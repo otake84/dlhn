@@ -15,6 +15,10 @@ impl Header {
     pub fn types(&self) -> &[Type] {
         &self.0
     }
+
+    pub fn push(&mut self, ty: Type) {
+        self.0.push(ty);
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
