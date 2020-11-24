@@ -1,4 +1,7 @@
 #[derive(Clone, Debug, PartialEq)]
-pub enum Header {
+pub struct Header(Vec<Type>);
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Type {
     Bool,
 }
