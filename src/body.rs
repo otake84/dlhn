@@ -10,8 +10,12 @@ impl Body {
         match header {
             Header::Boolean => {
                 match self {
-                    Body::Boolean(_) => {
-                        Ok(vec![1])
+                    Body::Boolean(v) => {
+                        if *v {
+                            Ok(vec![1])
+                        } else {
+                            Ok(vec![0])
+                        }
                     }
                 }
             }
