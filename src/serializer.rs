@@ -10,3 +10,15 @@ pub fn serialize(header: &Header, body: &Body) -> Result<Vec<u8>, ()> {
         Err(_) => Err(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{body::Body, header::Header};
+
+    #[test]
+    fn serialize_boolean() {
+        let header = Header::Boolean;
+        assert_eq!(super::serialize(&header, &Body::Boolean(false)).unwrap(), [0, 0]);
+        assert_eq!(super::serialize(&header, &Body::Boolean(true)).unwrap(), [0, 1]);
+    }
+}
