@@ -10,15 +10,14 @@ impl Body {
     pub(crate) fn serialize(&self, header: &Header) -> Result<Vec<u8>, ()> {
         match header {
             Header::Boolean => {
-                match self {
-                    Body::Boolean(v) => {
-                        if *v {
-                            Ok(vec![1])
-                        } else {
-                            Ok(vec![0])
-                        }
+                if let Body::Boolean(v) = self {
+                    if *v {
+                        Ok(vec![1])
+                    } else {
+                        Ok(vec![0])
                     }
-                    _ => Err(())
+                } else {
+                    Err(())
                 }
             }
             Header::UInt8 => {
