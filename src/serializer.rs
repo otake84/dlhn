@@ -54,7 +54,7 @@ mod tests {
     #[test]
     fn serialize_uint8() {
         let header = Header::UInt8;
-        assert_eq!(super::serialize(&header, &Body::UInt8(0)).unwrap(), [[1], (0 as u8).to_le_bytes()].concat());
-        assert_eq!(super::serialize(&header, &Body::UInt8(255)).unwrap(), [[1], (255 as u8).to_le_bytes()].concat());
+        assert_eq!(super::serialize(&header, &Body::UInt8(0)).unwrap(), [[1], (0u8).to_le_bytes()].concat());
+        assert_eq!(super::serialize(&header, &Body::UInt8(255)).unwrap(), [[1], (255u8).to_le_bytes()].concat());
     }
 }
