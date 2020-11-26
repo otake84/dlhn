@@ -1,19 +1,48 @@
 use crate::{body::Body, header::Header};
 
-pub fn serialize(header: &Header, body: &Body) -> Result<Vec<u8>, ()> {
-    let mut serialized_header= header.serialize();
-    match body.serialize(header) {
-        Ok(mut value) => {
-            serialized_header.append(&mut value);
-            Ok(serialized_header)
+fn validate(header: &Header, body: &Body) -> bool {
+    match header {
+        Header::Boolean => {
+            if let Body::Boolean(_) = body {
+                true
+            } else {
+                false
+            }
         }
-        Err(_) => Err(())
+        Header::UInt8 => {
+            if let Body::UInt8(_) = body {
+                true
+            } else {
+                false
+            }
+        }
     }
+}
+
+pub fn serialize(header: &Header, body: &Body) -> Result<Vec<u8>, ()> {
+    if !validate(header, body) {
+        return Err(())
+    }
+
+    let mut serialized_header= header.serialize();
+    serialized_header.append(&mut body.serialize());
+    Ok(serialized_header)
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{body::Body, header::Header};
+
+    #[test]
+    fn validate() {
+        let header = Header::Boolean;
+        assert!(super::validate(&header, &Body::Boolean(true)));
+        assert!(!super::validate(&header, &Body::UInt8(0)));
+
+        let header = Header::UInt8;
+        assert!(super::validate(&header, &Body::UInt8(0)));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+    }
 
     #[test]
     fn serialize_boolean() {
