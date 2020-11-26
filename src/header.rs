@@ -25,10 +25,9 @@ impl Header {
         }
     }
 
-    pub(crate) fn deserialize<R: Read>(read: R) -> Result<Header, ()> {
-        let mut reader = BufReader::new(read);
+    pub(crate) fn deserialize<R: Read>(buf_reader: &mut BufReader<R>) -> Result<Header, ()> {
         let mut buf = [0u8; 1];
-        reader.read_exact(&mut buf).or(Err(()))?;
+        buf_reader.read_exact(&mut buf).or(Err(()))?;
 
         if let Some(first) = buf.first() {
             match first {
@@ -50,11 +49,14 @@ pub enum BodySize {
 
 #[cfg(test)]
 mod tests {
+    use std::io::BufReader;
+
     use super::Header;
 
     #[test]
     fn deserialize() {
-        assert_eq!(Header::deserialize(&[0u8] as &[u8]), Ok(Header::Boolean));
-        assert_eq!(Header::deserialize(&[1u8] as &[u8]), Ok(Header::UInt8));
+        assert_eq!(Header::deserialize(&mut BufReader::new(&[0u8] as &[u8])), Ok(Header::Boolean));
+        assert_eq!(Header::deserialize(&mut BufReader::new(&[1u8] as &[u8])), Ok(Header::UInt8));
+
     }
 }

@@ -24,13 +24,11 @@ impl Body {
         }
     }
 
-    pub(crate) fn deserialize<R: Read>(header: Header, read: R) -> Result<Body, ()> {
-        let mut reader = BufReader::new(read);
-
+    pub(crate) fn deserialize<R: Read>(header: &Header, buf_reader: &mut BufReader<R>) -> Result<Body, ()> {
         if let BodySize::Fix(size) = header.body_size() {
             let mut body_buf = Vec::with_capacity(size);
             unsafe { body_buf.set_len(size); }
-            reader.read_exact(&mut body_buf).or(Err(()))?;
+            buf_reader.read_exact(&mut body_buf).or(Err(()))?;
 
             match header {
                 Header::Boolean => {
@@ -52,15 +50,17 @@ impl Body {
 
 #[cfg(test)]
 mod tests {
+    use std::io::BufReader;
+
     use crate::header::Header;
 
     use super::Body;
 
     #[test]
     fn deserialize() {
-        assert_eq!(super::Body::deserialize(Header::Boolean, &[0u8] as &[u8]), Ok(Body::Boolean(false)));
-        assert_eq!(super::Body::deserialize(Header::Boolean, &[1u8] as &[u8]), Ok(Body::Boolean(true)));
-        assert_eq!(super::Body::deserialize(Header::UInt8, &[0u8] as &[u8]), Ok(Body::UInt8(0)));
-        assert_eq!(super::Body::deserialize(Header::UInt8, &[255u8] as &[u8]), Ok(Body::UInt8(255)));
+        assert_eq!(super::Body::deserialize(&Header::Boolean, &mut BufReader::new(&[0u8] as &[u8])), Ok(Body::Boolean(false)));
+        assert_eq!(super::Body::deserialize(&Header::Boolean, &mut BufReader::new(&[1u8] as &[u8])), Ok(Body::Boolean(true)));
+        assert_eq!(super::Body::deserialize(&Header::UInt8, &mut BufReader::new(&[0u8] as &[u8])), Ok(Body::UInt8(0)));
+        assert_eq!(super::Body::deserialize(&Header::UInt8, &mut BufReader::new(&[255u8] as &[u8])), Ok(Body::UInt8(255)));
     }
 }
