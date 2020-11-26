@@ -7,6 +7,13 @@ pub enum Header {
 }
 
 impl Header {
+    pub fn body_size(&self) -> BodySize{
+        match self {
+            Header::Boolean => BodySize::Fix(1),
+            Header::UInt8 => BodySize::Fix(1),
+        }
+    }
+
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
             Header::Boolean => {
@@ -35,6 +42,11 @@ impl Header {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum BodySize {
+    Fix(usize),
+    Variable,
+}
 
 #[cfg(test)]
 mod tests {
