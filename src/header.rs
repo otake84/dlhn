@@ -39,16 +39,12 @@ impl Header {
         let mut buf = [0u8; 1];
         buf_reader.read_exact(&mut buf).or(Err(()))?;
 
-        if let Some(first) = buf.first() {
-            match first {
-                0 => Ok(Header::Boolean),
-                1 => Ok(Header::UInt),
-                2 => Ok(Header::UInt8),
-                3 => Ok(Header::Int8),
-                _ => Err(())
-            }
-        } else {
-            Err(())
+        match buf.first() {
+            Some(0) => Ok(Header::Boolean),
+            Some(1) => Ok(Header::UInt),
+            Some(2) => Ok(Header::UInt8),
+            Some(3) => Ok(Header::Int8),
+            _ => Err(())
         }
     }
 }
