@@ -9,6 +9,13 @@ fn validate(header: &Header, body: &Body) -> bool {
                 false
             }
         }
+        Header::UInt => {
+            if let Body::UInt(_) = body {
+                true
+            } else {
+                false
+            }
+        }
         Header::UInt8 => {
             if let Body::UInt8(_) = body {
                 true
@@ -61,7 +68,7 @@ mod tests {
     #[test]
     fn serialize_uint8() {
         let header = Header::UInt8;
-        assert_eq!(super::serialize(&header, &Body::UInt8(0)).unwrap(), [[1], (0u8).to_le_bytes()].concat());
-        assert_eq!(super::serialize(&header, &Body::UInt8(255)).unwrap(), [[1], (255u8).to_le_bytes()].concat());
+        assert_eq!(super::serialize(&header, &Body::UInt8(0)).unwrap(), [[2], (0u8).to_le_bytes()].concat());
+        assert_eq!(super::serialize(&header, &Body::UInt8(255)).unwrap(), [[2], (255u8).to_le_bytes()].concat());
     }
 }

@@ -1,10 +1,11 @@
 use std::io::{BufReader, Read};
-
+use integer_encoding::{VarInt, VarIntReader};
 use crate::header::{BodySize, Header};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Body {
     Boolean(bool),
+    UInt(u64),
     UInt8(u8),
     Int8(i8),
 }
@@ -18,6 +19,9 @@ impl Body {
                 } else {
                     vec![0]
                 }
+            }
+            Body::UInt(v) => {
+                v.encode_var_vec()
             }
             Body::UInt8(v) => {
                 v.to_le_bytes().to_vec()
@@ -48,9 +52,15 @@ impl Body {
                 Header::Int8 => {
                     Ok(Body::Int8(i8::from_le_bytes([*body_buf.first().unwrap()])))
                 }
+                _ => Err(())
             }
         } else {
-            Err(())
+            match header {
+                Header::UInt => {
+                    buf_reader.read_varint::<u64>().map(|v| Body::UInt(v.into())).or(Err(()))
+                }
+                _ => Err(())
+            }
         }
     }
 }
@@ -58,15 +68,19 @@ impl Body {
 #[cfg(test)]
 mod tests {
     use std::io::BufReader;
-
+    use integer_encoding::VarInt;
     use crate::header::Header;
-
     use super::Body;
 
     #[test]
     fn deserialize() {
         assert_eq!(super::Body::deserialize(&Header::Boolean, &mut BufReader::new(&[0u8] as &[u8])), Ok(Body::Boolean(false)));
         assert_eq!(super::Body::deserialize(&Header::Boolean, &mut BufReader::new(&[1u8] as &[u8])), Ok(Body::Boolean(true)));
+        assert_eq!(super::Body::deserialize(&Header::UInt, &mut BufReader::new(0u8.encode_var_vec().as_ref() as &[u8])), Ok(Body::UInt(0)));
+        assert_eq!(super::Body::deserialize(&Header::UInt, &mut BufReader::new(u8::MAX.encode_var_vec().as_ref() as &[u8])), Ok(Body::UInt(u8::MAX as u64)));
+        assert_eq!(super::Body::deserialize(&Header::UInt, &mut BufReader::new(u16::MAX.encode_var_vec().as_ref() as &[u8])), Ok(Body::UInt(u16::MAX as u64)));
+        assert_eq!(super::Body::deserialize(&Header::UInt, &mut BufReader::new(u32::MAX.encode_var_vec().as_ref() as &[u8])), Ok(Body::UInt(u32::MAX as u64)));
+        assert_eq!(super::Body::deserialize(&Header::UInt, &mut BufReader::new(u64::MAX.encode_var_vec().as_ref() as &[u8])), Ok(Body::UInt(u64::MAX as u64)));
         assert_eq!(super::Body::deserialize(&Header::UInt8, &mut BufReader::new(&[0u8] as &[u8])), Ok(Body::UInt8(0)));
         assert_eq!(super::Body::deserialize(&Header::UInt8, &mut BufReader::new(&[255u8] as &[u8])), Ok(Body::UInt8(255)));
         assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&[0u8] as &[u8])), Ok(Body::Int8(0)));

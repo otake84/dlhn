@@ -3,6 +3,7 @@ use std::io::{BufReader, Read};
 #[derive(Clone, Debug, PartialEq)]
 pub enum Header {
     Boolean,
+    UInt,
     UInt8,
     Int8,
 }
@@ -11,6 +12,7 @@ impl Header {
     pub fn body_size(&self) -> BodySize{
         match self {
             Header::Boolean => BodySize::Fix(1),
+            Header::UInt => BodySize::Variable,
             Header::UInt8 => BodySize::Fix(1),
             Header::Int8 => BodySize::Fix(1),
         }
@@ -21,11 +23,14 @@ impl Header {
             Header::Boolean => {
                 vec![0]
             }
-            Header::UInt8 => {
+            Header::UInt => {
                 vec![1]
             }
-            Header::Int8 => {
+            Header::UInt8 => {
                 vec![2]
+            }
+            Header::Int8 => {
+                vec![3]
             }
         }
     }
@@ -37,8 +42,9 @@ impl Header {
         if let Some(first) = buf.first() {
             match first {
                 0 => Ok(Header::Boolean),
-                1 => Ok(Header::UInt8),
-                2 => Ok(Header::Int8),
+                1 => Ok(Header::UInt),
+                2 => Ok(Header::UInt8),
+                3 => Ok(Header::Int8),
                 _ => Err(())
             }
         } else {
@@ -56,13 +62,13 @@ pub enum BodySize {
 #[cfg(test)]
 mod tests {
     use std::io::BufReader;
-
     use super::Header;
 
     #[test]
     fn deserialize() {
         assert_eq!(Header::deserialize(&mut BufReader::new(&[0u8] as &[u8])), Ok(Header::Boolean));
-        assert_eq!(Header::deserialize(&mut BufReader::new(&[1u8] as &[u8])), Ok(Header::UInt8));
-        assert_eq!(Header::deserialize(&mut BufReader::new(&[2u8] as &[u8])), Ok(Header::Int8));
+        assert_eq!(Header::deserialize(&mut BufReader::new(&[1u8] as &[u8])), Ok(Header::UInt));
+        assert_eq!(Header::deserialize(&mut BufReader::new(&[2u8] as &[u8])), Ok(Header::UInt8));
+        assert_eq!(Header::deserialize(&mut BufReader::new(&[3u8] as &[u8])), Ok(Header::Int8));
     }
 }
