@@ -1,35 +1,12 @@
 use crate::{body::Body, header::Header};
 
 fn validate(header: &Header, body: &Body) -> bool {
-    match header {
-        Header::Boolean => {
-            if let Body::Boolean(_) = body {
-                true
-            } else {
-                false
-            }
-        }
-        Header::UInt => {
-            if let Body::UInt(_) = body {
-                true
-            } else {
-                false
-            }
-        }
-        Header::UInt8 => {
-            if let Body::UInt8(_) = body {
-                true
-            } else {
-                false
-            }
-        }
-        Header::Int8 => {
-            if let Body::Int8(_) = body {
-                true
-            } else {
-                false
-            }
-        }
+    match (header, body) {
+        (Header::Boolean, Body::Boolean(_)) => true,
+        (Header::UInt, Body::UInt(_)) => true,
+        (Header::UInt8, Body::UInt8(_)) => true,
+        (Header::Int8, Body::Int8(_)) => true,
+        _ => false,
     }
 }
 
