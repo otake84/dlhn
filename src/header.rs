@@ -4,6 +4,7 @@ use std::io::{BufReader, Read};
 pub enum Header {
     Boolean,
     UInt8,
+    Int8,
 }
 
 impl Header {
@@ -11,6 +12,7 @@ impl Header {
         match self {
             Header::Boolean => BodySize::Fix(1),
             Header::UInt8 => BodySize::Fix(1),
+            Header::Int8 => BodySize::Fix(1),
         }
     }
 
@@ -21,6 +23,9 @@ impl Header {
             }
             Header::UInt8 => {
                 vec![1]
+            }
+            Header::Int8 => {
+                vec![2]
             }
         }
     }
@@ -33,6 +38,7 @@ impl Header {
             match first {
                 0 => Ok(Header::Boolean),
                 1 => Ok(Header::UInt8),
+                2 => Ok(Header::Int8),
                 _ => Err(())
             }
         } else {
@@ -57,6 +63,6 @@ mod tests {
     fn deserialize() {
         assert_eq!(Header::deserialize(&mut BufReader::new(&[0u8] as &[u8])), Ok(Header::Boolean));
         assert_eq!(Header::deserialize(&mut BufReader::new(&[1u8] as &[u8])), Ok(Header::UInt8));
-
+        assert_eq!(Header::deserialize(&mut BufReader::new(&[2u8] as &[u8])), Ok(Header::Int8));
     }
 }

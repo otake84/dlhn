@@ -16,6 +16,13 @@ fn validate(header: &Header, body: &Body) -> bool {
                 false
             }
         }
+        Header::Int8 => {
+            if let Body::Int8(_) = body {
+                true
+            } else {
+                false
+            }
+        }
     }
 }
 

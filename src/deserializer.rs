@@ -26,5 +26,8 @@ mod tests {
         assert_eq!(super::deserialize(&[0u8, 1] as &[u8]), Ok((Header::Boolean, Body::Boolean(true))));
         assert_eq!(super::deserialize(&[1u8, 0] as &[u8]), Ok((Header::UInt8, Body::UInt8(0))));
         assert_eq!(super::deserialize(&[1u8, 255] as &[u8]), Ok((Header::UInt8, Body::UInt8(255))));
+        assert_eq!(super::deserialize(&[2u8, 0] as &[u8]), Ok((Header::Int8, Body::Int8(0))));
+        assert_eq!(super::deserialize(&[[2u8], i8::MIN.to_le_bytes()].concat() as &[u8]), Ok((Header::Int8, Body::Int8(i8::MIN))));
+        assert_eq!(super::deserialize(&[[2u8], i8::MAX.to_le_bytes()].concat() as &[u8]), Ok((Header::Int8, Body::Int8(i8::MAX))));
     }
 }

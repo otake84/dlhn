@@ -6,6 +6,7 @@ use crate::header::{BodySize, Header};
 pub enum Body {
     Boolean(bool),
     UInt8(u8),
+    Int8(i8),
 }
 
 impl Body {
@@ -19,6 +20,9 @@ impl Body {
                 }
             }
             Body::UInt8(v) => {
+                v.to_le_bytes().to_vec()
+            }
+            Body::Int8(v) => {
                 v.to_le_bytes().to_vec()
             }
         }
@@ -41,6 +45,9 @@ impl Body {
                 Header::UInt8 => {
                     Ok(Body::UInt8(*body_buf.first().unwrap()))
                 }
+                Header::Int8 => {
+                    Ok(Body::Int8(i8::from_le_bytes([*body_buf.first().unwrap()])))
+                }
             }
         } else {
             Err(())
@@ -62,5 +69,9 @@ mod tests {
         assert_eq!(super::Body::deserialize(&Header::Boolean, &mut BufReader::new(&[1u8] as &[u8])), Ok(Body::Boolean(true)));
         assert_eq!(super::Body::deserialize(&Header::UInt8, &mut BufReader::new(&[0u8] as &[u8])), Ok(Body::UInt8(0)));
         assert_eq!(super::Body::deserialize(&Header::UInt8, &mut BufReader::new(&[255u8] as &[u8])), Ok(Body::UInt8(255)));
+        assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&[0u8] as &[u8])), Ok(Body::Int8(0)));
+        assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&(-1i8).to_le_bytes() as &[u8])), Ok(Body::Int8(-1)));
+        assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&i8::MIN.to_le_bytes() as &[u8])), Ok(Body::Int8(i8::MIN)));
+        assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&i8::MAX.to_le_bytes() as &[u8])), Ok(Body::Int8(i8::MAX)));
     }
 }
