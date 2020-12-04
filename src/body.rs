@@ -91,16 +91,28 @@ mod tests {
     use super::Body;
 
     #[test]
-    fn deserialize() {
+    fn deserialize_boolean() {
         assert_eq!(super::Body::deserialize(&Header::Boolean, &mut BufReader::new(&[0u8] as &[u8])), Ok(Body::Boolean(false)));
         assert_eq!(super::Body::deserialize(&Header::Boolean, &mut BufReader::new(&[1u8] as &[u8])), Ok(Body::Boolean(true)));
+    }
+
+    #[test]
+    fn deserialize_uint() {
         assert_eq!(super::Body::deserialize(&Header::UInt, &mut BufReader::new(0u8.encode_var_vec().as_ref() as &[u8])), Ok(Body::UInt(0)));
         assert_eq!(super::Body::deserialize(&Header::UInt, &mut BufReader::new(u8::MAX.encode_var_vec().as_ref() as &[u8])), Ok(Body::UInt(u8::MAX as u64)));
         assert_eq!(super::Body::deserialize(&Header::UInt, &mut BufReader::new(u16::MAX.encode_var_vec().as_ref() as &[u8])), Ok(Body::UInt(u16::MAX as u64)));
         assert_eq!(super::Body::deserialize(&Header::UInt, &mut BufReader::new(u32::MAX.encode_var_vec().as_ref() as &[u8])), Ok(Body::UInt(u32::MAX as u64)));
         assert_eq!(super::Body::deserialize(&Header::UInt, &mut BufReader::new(u64::MAX.encode_var_vec().as_ref() as &[u8])), Ok(Body::UInt(u64::MAX as u64)));
+    }
+
+    #[test]
+    fn deserialize_uint8() {
         assert_eq!(super::Body::deserialize(&Header::UInt8, &mut BufReader::new(&[0u8] as &[u8])), Ok(Body::UInt8(0)));
         assert_eq!(super::Body::deserialize(&Header::UInt8, &mut BufReader::new(&[255u8] as &[u8])), Ok(Body::UInt8(255)));
+    }
+
+    #[test]
+    fn deserialize_int() {
         assert_eq!(super::Body::deserialize(&Header::Int, &mut BufReader::new(0i8.encode_var_vec().as_ref() as &[u8])), Ok(Body::Int(0)));
         assert_eq!(super::Body::deserialize(&Header::Int, &mut BufReader::new(i8::MIN.encode_var_vec().as_ref() as &[u8])), Ok(Body::Int(i8::MIN as i64)));
         assert_eq!(super::Body::deserialize(&Header::Int, &mut BufReader::new(i8::MAX.encode_var_vec().as_ref() as &[u8])), Ok(Body::Int(i8::MAX as i64)));
@@ -110,10 +122,18 @@ mod tests {
         assert_eq!(super::Body::deserialize(&Header::Int, &mut BufReader::new(i32::MAX.encode_var_vec().as_ref() as &[u8])), Ok(Body::Int(i32::MAX as i64)));
         assert_eq!(super::Body::deserialize(&Header::Int, &mut BufReader::new(i64::MIN.encode_var_vec().as_ref() as &[u8])), Ok(Body::Int(i64::MIN as i64)));
         assert_eq!(super::Body::deserialize(&Header::Int, &mut BufReader::new(i64::MAX.encode_var_vec().as_ref() as &[u8])), Ok(Body::Int(i64::MAX as i64)));
+    }
+
+    #[test]
+    fn deserialize_int8() {
         assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&[0u8] as &[u8])), Ok(Body::Int8(0)));
         assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&(-1i8).to_le_bytes() as &[u8])), Ok(Body::Int8(-1)));
         assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&i8::MIN.to_le_bytes() as &[u8])), Ok(Body::Int8(i8::MIN)));
         assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&i8::MAX.to_le_bytes() as &[u8])), Ok(Body::Int8(i8::MAX)));
+    }
+
+    #[test]
+    fn deserialize_string() {
         assert_eq!(super::Body::deserialize(&Header::String, &mut BufReader::new(["test".len().encode_var_vec(), "test".as_bytes().to_vec()].concat().as_ref() as &[u8])), Ok(Body::String(String::from("test"))));
         assert_eq!(super::Body::deserialize(&Header::String, &mut BufReader::new(["テスト".len().encode_var_vec(), "テスト".as_bytes().to_vec()].concat().as_ref() as &[u8])), Ok(Body::String(String::from("テスト"))));
     }
