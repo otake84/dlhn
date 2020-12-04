@@ -10,6 +10,7 @@ pub enum Body {
     Int(i64),
     Int8(i8),
     Float32(f32),
+    Float64(f64),
     String(String),
 }
 
@@ -36,6 +37,9 @@ impl Body {
                 v.to_le_bytes().to_vec()
             }
             Body::Float32(v) => {
+                v.to_le_bytes().to_vec()
+            }
+            Body::Float64(v) => {
                 v.to_le_bytes().to_vec()
             }
             Body::String(v) => {
@@ -67,6 +71,10 @@ impl Body {
                 Header::Float32 => {
                     let bytes = body_buf.try_into().or(Err(()))?;
                     Ok(Body::Float32(f32::from_le_bytes(bytes)))
+                }
+                Header::Float64 => {
+                    let bytes = body_buf.try_into().or(Err(()))?;
+                    Ok(Body::Float64(f64::from_le_bytes(bytes)))
                 }
                 _ => Err(())
             }
@@ -147,6 +155,15 @@ mod tests {
         assert_eq!(super::Body::deserialize(&Header::Float32, &mut BufReader::new(&(-1.1f32).to_le_bytes() as &[u8])), Ok(Body::Float32(-1.1f32)));
         assert_eq!(super::Body::deserialize(&Header::Float32, &mut BufReader::new(&f32::INFINITY.to_le_bytes() as &[u8])), Ok(Body::Float32(f32::INFINITY)));
         assert_eq!(super::Body::deserialize(&Header::Float32, &mut BufReader::new(&(-f32::INFINITY).to_le_bytes() as &[u8])), Ok(Body::Float32(-f32::INFINITY)));
+    }
+
+    #[test]
+    fn deserialize_float64() {
+        assert_eq!(super::Body::deserialize(&Header::Float64, &mut BufReader::new(&0f64.to_le_bytes() as &[u8])), Ok(Body::Float64(0f64)));
+        assert_eq!(super::Body::deserialize(&Header::Float64, &mut BufReader::new(&1.1f64.to_le_bytes() as &[u8])), Ok(Body::Float64(1.1f64)));
+        assert_eq!(super::Body::deserialize(&Header::Float64, &mut BufReader::new(&(-1.1f64).to_le_bytes() as &[u8])), Ok(Body::Float64(-1.1f64)));
+        assert_eq!(super::Body::deserialize(&Header::Float64, &mut BufReader::new(&f64::INFINITY.to_le_bytes() as &[u8])), Ok(Body::Float64(f64::INFINITY)));
+        assert_eq!(super::Body::deserialize(&Header::Float64, &mut BufReader::new(&(-f64::INFINITY).to_le_bytes() as &[u8])), Ok(Body::Float64(-f64::INFINITY)));
     }
 
     #[test]

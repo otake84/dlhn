@@ -8,6 +8,7 @@ pub enum Header {
     Int,
     Int8,
     Float32,
+    Float64,
     String,
 }
 
@@ -20,6 +21,7 @@ impl Header {
             Header::Int => BodySize::Variable,
             Header::Int8 => BodySize::Fix(1),
             Header::Float32 => BodySize::Fix(4),
+            Header::Float64 => BodySize::Fix(8),
             Header::String => BodySize::Variable,
         }
     }
@@ -44,8 +46,11 @@ impl Header {
             Header::Float32 => {
                 vec![5]
             }
-            Header::String => {
+            Header::Float64 => {
                 vec![6]
+            }
+            Header::String => {
+                vec![7]
             }
         }
     }
@@ -61,7 +66,8 @@ impl Header {
             Some(3) => Ok(Header::Int),
             Some(4) => Ok(Header::Int8),
             Some(5) => Ok(Header::Float32),
-            Some(6) => Ok(Header::String),
+            Some(6) => Ok(Header::Float64),
+            Some(7) => Ok(Header::String),
             _ => Err(())
         }
     }
@@ -86,6 +92,7 @@ mod tests {
         assert_eq!(Header::deserialize(&mut BufReader::new(&[3u8] as &[u8])), Ok(Header::Int));
         assert_eq!(Header::deserialize(&mut BufReader::new(&[4u8] as &[u8])), Ok(Header::Int8));
         assert_eq!(Header::deserialize(&mut BufReader::new(&[5u8] as &[u8])), Ok(Header::Float32));
-        assert_eq!(Header::deserialize(&mut BufReader::new(&[6u8] as &[u8])), Ok(Header::String));
+        assert_eq!(Header::deserialize(&mut BufReader::new(&[6u8] as &[u8])), Ok(Header::Float64));
+        assert_eq!(Header::deserialize(&mut BufReader::new(&[7u8] as &[u8])), Ok(Header::String));
     }
 }
