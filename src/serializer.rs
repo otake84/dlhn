@@ -1,6 +1,6 @@
 use crate::{body::Body, header::Header};
 
-fn validate(header: &Header, body: &Body) -> bool {
+const fn validate(header: &Header, body: &Body) -> bool {
     match (header, body) {
         (Header::Boolean, Body::Boolean(_)) => true,
         (Header::UInt, Body::UInt(_)) => true,

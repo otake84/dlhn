@@ -12,7 +12,7 @@ pub enum Header {
 }
 
 impl Header {
-    pub fn body_size(&self) -> BodySize{
+    pub const fn body_size(&self) -> BodySize{
         match self {
             Header::Boolean => BodySize::Fix(1),
             Header::UInt => BodySize::Variable,
