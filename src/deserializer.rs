@@ -34,5 +34,6 @@ mod tests {
         assert_eq!(super::deserialize(&[Header::Int8.serialize(), 0i8.to_le_bytes().to_vec()].concat() as &[u8]), Ok((Header::Int8, Body::Int8(0))));
         assert_eq!(super::deserialize(&[Header::Int8.serialize(), i8::MIN.to_le_bytes().to_vec()].concat() as &[u8]), Ok((Header::Int8, Body::Int8(i8::MIN))));
         assert_eq!(super::deserialize(&[Header::Int8.serialize(), i8::MAX.to_le_bytes().to_vec()].concat() as &[u8]), Ok((Header::Int8, Body::Int8(i8::MAX))));
+        assert_eq!(super::deserialize(&[Header::String.serialize(), "test".len().encode_var_vec(), "test".as_bytes().to_vec()].concat() as &[u8]), Ok((Header::String, Body::String(String::from("test")))));
     }
 }

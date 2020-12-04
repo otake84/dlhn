@@ -9,6 +9,7 @@ pub enum Body {
     UInt8(u8),
     Int(i64),
     Int8(i8),
+    String(String),
 }
 
 impl Body {
@@ -32,6 +33,9 @@ impl Body {
             }
             Body::Int8(v) => {
                 v.to_le_bytes().to_vec()
+            }
+            Body::String(v) => {
+                [v.len().encode_var_vec(), v.as_bytes().to_vec()].concat()
             }
         }
     }
@@ -65,6 +69,13 @@ impl Body {
                 }
                 Header::Int => {
                     buf_reader.read_varint::<i64>().map(|v| Body::Int(v.into())).or(Err(()))
+                }
+                Header::String => {
+                    let size = buf_reader.read_varint::<usize>().or(Err(()))?;
+                    let mut body_buf = Vec::with_capacity(size);
+                    unsafe { body_buf.set_len(size); }
+                    buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                    String::from_utf8(body_buf).map(Body::String).or(Err(()))
                 }
                 _ => Err(())
             }
@@ -103,5 +114,7 @@ mod tests {
         assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&(-1i8).to_le_bytes() as &[u8])), Ok(Body::Int8(-1)));
         assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&i8::MIN.to_le_bytes() as &[u8])), Ok(Body::Int8(i8::MIN)));
         assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&i8::MAX.to_le_bytes() as &[u8])), Ok(Body::Int8(i8::MAX)));
+        assert_eq!(super::Body::deserialize(&Header::String, &mut BufReader::new(["test".len().encode_var_vec(), "test".as_bytes().to_vec()].concat().as_ref() as &[u8])), Ok(Body::String(String::from("test"))));
+        assert_eq!(super::Body::deserialize(&Header::String, &mut BufReader::new(["テスト".len().encode_var_vec(), "テスト".as_bytes().to_vec()].concat().as_ref() as &[u8])), Ok(Body::String(String::from("テスト"))));
     }
 }
