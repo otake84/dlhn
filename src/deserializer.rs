@@ -42,6 +42,19 @@ mod tests {
     }
 
     #[test]
+    fn deserialize_int() {
+        assert_eq!(super::deserialize(&[Header::Int.serialize(), 0i8.encode_var_vec()].concat() as &[u8]), Ok((Header::Int, Body::Int(0))));
+        assert_eq!(super::deserialize(&[Header::Int.serialize(), i8::MIN.encode_var_vec()].concat() as &[u8]), Ok((Header::Int, Body::Int(i8::MIN as i64))));
+        assert_eq!(super::deserialize(&[Header::Int.serialize(), i8::MAX.encode_var_vec()].concat() as &[u8]), Ok((Header::Int, Body::Int(i8::MAX as i64))));
+        assert_eq!(super::deserialize(&[Header::Int.serialize(), i16::MIN.encode_var_vec()].concat() as &[u8]), Ok((Header::Int, Body::Int(i16::MIN as i64))));
+        assert_eq!(super::deserialize(&[Header::Int.serialize(), i16::MAX.encode_var_vec()].concat() as &[u8]), Ok((Header::Int, Body::Int(i16::MAX as i64))));
+        assert_eq!(super::deserialize(&[Header::Int.serialize(), i32::MIN.encode_var_vec()].concat() as &[u8]), Ok((Header::Int, Body::Int(i32::MIN as i64))));
+        assert_eq!(super::deserialize(&[Header::Int.serialize(), i32::MAX.encode_var_vec()].concat() as &[u8]), Ok((Header::Int, Body::Int(i32::MAX as i64))));
+        assert_eq!(super::deserialize(&[Header::Int.serialize(), i64::MIN.encode_var_vec()].concat() as &[u8]), Ok((Header::Int, Body::Int(i64::MIN as i64))));
+        assert_eq!(super::deserialize(&[Header::Int.serialize(), i64::MAX.encode_var_vec()].concat() as &[u8]), Ok((Header::Int, Body::Int(i64::MAX as i64))));
+    }
+
+    #[test]
     fn deserialize_int8() {
         assert_eq!(super::deserialize(&[Header::Int8.serialize(), 0i8.to_le_bytes().to_vec()].concat() as &[u8]), Ok((Header::Int8, Body::Int8(0))));
         assert_eq!(super::deserialize(&[Header::Int8.serialize(), i8::MIN.to_le_bytes().to_vec()].concat() as &[u8]), Ok((Header::Int8, Body::Int8(i8::MIN))));
