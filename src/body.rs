@@ -1,4 +1,4 @@
-use std::io::{BufReader, Read};
+use std::{convert::TryInto, io::{BufReader, Read}};
 use integer_encoding::{VarInt, VarIntReader};
 use crate::header::{BodySize, Header};
 
@@ -9,6 +9,7 @@ pub enum Body {
     UInt8(u8),
     Int(i64),
     Int8(i8),
+    Float32(f32),
     String(String),
 }
 
@@ -32,6 +33,9 @@ impl Body {
                 v.encode_var_vec()
             }
             Body::Int8(v) => {
+                v.to_le_bytes().to_vec()
+            }
+            Body::Float32(v) => {
                 v.to_le_bytes().to_vec()
             }
             Body::String(v) => {
@@ -59,6 +63,10 @@ impl Body {
                 }
                 Header::Int8 => {
                     Ok(Body::Int8(i8::from_le_bytes([*body_buf.first().unwrap()])))
+                }
+                Header::Float32 => {
+                    let bytes = body_buf.try_into().or(Err(()))?;
+                    Ok(Body::Float32(f32::from_le_bytes(bytes)))
                 }
                 _ => Err(())
             }
@@ -130,6 +138,15 @@ mod tests {
         assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&(-1i8).to_le_bytes() as &[u8])), Ok(Body::Int8(-1)));
         assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&i8::MIN.to_le_bytes() as &[u8])), Ok(Body::Int8(i8::MIN)));
         assert_eq!(super::Body::deserialize(&Header::Int8, &mut BufReader::new(&i8::MAX.to_le_bytes() as &[u8])), Ok(Body::Int8(i8::MAX)));
+    }
+
+    #[test]
+    fn deserialize_float32() {
+        assert_eq!(super::Body::deserialize(&Header::Float32, &mut BufReader::new(&0f32.to_le_bytes() as &[u8])), Ok(Body::Float32(0f32)));
+        assert_eq!(super::Body::deserialize(&Header::Float32, &mut BufReader::new(&1.1f32.to_le_bytes() as &[u8])), Ok(Body::Float32(1.1f32)));
+        assert_eq!(super::Body::deserialize(&Header::Float32, &mut BufReader::new(&(-1.1f32).to_le_bytes() as &[u8])), Ok(Body::Float32(-1.1f32)));
+        assert_eq!(super::Body::deserialize(&Header::Float32, &mut BufReader::new(&f32::INFINITY.to_le_bytes() as &[u8])), Ok(Body::Float32(f32::INFINITY)));
+        assert_eq!(super::Body::deserialize(&Header::Float32, &mut BufReader::new(&(-f32::INFINITY).to_le_bytes() as &[u8])), Ok(Body::Float32(-f32::INFINITY)));
     }
 
     #[test]

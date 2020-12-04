@@ -62,6 +62,13 @@ mod tests {
     }
 
     #[test]
+    fn deserialize_float32() {
+        assert_eq!(super::deserialize(&[Header::Float32.serialize(), 0f32.to_le_bytes().to_vec()].concat() as &[u8]), Ok((Header::Float32, Body::Float32(0f32))));
+        assert_eq!(super::deserialize(&[Header::Float32.serialize(), f32::INFINITY.to_le_bytes().to_vec()].concat() as &[u8]), Ok((Header::Float32, Body::Float32(f32::INFINITY))));
+        assert_eq!(super::deserialize(&[Header::Float32.serialize(), (-f32::INFINITY).to_le_bytes().to_vec()].concat() as &[u8]), Ok((Header::Float32, Body::Float32(-f32::INFINITY))));
+    }
+
+    #[test]
     fn deserialize_string() {
         assert_eq!(super::deserialize(&[Header::String.serialize(), "test".len().encode_var_vec(), "test".as_bytes().to_vec()].concat() as &[u8]), Ok((Header::String, Body::String(String::from("test")))));
     }
