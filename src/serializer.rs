@@ -7,6 +7,8 @@ const fn validate(header: &Header, body: &Body) -> bool {
         (Header::UInt8, Body::UInt8(_)) => true,
         (Header::Int, Body::Int(_)) => true,
         (Header::Int8, Body::Int8(_)) => true,
+        (Header::Float32, Body::Float32(_)) => true,
+        (Header::String, Body::String(_)) => true,
         _ => false,
     }
 }
@@ -45,6 +47,14 @@ mod tests {
 
         let header = Header::Int8;
         assert!(super::validate(&header, &Body::Int8(0)));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::Float32;
+        assert!(super::validate(&header, &Body::Float32(0f32)));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::String;
+        assert!(super::validate(&header, &Body::String(String::from("test"))));
         assert!(!super::validate(&header, &Body::Boolean(true)));
     }
 
