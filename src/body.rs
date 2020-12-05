@@ -12,6 +12,7 @@ pub enum Body {
     Float32(f32),
     Float64(f64),
     String(String),
+    Array(Vec<Body>),
 }
 
 impl Body {
@@ -44,6 +45,10 @@ impl Body {
             }
             Body::String(v) => {
                 [v.len().encode_var_vec(), v.as_bytes().to_vec()].concat()
+            }
+            Body::Array(v) => {
+                let items = v.iter().flat_map(|v| v.serialize()).collect::<Vec<u8>>();
+                [v.len().encode_var_vec(), items].concat()
             }
         }
     }
@@ -92,6 +97,14 @@ impl Body {
                     unsafe { body_buf.set_len(size); }
                     buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                     String::from_utf8(body_buf).map(Body::String).or(Err(()))
+                }
+                Header::Array(inner_header) => {
+                    let size = buf_reader.read_varint::<usize>().or(Err(()))?;
+                    let mut body = Vec::with_capacity(size);
+                    for _ in 0..size {
+                        body.push(Self::deserialize(inner_header, buf_reader)?);
+                    }
+                    Ok(Body::Array(body))
                 }
                 _ => Err(())
             }
@@ -170,5 +183,14 @@ mod tests {
     fn deserialize_string() {
         assert_eq!(super::Body::deserialize(&Header::String, &mut BufReader::new(["test".len().encode_var_vec(), "test".as_bytes().to_vec()].concat().as_ref() as &[u8])), Ok(Body::String(String::from("test"))));
         assert_eq!(super::Body::deserialize(&Header::String, &mut BufReader::new(["テスト".len().encode_var_vec(), "テスト".as_bytes().to_vec()].concat().as_ref() as &[u8])), Ok(Body::String(String::from("テスト"))));
+    }
+
+    #[test]
+    fn deserialize_array() {
+        let body = [0u8, 1, 2, u8::MAX];
+        assert_eq!(super::Body::deserialize(&Header::Array(Box::new(Header::UInt8)), &mut BufReader::new([body.len().encode_var_vec(), body.iter().flat_map(|v| v.to_le_bytes().to_vec()).collect()].concat().as_ref() as &[u8])), Ok(Body::Array(vec![Body::UInt8(0), Body::UInt8(1), Body::UInt8(2), Body::UInt8(u8::MAX)])));
+
+        let body = ["aaaa", "bbbb"];
+        assert_eq!(super::Body::deserialize(&Header::Array(Box::new(Header::String)), &mut BufReader::new([body.len().encode_var_vec(), body.iter().flat_map(|v| [v.len().encode_var_vec(), v.as_bytes().to_vec()].concat()).collect()].concat().as_ref() as &[u8])), Ok(Body::Array(vec![Body::String(String::from("aaaa")), Body::String(String::from("bbbb"))])));
     }
 }

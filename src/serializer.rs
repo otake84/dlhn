@@ -1,6 +1,6 @@
 use crate::{body::Body, header::Header};
 
-const fn validate(header: &Header, body: &Body) -> bool {
+fn validate(header: &Header, body: &Body) -> bool {
     match (header, body) {
         (Header::Boolean, Body::Boolean(_)) => true,
         (Header::UInt, Body::UInt(_)) => true,
@@ -9,6 +9,9 @@ const fn validate(header: &Header, body: &Body) -> bool {
         (Header::Int8, Body::Int8(_)) => true,
         (Header::Float32, Body::Float32(_)) => true,
         (Header::String, Body::String(_)) => true,
+        (Header::Array(inner_header), Body::Array(inner_body)) => {
+            inner_body.iter().all(|v| validate(inner_header, v))
+        },
         _ => false,
     }
 }
@@ -56,6 +59,12 @@ mod tests {
         let header = Header::String;
         assert!(super::validate(&header, &Body::String(String::from("test"))));
         assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::Array(Box::new(Header::UInt8));
+        assert!(super::validate(&header, &Body::Array(vec![Body::UInt8(0)])));
+        assert!(!super::validate(&header, &Body::Array(vec![Body::Boolean(true)])));
+        assert!(super::validate(&header, &Body::Array(vec![Body::UInt8(0), Body::UInt8(1)])));
+        assert!(!super::validate(&header, &Body::Array(vec![Body::UInt8(0), Body::Boolean(true)])));
     }
 
     #[test]

@@ -10,6 +10,7 @@ pub enum Header {
     Float32,
     Float64,
     String,
+    Array(Box<Header>),
 }
 
 impl Header {
@@ -23,6 +24,7 @@ impl Header {
             Header::Float32 => BodySize::Fix(4),
             Header::Float64 => BodySize::Fix(8),
             Header::String => BodySize::Variable,
+            Header::Array(_) => BodySize::Variable,
         }
     }
 
@@ -52,6 +54,9 @@ impl Header {
             Header::String => {
                 vec![7]
             }
+            Header::Array(inner) => {
+                vec![vec![8], inner.serialize()].concat()
+            }
         }
     }
 
@@ -68,6 +73,10 @@ impl Header {
             Some(5) => Ok(Header::Float32),
             Some(6) => Ok(Header::Float64),
             Some(7) => Ok(Header::String),
+            Some(8) => {
+                let inner = Self::deserialize(buf_reader)?;
+                Ok(Header::Array(Box::new(inner)))
+            }
             _ => Err(())
         }
     }
@@ -94,5 +103,6 @@ mod tests {
         assert_eq!(Header::deserialize(&mut BufReader::new(&[5u8] as &[u8])), Ok(Header::Float32));
         assert_eq!(Header::deserialize(&mut BufReader::new(&[6u8] as &[u8])), Ok(Header::Float64));
         assert_eq!(Header::deserialize(&mut BufReader::new(&[7u8] as &[u8])), Ok(Header::String));
+        assert_eq!(Header::deserialize(&mut BufReader::new(&[8u8, 0] as &[u8])), Ok(Header::Array(Box::new(Header::Boolean))));
     }
 }

@@ -79,4 +79,13 @@ mod tests {
     fn deserialize_string() {
         assert_eq!(super::deserialize(&[Header::String.serialize(), "test".len().encode_var_vec(), "test".as_bytes().to_vec()].concat() as &[u8]), Ok((Header::String, Body::String(String::from("test")))));
     }
+
+    #[test]
+    fn deserialize_array() {
+        let body = [0u8, 1, 2, u8::MAX];
+        assert_eq!(super::deserialize(&[Header::Array(Box::new(Header::UInt8)).serialize(), [body.len().encode_var_vec(), body.iter().flat_map(|v| v.to_le_bytes().to_vec()).collect()].concat()].concat() as &[u8]), Ok((Header::Array(Box::new(Header::UInt8)), Body::Array(body.iter().map(|v| Body::UInt8(*v)).collect()))));
+
+        let body = ["aaaa", "bbbb"];
+        assert_eq!(super::deserialize(&[Header::Array(Box::new(Header::String)).serialize(), [body.len().encode_var_vec(), body.iter().flat_map(|v| [v.len().encode_var_vec(), v.as_bytes().to_vec()].concat()).collect()].concat()].concat() as &[u8]), Ok((Header::Array(Box::new(Header::String)), Body::Array(body.iter().map(|v| Body::String(v.to_string())).collect()))));
+    }
 }
