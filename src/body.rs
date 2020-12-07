@@ -46,7 +46,7 @@ impl Body {
                 v.to_le_bytes().to_vec()
             }
             Body::String(v) => {
-                [v.len().encode_var_vec(), v.as_bytes().to_vec()].concat()
+                [v.len().encode_var_vec().as_ref(), v.as_bytes()].concat()
             }
             Body::Array(v) => {
                 let items = v.iter().flat_map(|v| v.serialize()).collect::<Vec<u8>>();
