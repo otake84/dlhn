@@ -1,5 +1,8 @@
 use std::io::{BufReader, Read};
 
+use indexmap::IndexMap;
+use integer_encoding::{VarInt, VarIntReader};
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Header {
     Boolean,
@@ -11,6 +14,7 @@ pub enum Header {
     Float64,
     String,
     Array(Box<Header>),
+    Map(IndexMap<String, Header>),
 }
 
 impl Header {
@@ -25,6 +29,7 @@ impl Header {
             Header::Float64 => BodySize::Fix(8),
             Header::String => BodySize::Variable,
             Header::Array(_) => BodySize::Variable,
+            Header::Map(_) => BodySize::Variable,
         }
     }
 
@@ -57,6 +62,9 @@ impl Header {
             Header::Array(inner) => {
                 vec![vec![8], inner.serialize()].concat()
             }
+            Header::Map(inner) => {
+                vec![vec![9], inner.len().encode_var_vec(), inner.iter().flat_map(|v| [Self::serialize_map_key(v.0), v.1.serialize()].concat()).collect()].concat()
+            }
         }
     }
 
@@ -77,8 +85,28 @@ impl Header {
                 let inner = Self::deserialize(buf_reader)?;
                 Ok(Header::Array(Box::new(inner)))
             }
+            Some(9) => {
+                let size = buf_reader.read_varint::<usize>().or(Err(()))?;
+                let mut index_map: IndexMap<String, Header> = IndexMap::with_capacity(size);
+                for _ in 0..size {
+                    index_map.insert(Self::deserialize_map_key(buf_reader)?, Self::deserialize(buf_reader)?);
+                }
+                Ok(Header::Map(index_map))
+            }
             _ => Err(())
         }
+    }
+
+    fn serialize_map_key(v: &str) -> Vec<u8> {
+        [v.len().encode_var_vec().as_ref(), v.as_bytes()].concat()
+    }
+
+    fn deserialize_map_key<R: Read>(buf_reader: &mut BufReader<R>) -> Result<String, ()> {
+        let size = buf_reader.read_varint::<usize>().or(Err(()))?;
+        let mut body_buf = Vec::with_capacity(size);
+        unsafe { body_buf.set_len(size); }
+        buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+        String::from_utf8(body_buf).or(Err(()))
     }
 }
 
@@ -92,6 +120,7 @@ pub enum BodySize {
 mod tests {
     use std::io::BufReader;
     use super::Header;
+    use indexmap::*;
 
     #[test]
     fn deserialize() {
@@ -104,5 +133,6 @@ mod tests {
         assert_eq!(Header::deserialize(&mut BufReader::new(&[6u8] as &[u8])), Ok(Header::Float64));
         assert_eq!(Header::deserialize(&mut BufReader::new(&[7u8] as &[u8])), Ok(Header::String));
         assert_eq!(Header::deserialize(&mut BufReader::new(&[8u8, 0] as &[u8])), Ok(Header::Array(Box::new(Header::Boolean))));
+        assert_eq!(Header::deserialize(&mut BufReader::new(&[vec![9u8], vec![1], Header::serialize_map_key("test"), Header::Boolean.serialize()].concat() as &[u8])), Ok(Header::Map(indexmap!{String::from("test") => Header::Boolean})));
     }
 }

@@ -1,4 +1,5 @@
 use std::{convert::TryInto, io::{BufReader, Read}};
+use indexmap::IndexMap;
 use integer_encoding::{VarInt, VarIntReader};
 use crate::header::{BodySize, Header};
 
@@ -13,6 +14,7 @@ pub enum Body {
     Float64(f64),
     String(String),
     Array(Vec<Body>),
+    Map(IndexMap<String, Body>),
 }
 
 impl Body {
@@ -49,6 +51,9 @@ impl Body {
             Body::Array(v) => {
                 let items = v.iter().flat_map(|v| v.serialize()).collect::<Vec<u8>>();
                 [v.len().encode_var_vec(), items].concat()
+            }
+            Body::Map(v) => {
+                v.iter().flat_map(|v| v.1.serialize()).collect::<Vec<u8>>()
             }
         }
     }
@@ -106,6 +111,13 @@ impl Body {
                     }
                     Ok(Body::Array(body))
                 }
+                Header::Map(inner_header) => {
+                    let mut body: IndexMap<String, Body> = IndexMap::with_capacity(inner_header.len());
+                    for (key, h) in inner_header.iter() {
+                        body.insert(key.clone(), Self::deserialize(h, buf_reader)?);
+                    }
+                    Ok(Body::Map(body))
+                }
                 _ => Err(())
             }
         }
@@ -114,8 +126,10 @@ impl Body {
 
 #[cfg(test)]
 mod tests {
+    use core::panic;
     use std::io::BufReader;
     use integer_encoding::VarInt;
+    use indexmap::*;
     use crate::header::Header;
     use super::Body;
 
@@ -192,5 +206,14 @@ mod tests {
 
         let body = ["aaaa", "bbbb"];
         assert_eq!(super::Body::deserialize(&Header::Array(Box::new(Header::String)), &mut BufReader::new([body.len().encode_var_vec(), body.iter().flat_map(|v| [v.len().encode_var_vec(), v.as_bytes().to_vec()].concat()).collect()].concat().as_ref() as &[u8])), Ok(Body::Array(vec![Body::String(String::from("aaaa")), Body::String(String::from("bbbb"))])));
+    }
+
+    #[test]
+    fn deserialize_map() {
+        let body: IndexMap<String, Body> = indexmap! { String::from("test") => Body::Boolean(true), String::from("test2") => Body::UInt8(u8::MAX) };
+        assert_eq!(super::Body::deserialize(&Header::Map(indexmap! { String::from("test") => Header::Boolean, String::from("test2") => Header::UInt8 }), &mut BufReader::new(&[1u8, u8::MAX] as &[u8])), Ok(Body::Map(body)));
+
+        let body: IndexMap<String, Body> = indexmap! { String::from("test") => Body::String(String::from("aaaa")), String::from("test2") =>Body::String(String::from("bbbb")) };
+        assert_eq!(super::Body::deserialize(&Header::Map(indexmap! { String::from("test") => Header::String, String::from("test2") => Header::String }), &mut BufReader::new(body.iter().flat_map(|v| if let Body::String(value) = v.1 { [value.len().encode_var_vec(), value.as_bytes().to_vec()].concat() } else { panic!(); }).collect::<Vec<u8>>().as_ref() as &[u8])), Ok(Body::Map(body)));
     }
 }

@@ -17,6 +17,8 @@ pub fn deserialize<R: Read>(read: R) -> Result<(Header, Body), ()> {
 
 #[cfg(test)]
 mod tests {
+    use core::panic;
+    use indexmap::*;
     use integer_encoding::VarInt;
     use crate::{body::Body, header::Header};
 
@@ -87,5 +89,12 @@ mod tests {
 
         let body = ["aaaa", "bbbb"];
         assert_eq!(super::deserialize(&[Header::Array(Box::new(Header::String)).serialize(), [body.len().encode_var_vec(), body.iter().flat_map(|v| [v.len().encode_var_vec(), v.as_bytes().to_vec()].concat()).collect()].concat()].concat() as &[u8]), Ok((Header::Array(Box::new(Header::String)), Body::Array(body.iter().map(|v| Body::String(v.to_string())).collect()))));
+    }
+
+    #[test]
+    fn deserialize_map() {
+        let header = Header::Map(indexmap! { String::from("test") => Header::String, String::from("test2") => Header::Boolean });
+        let body: IndexMap<String, Body> = indexmap! { String::from("test") => Body::String(String::from("aaaa")), String::from("test2") => Body::Boolean(true) };
+        assert_eq!(super::deserialize(&[header.serialize(), body.iter().flat_map(|v| [if let Body::String(v) = v.1 { [v.len().encode_var_vec(), v.as_bytes().to_vec()].concat() } else if let Body::Boolean(v) = v.1 { if *v { vec![1u8] } else { vec![0u8] } } else { panic!()}].concat()).collect()].concat() as &[u8]), Ok((header, Body::Map(body))));
     }
 }

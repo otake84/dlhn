@@ -12,6 +12,15 @@ fn validate(header: &Header, body: &Body) -> bool {
         (Header::Array(inner_header), Body::Array(inner_body)) => {
             inner_body.iter().all(|v| validate(inner_header, v))
         },
+        (Header::Map(inner_header), Body::Map(inner_body)) => {
+            inner_body.iter().enumerate().all(|(i, v)| {
+                if let Some(h) = inner_header.get_index(i) {
+                    validate(h.1, v.1)
+                } else {
+                    false
+                }
+            })
+        }
         _ => false,
     }
 }
@@ -28,6 +37,7 @@ pub fn serialize(header: &Header, body: &Body) -> Result<Vec<u8>, ()> {
 
 #[cfg(test)]
 mod tests {
+    use indexmap::*;
     use crate::{body::Body, header::Header};
 
     #[test]
@@ -65,6 +75,11 @@ mod tests {
         assert!(!super::validate(&header, &Body::Array(vec![Body::Boolean(true)])));
         assert!(super::validate(&header, &Body::Array(vec![Body::UInt8(0), Body::UInt8(1)])));
         assert!(!super::validate(&header, &Body::Array(vec![Body::UInt8(0), Body::Boolean(true)])));
+
+        let header = Header::Map(indexmap! { String::from("test") => Header::Boolean });
+        assert!(super::validate(&header, &Body::Map(indexmap! { String::from("test") => Body::Boolean(true) })));
+        assert!(!super::validate(&header, &Body::Map(indexmap! { String::from("test") => Body::UInt(1) })));
+        assert!(!super::validate(&header, &Body::Map(indexmap! { String::from("test") => Body::Boolean(true), String::from("test2") => Body::UInt(1) })));
     }
 
     #[test]
