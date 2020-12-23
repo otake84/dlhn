@@ -20,6 +20,19 @@ pub enum Header {
 }
 
 impl Header {
+    const OPTIONAL_CODE: u8 = 0;
+    const BOOLEAN_CODE: u8 = 1;
+    const UINT_CODE: u8 = 2;
+    const UINT8_CODE: u8 = 3;
+    const INT_CODE: u8 = 4;
+    const INT8_CODE: u8 = 5;
+    const FLOAT32_CODE: u8 = 6;
+    const FLOAT64_CODE: u8 = 7;
+    const STRING_CODE: u8 = 8;
+    const BINARY_CODE: u8 = 9;
+    const ARRAY_CODE: u8 = 10;
+    const MAP_CODE: u8 = 11;
+
     pub const fn body_size(&self) -> BodySize {
         match self {
             Header::Optional(_) => BodySize::Variable,
@@ -39,41 +52,41 @@ impl Header {
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
-            Header::Optional(inner) => {
-                vec![vec![0], inner.serialize()].concat()
+            Self::Optional(inner) => {
+                vec![vec![Self::OPTIONAL_CODE], inner.serialize()].concat()
             }
-            Header::Boolean => {
-                vec![1]
+            Self::Boolean => {
+                vec![Self::Boolean.code()]
             }
-            Header::UInt => {
-                vec![2]
+            Self::UInt => {
+                vec![Self::UInt.code()]
             }
-            Header::UInt8 => {
-                vec![3]
+            Self::UInt8 => {
+                vec![Self::UInt8.code()]
             }
-            Header::Int => {
-                vec![4]
+            Self::Int => {
+                vec![Self::Int.code()]
             }
-            Header::Int8 => {
-                vec![5]
+            Self::Int8 => {
+                vec![Self::Int8.code()]
             }
-            Header::Float32 => {
-                vec![6]
+            Self::Float32 => {
+                vec![Self::Float32.code()]
             }
-            Header::Float64 => {
-                vec![7]
+            Self::Float64 => {
+                vec![Self::Float64.code()]
             }
-            Header::String => {
-                vec![8]
+            Self::String => {
+                vec![Self::String.code()]
             }
-            Header::Binary => {
-                vec![9]
+            Self::Binary => {
+                vec![Self::Binary.code()]
             }
-            Header::Array(inner) => {
-                vec![vec![10], inner.serialize()].concat()
+            Self::Array(inner) => {
+                vec![vec![Self::ARRAY_CODE], inner.serialize()].concat()
             }
-            Header::Map(inner) => {
-                vec![vec![11], inner.len().encode_var_vec(), inner.iter().flat_map(|v| [Self::serialize_map_key(v.0), v.1.serialize()].concat()).collect()].concat()
+            Self::Map(inner) => {
+                vec![vec![Self::MAP_CODE], inner.len().encode_var_vec(), inner.iter().flat_map(|v| [Self::serialize_map_key(v.0), v.1.serialize()].concat()).collect()].concat()
             }
         }
     }
@@ -83,24 +96,24 @@ impl Header {
         buf_reader.read_exact(&mut buf).or(Err(()))?;
 
         match buf.first() {
-            Some(0) => {
+            Some(&Self::OPTIONAL_CODE) => {
                 let inner = Self::deserialize(buf_reader)?;
                 Ok(Header::Optional(Box::new(inner)))
             }
-            Some(1) => Ok(Header::Boolean),
-            Some(2) => Ok(Header::UInt),
-            Some(3) => Ok(Header::UInt8),
-            Some(4) => Ok(Header::Int),
-            Some(5) => Ok(Header::Int8),
-            Some(6) => Ok(Header::Float32),
-            Some(7) => Ok(Header::Float64),
-            Some(8) => Ok(Header::String),
-            Some(9) => Ok(Header::Binary),
-            Some(10) => {
+            Some(&Self::BOOLEAN_CODE) => Ok(Header::Boolean),
+            Some(&Self::UINT_CODE) => Ok(Header::UInt),
+            Some(&Self::UINT8_CODE) => Ok(Header::UInt8),
+            Some(&Self::INT_CODE) => Ok(Header::Int),
+            Some(&Self::INT8_CODE) => Ok(Header::Int8),
+            Some(&Self::FLOAT32_CODE) => Ok(Header::Float32),
+            Some(&Self::FLOAT64_CODE) => Ok(Header::Float64),
+            Some(&Self::STRING_CODE) => Ok(Header::String),
+            Some(&Self::BINARY_CODE) => Ok(Header::Binary),
+            Some(&Self::ARRAY_CODE) => {
                 let inner = Self::deserialize(buf_reader)?;
                 Ok(Header::Array(Box::new(inner)))
             }
-            Some(11) => {
+            Some(&Self::MAP_CODE) => {
                 let size = buf_reader.read_varint::<usize>().or(Err(()))?;
                 let mut index_map: IndexMap<String, Header> = IndexMap::with_capacity(size);
                 for _ in 0..size {
@@ -109,6 +122,23 @@ impl Header {
                 Ok(Header::Map(index_map))
             }
             _ => Err(())
+        }
+    }
+
+    pub(crate) const fn code(&self) -> u8 {
+        match self {
+            Self::Optional(_) => Self::OPTIONAL_CODE,
+            Self::Boolean => Self::BOOLEAN_CODE,
+            Self::UInt => Self::UINT_CODE,
+            Self::UInt8 => Self::UINT8_CODE,
+            Self::Int => Self::INT_CODE,
+            Self::Int8 => Self::INT8_CODE,
+            Self::Float32 => Self::FLOAT32_CODE,
+            Self::Float64 => Self::FLOAT64_CODE,
+            Self::String => Self::STRING_CODE,
+            Self::Binary => Self::BINARY_CODE,
+            Self::Array(_) => Self::ARRAY_CODE,
+            Self::Map(_) => Self::MAP_CODE,
         }
     }
 
@@ -139,17 +169,17 @@ mod tests {
 
     #[test]
     fn deserialize() {
-        assert_eq!(Header::deserialize(&mut BufReader::new([0u8, 1].as_ref())), Ok(Header::Optional(Box::new(Header::Boolean))));
-        assert_eq!(Header::deserialize(&mut BufReader::new([1u8].as_ref())), Ok(Header::Boolean));
-        assert_eq!(Header::deserialize(&mut BufReader::new([2u8].as_ref())), Ok(Header::UInt));
-        assert_eq!(Header::deserialize(&mut BufReader::new([3u8].as_ref())), Ok(Header::UInt8));
-        assert_eq!(Header::deserialize(&mut BufReader::new([4u8].as_ref())), Ok(Header::Int));
-        assert_eq!(Header::deserialize(&mut BufReader::new([5u8].as_ref())), Ok(Header::Int8));
-        assert_eq!(Header::deserialize(&mut BufReader::new([6u8].as_ref())), Ok(Header::Float32));
-        assert_eq!(Header::deserialize(&mut BufReader::new([7u8].as_ref())), Ok(Header::Float64));
-        assert_eq!(Header::deserialize(&mut BufReader::new([8u8].as_ref())), Ok(Header::String));
-        assert_eq!(Header::deserialize(&mut BufReader::new([9u8].as_ref())), Ok(Header::Binary));
-        assert_eq!(Header::deserialize(&mut BufReader::new([10u8, 1].as_ref())), Ok(Header::Array(Box::new(Header::Boolean))));
-        assert_eq!(Header::deserialize(&mut BufReader::new([vec![11u8], vec![1], Header::serialize_map_key("test"), Header::Boolean.serialize()].concat().as_slice())), Ok(Header::Map(indexmap!{String::from("test") => Header::Boolean})));
+        assert_eq!(Header::deserialize(&mut BufReader::new([Header::OPTIONAL_CODE, Header::Boolean.code()].as_ref())), Ok(Header::Optional(Box::new(Header::Boolean))));
+        assert_eq!(Header::deserialize(&mut BufReader::new([Header::Boolean.code()].as_ref())), Ok(Header::Boolean));
+        assert_eq!(Header::deserialize(&mut BufReader::new([Header::UInt.code()].as_ref())), Ok(Header::UInt));
+        assert_eq!(Header::deserialize(&mut BufReader::new([Header::UInt8.code()].as_ref())), Ok(Header::UInt8));
+        assert_eq!(Header::deserialize(&mut BufReader::new([Header::Int.code()].as_ref())), Ok(Header::Int));
+        assert_eq!(Header::deserialize(&mut BufReader::new([Header::Int8.code()].as_ref())), Ok(Header::Int8));
+        assert_eq!(Header::deserialize(&mut BufReader::new([Header::Float32.code()].as_ref())), Ok(Header::Float32));
+        assert_eq!(Header::deserialize(&mut BufReader::new([Header::Float64.code()].as_ref())), Ok(Header::Float64));
+        assert_eq!(Header::deserialize(&mut BufReader::new([Header::String.code()].as_ref())), Ok(Header::String));
+        assert_eq!(Header::deserialize(&mut BufReader::new([Header::Binary.code()].as_ref())), Ok(Header::Binary));
+        assert_eq!(Header::deserialize(&mut BufReader::new([Header::ARRAY_CODE, Header::Boolean.code()].as_ref())), Ok(Header::Array(Box::new(Header::Boolean))));
+        assert_eq!(Header::deserialize(&mut BufReader::new([vec![Header::MAP_CODE], vec![Header::Boolean.code()], Header::serialize_map_key("test"), Header::Boolean.serialize()].concat().as_slice())), Ok(Header::Map(indexmap!{String::from("test") => Header::Boolean})));
     }
 }

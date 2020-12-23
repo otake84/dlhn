@@ -101,14 +101,14 @@ mod tests {
     #[test]
     fn serialize_boolean() {
         let header = Header::Boolean;
-        assert_eq!(super::serialize(&header, &Body::Boolean(false)).unwrap(), [1, 0]);
-        assert_eq!(super::serialize(&header, &Body::Boolean(true)).unwrap(), [1, 1]);
+        assert_eq!(super::serialize(&header, &Body::Boolean(false)).unwrap(), [Header::Boolean.code(), 0]);
+        assert_eq!(super::serialize(&header, &Body::Boolean(true)).unwrap(), [Header::Boolean.code(), 1]);
     }
 
     #[test]
     fn serialize_uint8() {
         let header = Header::UInt8;
-        assert_eq!(super::serialize(&header, &Body::UInt8(0)).unwrap(), [[3], (0u8).to_le_bytes()].concat());
-        assert_eq!(super::serialize(&header, &Body::UInt8(255)).unwrap(), [[3], (255u8).to_le_bytes()].concat());
+        assert_eq!(super::serialize(&header, &Body::UInt8(0)).unwrap(), [[Header::UInt8.code()], (0u8).to_le_bytes()].concat());
+        assert_eq!(super::serialize(&header, &Body::UInt8(255)).unwrap(), [[Header::UInt8.code()], (255u8).to_le_bytes()].concat());
     }
 }
