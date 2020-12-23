@@ -9,6 +9,7 @@ fn validate(header: &Header, body: &Body) -> bool {
         (Header::Int8, Body::Int8(_)) => true,
         (Header::Float32, Body::Float32(_)) => true,
         (Header::String, Body::String(_)) => true,
+        (Header::Binary, Body::Binary(_)) => true,
         (Header::Array(inner_header), Body::Array(inner_body)) => {
             inner_body.iter().all(|v| validate(inner_header, v))
         },
@@ -38,7 +39,7 @@ pub fn serialize(header: &Header, body: &Body) -> Result<Vec<u8>, ()> {
 #[cfg(test)]
 mod tests {
     use indexmap::*;
-    use crate::{body::Body, header::Header};
+    use crate::{binary::Binary, body::Body, header::Header};
 
     #[test]
     fn validate() {
@@ -69,6 +70,9 @@ mod tests {
         let header = Header::String;
         assert!(super::validate(&header, &Body::String(String::from("test"))));
         assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::Binary;
+        assert!(super::validate(&header, &Body::Binary(Binary(vec![0, 1, 2, 3, 255]))));
 
         let header = Header::Array(Box::new(Header::UInt8));
         assert!(super::validate(&header, &Body::Array(vec![Body::UInt8(0)])));

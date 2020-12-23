@@ -18,9 +18,10 @@ pub fn deserialize<R: Read>(read: R) -> Result<(Header, Body), ()> {
 #[cfg(test)]
 mod tests {
     use core::panic;
+    use std::iter;
     use indexmap::*;
     use integer_encoding::VarInt;
-    use crate::{body::Body, header::Header};
+    use crate::{binary::Binary, body::Body, header::Header, serializer::serialize};
 
     #[test]
     fn deserialize_boolean() {
@@ -80,6 +81,12 @@ mod tests {
     #[test]
     fn deserialize_string() {
         assert_eq!(super::deserialize(&[Header::String.serialize(), "test".len().encode_var_vec(), "test".as_bytes().to_vec()].concat() as &[u8]), Ok((Header::String, Body::String(String::from("test")))));
+    }
+
+    #[test]
+    fn deserialize_binary() {
+        assert_eq!(super::deserialize(serialize(&Header::Binary, &Body::Binary(Binary(vec![0, 1, 2, 3, 255]))).unwrap().as_slice()), Ok((Header::Binary, Body::Binary(Binary(vec![0, 1, 2, 3, 255])))));
+        assert_eq!(super::deserialize(serialize(&Header::Binary, &Body::Binary(Binary(iter::repeat(255u8).take(u16::MAX as usize).collect()))).unwrap().as_slice()), Ok((Header::Binary, Body::Binary(Binary(iter::repeat(255u8).take(u16::MAX as usize).collect())))));
     }
 
     #[test]

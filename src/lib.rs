@@ -1,3 +1,4 @@
+pub mod binary;
 pub mod body;
 pub mod deserializer;
 pub mod header;

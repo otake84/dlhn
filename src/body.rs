@@ -1,7 +1,7 @@
 use std::{convert::TryInto, io::{BufReader, Read}};
 use indexmap::IndexMap;
 use integer_encoding::{VarInt, VarIntReader};
-use crate::header::{BodySize, Header};
+use crate::{binary::Binary, header::{BodySize, Header}};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Body {
@@ -13,6 +13,7 @@ pub enum Body {
     Float32(f32),
     Float64(f64),
     String(String),
+    Binary(Binary),
     Array(Vec<Body>),
     Map(IndexMap<String, Body>),
 }
@@ -47,6 +48,9 @@ impl Body {
             }
             Body::String(v) => {
                 [v.len().encode_var_vec().as_ref(), v.as_bytes()].concat()
+            }
+            Body::Binary(v) => {
+                [v.0.len().encode_var_vec().as_ref(), v.0.as_slice()].concat()
             }
             Body::Array(v) => {
                 let items = v.iter().flat_map(|v| v.serialize()).collect::<Vec<u8>>();
@@ -103,6 +107,13 @@ impl Body {
                     buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                     String::from_utf8(body_buf).map(Body::String).or(Err(()))
                 }
+                Header::Binary => {
+                    let size = buf_reader.read_varint::<usize>().or(Err(()))?;
+                    let mut body_buf = Vec::with_capacity(size);
+                    unsafe { body_buf.set_len(size); }
+                    buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                    Ok(Body::Binary(Binary(body_buf)))
+                }
                 Header::Array(inner_header) => {
                     let size = buf_reader.read_varint::<usize>().or(Err(()))?;
                     let mut body = Vec::with_capacity(size);
@@ -130,7 +141,7 @@ mod tests {
     use std::io::BufReader;
     use integer_encoding::VarInt;
     use indexmap::*;
-    use crate::header::Header;
+    use crate::{binary::Binary, header::Header};
     use super::Body;
 
     #[test]
@@ -197,6 +208,12 @@ mod tests {
     fn deserialize_string() {
         assert_eq!(super::Body::deserialize(&Header::String, &mut BufReader::new(["test".len().encode_var_vec(), "test".as_bytes().to_vec()].concat().as_ref() as &[u8])), Ok(Body::String(String::from("test"))));
         assert_eq!(super::Body::deserialize(&Header::String, &mut BufReader::new(["テスト".len().encode_var_vec(), "テスト".as_bytes().to_vec()].concat().as_ref() as &[u8])), Ok(Body::String(String::from("テスト"))));
+    }
+
+    #[test]
+    fn deserialize_binary() {
+        let body = Binary(vec![0, 1, 2, 3, 255]);
+        assert_eq!(super::Body::deserialize(&Header::Binary, &mut BufReader::new([body.0.len().encode_var_vec(), body.0.clone()].concat().as_slice())), Ok(Body::Binary(body)));
     }
 
     #[test]
