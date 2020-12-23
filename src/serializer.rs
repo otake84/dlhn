@@ -2,6 +2,13 @@ use crate::{body::Body, header::Header};
 
 fn validate(header: &Header, body: &Body) -> bool {
     match (header, body) {
+        (Header::Optional(inner_header), Body::Optional(inner_body)) => {
+            if let Some(v) = &**inner_body {
+                validate(inner_header, v)
+            } else {
+                true
+            }
+        }
         (Header::Boolean, Body::Boolean(_)) => true,
         (Header::UInt, Body::UInt(_)) => true,
         (Header::UInt8, Body::UInt8(_)) => true,
@@ -43,6 +50,11 @@ mod tests {
 
     #[test]
     fn validate() {
+        let header = Header::Optional(Box::new(Header::Boolean));
+        assert!(super::validate(&header, &Body::Optional(Box::new(None))));
+        assert!(super::validate(&header, &Body::Optional(Box::new(Some(Body::Boolean(true))))));
+        assert!(!super::validate(&header, &Body::Optional(Box::new(Some(Body::UInt8(0))))));
+
         let header = Header::Boolean;
         assert!(super::validate(&header, &Body::Boolean(true)));
         assert!(!super::validate(&header, &Body::UInt8(0)));
@@ -89,14 +101,14 @@ mod tests {
     #[test]
     fn serialize_boolean() {
         let header = Header::Boolean;
-        assert_eq!(super::serialize(&header, &Body::Boolean(false)).unwrap(), [0, 0]);
-        assert_eq!(super::serialize(&header, &Body::Boolean(true)).unwrap(), [0, 1]);
+        assert_eq!(super::serialize(&header, &Body::Boolean(false)).unwrap(), [1, 0]);
+        assert_eq!(super::serialize(&header, &Body::Boolean(true)).unwrap(), [1, 1]);
     }
 
     #[test]
     fn serialize_uint8() {
         let header = Header::UInt8;
-        assert_eq!(super::serialize(&header, &Body::UInt8(0)).unwrap(), [[2], (0u8).to_le_bytes()].concat());
-        assert_eq!(super::serialize(&header, &Body::UInt8(255)).unwrap(), [[2], (255u8).to_le_bytes()].concat());
+        assert_eq!(super::serialize(&header, &Body::UInt8(0)).unwrap(), [[3], (0u8).to_le_bytes()].concat());
+        assert_eq!(super::serialize(&header, &Body::UInt8(255)).unwrap(), [[3], (255u8).to_le_bytes()].concat());
     }
 }

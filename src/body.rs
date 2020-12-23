@@ -5,6 +5,7 @@ use crate::{binary::Binary, header::{BodySize, Header}};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Body {
+    Optional(Box<Option<Body>>),
     Boolean(bool),
     UInt(u64),
     UInt8(u8),
@@ -21,6 +22,13 @@ pub enum Body {
 impl Body {
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
+            Body::Optional(v) => {
+                if let Some(v) = &**v {
+                    vec![[1u8].as_ref(), v.serialize().as_slice()].concat()
+                } else {
+                    vec![0]
+                }
+            }
             Body::Boolean(v) => {
                 if *v {
                     vec![1]
@@ -94,6 +102,15 @@ impl Body {
             }
         } else {
             match header {
+                Header::Optional(inner_header) => {
+                    let mut buf = [0u8; 1];
+                    buf_reader.read_exact(&mut buf).or(Err(()))?;
+                    if buf.first() == Some(&1) {
+                        Ok(Body::Optional(Box::new(Some(Self::deserialize(inner_header, buf_reader)?))))
+                    } else {
+                        Ok(Body::Optional(Box::new(None)))
+                    }
+                }
                 Header::UInt => {
                     buf_reader.read_varint::<u64>().map(|v| Body::UInt(v.into())).or(Err(()))
                 }
@@ -143,6 +160,18 @@ mod tests {
     use indexmap::*;
     use crate::{binary::Binary, header::Header};
     use super::Body;
+
+    #[test]
+    fn deserialize_optional() {
+        let body = Body::Optional(Box::new(None));
+        assert_eq!(super::Body::deserialize(&Header::Optional(Box::new(Header::Boolean)), &mut BufReader::new(body.serialize().as_slice())), Ok(body));
+
+        let body = Body::Optional(Box::new(Some(Body::Boolean(true))));
+        assert_eq!(super::Body::deserialize(&Header::Optional(Box::new(Header::Boolean)), &mut BufReader::new(body.serialize().as_slice())), Ok(body));
+
+        let body = Body::Optional(Box::new(Some(Body::String(String::from("test")))));
+        assert_eq!(super::Body::deserialize(&Header::Optional(Box::new(Header::String)), &mut BufReader::new(body.serialize().as_slice())), Ok(body));
+    }
 
     #[test]
     fn deserialize_boolean() {

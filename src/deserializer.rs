@@ -24,6 +24,18 @@ mod tests {
     use crate::{binary::Binary, body::Body, header::Header, serializer::serialize};
 
     #[test]
+    fn deserialize_optional() {
+        let (header, body) = (Header::Optional(Box::new(Header::Boolean)), Body::Optional(Box::new(Some(Body::Boolean(true)))));
+        assert_eq!(super::deserialize(serialize(&header, &body).unwrap().as_slice()), Ok((header, body)));
+
+        let (header, body) = (Header::Optional(Box::new(Header::Boolean)), Body::Optional(Box::new(None)));
+        assert_eq!(super::deserialize(serialize(&header, &body).unwrap().as_slice()), Ok((header, body)));
+
+        let (header, body) = (Header::Optional(Box::new(Header::String)), Body::Optional(Box::new(Some(Body::String(String::from("test"))))));
+        assert_eq!(super::deserialize(serialize(&header, &body).unwrap().as_slice()), Ok((header, body)));
+    }
+
+    #[test]
     fn deserialize_boolean() {
         assert_eq!(super::deserialize([Header::Boolean.serialize(), vec![0]].concat().as_slice()), Ok((Header::Boolean, Body::Boolean(false))));
         assert_eq!(super::deserialize([Header::Boolean.serialize(), vec![1]].concat().as_slice()), Ok((Header::Boolean, Body::Boolean(true))));
