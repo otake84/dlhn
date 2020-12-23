@@ -130,16 +130,16 @@ mod tests {
 
     #[test]
     fn deserialize() {
-        assert_eq!(Header::deserialize(&mut BufReader::new(&[0u8] as &[u8])), Ok(Header::Boolean));
-        assert_eq!(Header::deserialize(&mut BufReader::new(&[1u8] as &[u8])), Ok(Header::UInt));
-        assert_eq!(Header::deserialize(&mut BufReader::new(&[2u8] as &[u8])), Ok(Header::UInt8));
-        assert_eq!(Header::deserialize(&mut BufReader::new(&[3u8] as &[u8])), Ok(Header::Int));
-        assert_eq!(Header::deserialize(&mut BufReader::new(&[4u8] as &[u8])), Ok(Header::Int8));
-        assert_eq!(Header::deserialize(&mut BufReader::new(&[5u8] as &[u8])), Ok(Header::Float32));
-        assert_eq!(Header::deserialize(&mut BufReader::new(&[6u8] as &[u8])), Ok(Header::Float64));
-        assert_eq!(Header::deserialize(&mut BufReader::new(&[7u8] as &[u8])), Ok(Header::String));
-        assert_eq!(Header::deserialize(&mut BufReader::new(&[8u8] as &[u8])), Ok(Header::Binary));
-        assert_eq!(Header::deserialize(&mut BufReader::new(&[9u8, 0] as &[u8])), Ok(Header::Array(Box::new(Header::Boolean))));
-        assert_eq!(Header::deserialize(&mut BufReader::new(&[vec![10u8], vec![1], Header::serialize_map_key("test"), Header::Boolean.serialize()].concat() as &[u8])), Ok(Header::Map(indexmap!{String::from("test") => Header::Boolean})));
+        assert_eq!(Header::deserialize(&mut BufReader::new([0u8].as_ref())), Ok(Header::Boolean));
+        assert_eq!(Header::deserialize(&mut BufReader::new([1u8].as_ref())), Ok(Header::UInt));
+        assert_eq!(Header::deserialize(&mut BufReader::new([2u8].as_ref())), Ok(Header::UInt8));
+        assert_eq!(Header::deserialize(&mut BufReader::new([3u8].as_ref())), Ok(Header::Int));
+        assert_eq!(Header::deserialize(&mut BufReader::new([4u8].as_ref())), Ok(Header::Int8));
+        assert_eq!(Header::deserialize(&mut BufReader::new([5u8].as_ref())), Ok(Header::Float32));
+        assert_eq!(Header::deserialize(&mut BufReader::new([6u8].as_ref())), Ok(Header::Float64));
+        assert_eq!(Header::deserialize(&mut BufReader::new([7u8].as_ref())), Ok(Header::String));
+        assert_eq!(Header::deserialize(&mut BufReader::new([8u8].as_ref())), Ok(Header::Binary));
+        assert_eq!(Header::deserialize(&mut BufReader::new([9u8, 0].as_ref())), Ok(Header::Array(Box::new(Header::Boolean))));
+        assert_eq!(Header::deserialize(&mut BufReader::new([vec![10u8], vec![1], Header::serialize_map_key("test"), Header::Boolean.serialize()].concat().as_slice())), Ok(Header::Map(indexmap!{String::from("test") => Header::Boolean})));
     }
 }
