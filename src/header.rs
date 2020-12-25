@@ -35,18 +35,18 @@ impl Header {
 
     pub const fn body_size(&self) -> BodySize {
         match self {
-            Header::Optional(_) => BodySize::Variable,
-            Header::Boolean => BodySize::Fix(1),
-            Header::UInt => BodySize::Variable,
-            Header::UInt8 => BodySize::Fix(1),
-            Header::Int => BodySize::Variable,
-            Header::Int8 => BodySize::Fix(1),
-            Header::Float32 => BodySize::Fix(4),
-            Header::Float64 => BodySize::Fix(8),
-            Header::String => BodySize::Variable,
-            Header::Binary => BodySize::Variable,
-            Header::Array(_) => BodySize::Variable,
-            Header::Map(_) => BodySize::Variable,
+            Self::Optional(_) => BodySize::Variable,
+            Self::Boolean => BodySize::Fix(1),
+            Self::UInt => BodySize::Variable,
+            Self::UInt8 => BodySize::Fix(1),
+            Self::Int => BodySize::Variable,
+            Self::Int8 => BodySize::Fix(1),
+            Self::Float32 => BodySize::Fix(4),
+            Self::Float64 => BodySize::Fix(8),
+            Self::String => BodySize::Variable,
+            Self::Binary => BodySize::Variable,
+            Self::Array(_) => BodySize::Variable,
+            Self::Map(_) => BodySize::Variable,
         }
     }
 
@@ -98,20 +98,20 @@ impl Header {
         match buf.first() {
             Some(&Self::OPTIONAL_CODE) => {
                 let inner = Self::deserialize(buf_reader)?;
-                Ok(Header::Optional(Box::new(inner)))
+                Ok(Self::Optional(Box::new(inner)))
             }
-            Some(&Self::BOOLEAN_CODE) => Ok(Header::Boolean),
-            Some(&Self::UINT_CODE) => Ok(Header::UInt),
-            Some(&Self::UINT8_CODE) => Ok(Header::UInt8),
-            Some(&Self::INT_CODE) => Ok(Header::Int),
-            Some(&Self::INT8_CODE) => Ok(Header::Int8),
-            Some(&Self::FLOAT32_CODE) => Ok(Header::Float32),
-            Some(&Self::FLOAT64_CODE) => Ok(Header::Float64),
-            Some(&Self::STRING_CODE) => Ok(Header::String),
-            Some(&Self::BINARY_CODE) => Ok(Header::Binary),
+            Some(&Self::BOOLEAN_CODE) => Ok(Self::Boolean),
+            Some(&Self::UINT_CODE) => Ok(Self::UInt),
+            Some(&Self::UINT8_CODE) => Ok(Self::UInt8),
+            Some(&Self::INT_CODE) => Ok(Self::Int),
+            Some(&Self::INT8_CODE) => Ok(Self::Int8),
+            Some(&Self::FLOAT32_CODE) => Ok(Self::Float32),
+            Some(&Self::FLOAT64_CODE) => Ok(Self::Float64),
+            Some(&Self::STRING_CODE) => Ok(Self::String),
+            Some(&Self::BINARY_CODE) => Ok(Self::Binary),
             Some(&Self::ARRAY_CODE) => {
                 let inner = Self::deserialize(buf_reader)?;
-                Ok(Header::Array(Box::new(inner)))
+                Ok(Self::Array(Box::new(inner)))
             }
             Some(&Self::MAP_CODE) => {
                 let size = buf_reader.read_varint::<usize>().or(Err(()))?;
@@ -119,7 +119,7 @@ impl Header {
                 for _ in 0..size {
                     index_map.insert(Self::deserialize_map_key(buf_reader)?, Self::deserialize(buf_reader)?);
                 }
-                Ok(Header::Map(index_map))
+                Ok(Self::Map(index_map))
             }
             _ => Err(())
         }

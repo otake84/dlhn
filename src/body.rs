@@ -22,49 +22,49 @@ pub enum Body {
 impl Body {
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
-            Body::Optional(v) => {
+            Self::Optional(v) => {
                 if let Some(v) = &**v {
                     vec![[1u8].as_ref(), v.serialize().as_slice()].concat()
                 } else {
                     vec![0]
                 }
             }
-            Body::Boolean(v) => {
+            Self::Boolean(v) => {
                 if *v {
                     vec![1]
                 } else {
                     vec![0]
                 }
             }
-            Body::UInt(v) => {
+            Self::UInt(v) => {
                 v.encode_var_vec()
             }
-            Body::UInt8(v) => {
+            Self::UInt8(v) => {
                 v.to_le_bytes().to_vec()
             }
-            Body::Int(v) => {
+            Self::Int(v) => {
                 v.encode_var_vec()
             }
-            Body::Int8(v) => {
+            Self::Int8(v) => {
                 v.to_le_bytes().to_vec()
             }
-            Body::Float32(v) => {
+            Self::Float32(v) => {
                 v.to_le_bytes().to_vec()
             }
-            Body::Float64(v) => {
+            Self::Float64(v) => {
                 v.to_le_bytes().to_vec()
             }
-            Body::String(v) => {
+            Self::String(v) => {
                 [v.len().encode_var_vec().as_ref(), v.as_bytes()].concat()
             }
-            Body::Binary(v) => {
+            Self::Binary(v) => {
                 [v.0.len().encode_var_vec().as_ref(), v.0.as_slice()].concat()
             }
-            Body::Array(v) => {
+            Self::Array(v) => {
                 let items = v.iter().flat_map(|v| v.serialize()).collect::<Vec<u8>>();
                 [v.len().encode_var_vec(), items].concat()
             }
-            Body::Map(v) => {
+            Self::Map(v) => {
                 v.iter().flat_map(|v| v.1.serialize()).collect::<Vec<u8>>()
             }
         }
@@ -79,24 +79,24 @@ impl Body {
             match header {
                 Header::Boolean => {
                     match *body_buf.first().unwrap() {
-                        0 => Ok(Body::Boolean(false)),
-                        1 => Ok(Body::Boolean(true)),
+                        0 => Ok(Self::Boolean(false)),
+                        1 => Ok(Self::Boolean(true)),
                         _ => Err(()),
                     }
                 }
                 Header::UInt8 => {
-                    Ok(Body::UInt8(*body_buf.first().unwrap()))
+                    Ok(Self::UInt8(*body_buf.first().unwrap()))
                 }
                 Header::Int8 => {
-                    Ok(Body::Int8(i8::from_le_bytes([*body_buf.first().unwrap()])))
+                    Ok(Self::Int8(i8::from_le_bytes([*body_buf.first().unwrap()])))
                 }
                 Header::Float32 => {
                     let bytes = body_buf.try_into().or(Err(()))?;
-                    Ok(Body::Float32(f32::from_le_bytes(bytes)))
+                    Ok(Self::Float32(f32::from_le_bytes(bytes)))
                 }
                 Header::Float64 => {
                     let bytes = body_buf.try_into().or(Err(()))?;
-                    Ok(Body::Float64(f64::from_le_bytes(bytes)))
+                    Ok(Self::Float64(f64::from_le_bytes(bytes)))
                 }
                 _ => Err(())
             }
@@ -106,30 +106,30 @@ impl Body {
                     let mut buf = [0u8; 1];
                     buf_reader.read_exact(&mut buf).or(Err(()))?;
                     if buf.first() == Some(&1) {
-                        Ok(Body::Optional(Box::new(Some(Self::deserialize(inner_header, buf_reader)?))))
+                        Ok(Self::Optional(Box::new(Some(Self::deserialize(inner_header, buf_reader)?))))
                     } else {
-                        Ok(Body::Optional(Box::new(None)))
+                        Ok(Self::Optional(Box::new(None)))
                     }
                 }
                 Header::UInt => {
-                    buf_reader.read_varint::<u64>().map(|v| Body::UInt(v.into())).or(Err(()))
+                    buf_reader.read_varint::<u64>().map(|v| Self::UInt(v.into())).or(Err(()))
                 }
                 Header::Int => {
-                    buf_reader.read_varint::<i64>().map(|v| Body::Int(v.into())).or(Err(()))
+                    buf_reader.read_varint::<i64>().map(|v| Self::Int(v.into())).or(Err(()))
                 }
                 Header::String => {
                     let size = buf_reader.read_varint::<usize>().or(Err(()))?;
                     let mut body_buf = Vec::with_capacity(size);
                     unsafe { body_buf.set_len(size); }
                     buf_reader.read_exact(&mut body_buf).or(Err(()))?;
-                    String::from_utf8(body_buf).map(Body::String).or(Err(()))
+                    String::from_utf8(body_buf).map(Self::String).or(Err(()))
                 }
                 Header::Binary => {
                     let size = buf_reader.read_varint::<usize>().or(Err(()))?;
                     let mut body_buf = Vec::with_capacity(size);
                     unsafe { body_buf.set_len(size); }
                     buf_reader.read_exact(&mut body_buf).or(Err(()))?;
-                    Ok(Body::Binary(Binary(body_buf)))
+                    Ok(Self::Binary(Binary(body_buf)))
                 }
                 Header::Array(inner_header) => {
                     let size = buf_reader.read_varint::<usize>().or(Err(()))?;
@@ -137,14 +137,14 @@ impl Body {
                     for _ in 0..size {
                         body.push(Self::deserialize(inner_header, buf_reader)?);
                     }
-                    Ok(Body::Array(body))
+                    Ok(Self::Array(body))
                 }
                 Header::Map(inner_header) => {
                     let mut body: IndexMap<String, Body> = IndexMap::with_capacity(inner_header.len());
                     for (key, h) in inner_header.iter() {
                         body.insert(key.clone(), Self::deserialize(h, buf_reader)?);
                     }
-                    Ok(Body::Map(body))
+                    Ok(Self::Map(body))
                 }
                 _ => Err(())
             }
