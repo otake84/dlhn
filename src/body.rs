@@ -72,8 +72,7 @@ impl Body {
 
     pub(crate) fn deserialize<R: Read>(header: &Header, buf_reader: &mut BufReader<R>) -> Result<Body, ()> {
         if let BodySize::Fix(size) = header.body_size() {
-            let mut body_buf = Vec::with_capacity(size);
-            unsafe { body_buf.set_len(size); }
+            let mut body_buf = vec![0u8; size];
             buf_reader.read_exact(&mut body_buf).or(Err(()))?;
 
             match header {
@@ -85,7 +84,7 @@ impl Body {
                     }
                 }
                 Header::UInt8 => {
-                    Ok(Self::UInt8(*body_buf.first().unwrap()))
+                    Ok(Self::UInt8(u8::from_le_bytes([*body_buf.first().unwrap()])))
                 }
                 Header::Int8 => {
                     Ok(Self::Int8(i8::from_le_bytes([*body_buf.first().unwrap()])))
@@ -118,16 +117,12 @@ impl Body {
                     buf_reader.read_varint::<i64>().map(|v| Self::Int(v.into())).or(Err(()))
                 }
                 Header::String => {
-                    let size = buf_reader.read_varint::<usize>().or(Err(()))?;
-                    let mut body_buf = Vec::with_capacity(size);
-                    unsafe { body_buf.set_len(size); }
+                    let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
                     buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                     String::from_utf8(body_buf).map(Self::String).or(Err(()))
                 }
                 Header::Binary => {
-                    let size = buf_reader.read_varint::<usize>().or(Err(()))?;
-                    let mut body_buf = Vec::with_capacity(size);
-                    unsafe { body_buf.set_len(size); }
+                    let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
                     buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                     Ok(Self::Binary(Binary(body_buf)))
                 }

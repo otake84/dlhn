@@ -147,9 +147,7 @@ impl Header {
     }
 
     fn deserialize_map_key<R: Read>(buf_reader: &mut BufReader<R>) -> Result<String, ()> {
-        let size = buf_reader.read_varint::<usize>().or(Err(()))?;
-        let mut body_buf = Vec::with_capacity(size);
-        unsafe { body_buf.set_len(size); }
+        let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
         buf_reader.read_exact(&mut body_buf).or(Err(()))?;
         String::from_utf8(body_buf).or(Err(()))
     }
