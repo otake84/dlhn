@@ -17,6 +17,7 @@ pub enum Header {
     Binary,
     Array(Box<Header>),
     Map(IndexMap<String, Header>),
+    Timestamp,
 }
 
 impl Header {
@@ -32,6 +33,7 @@ impl Header {
     const BINARY_CODE: u8 = 9;
     const ARRAY_CODE: u8 = 10;
     const MAP_CODE: u8 = 11;
+    const TIMESTAMP_CODE: u8 = 12;
 
     pub const fn body_size(&self) -> BodySize {
         match self {
@@ -47,6 +49,7 @@ impl Header {
             Self::Binary => BodySize::Variable,
             Self::Array(_) => BodySize::Variable,
             Self::Map(_) => BodySize::Variable,
+            Self::Timestamp => BodySize::Variable,
         }
     }
 
@@ -88,6 +91,9 @@ impl Header {
             Self::Map(inner) => {
                 vec![vec![Self::MAP_CODE], inner.len().encode_var_vec(), inner.iter().flat_map(|v| [Self::serialize_map_key(v.0), v.1.serialize()].concat()).collect()].concat()
             }
+            Self::Timestamp => {
+                vec![Self::Timestamp.code()]
+            }
         }
     }
 
@@ -121,6 +127,7 @@ impl Header {
                 }
                 Ok(Self::Map(index_map))
             }
+            Some(&Self::TIMESTAMP_CODE) => Ok(Self::Timestamp),
             _ => Err(())
         }
     }
@@ -139,6 +146,7 @@ impl Header {
             Self::Binary => Self::BINARY_CODE,
             Self::Array(_) => Self::ARRAY_CODE,
             Self::Map(_) => Self::MAP_CODE,
+            Self::Timestamp => Self::TIMESTAMP_CODE,
         }
     }
 
@@ -179,5 +187,6 @@ mod tests {
         assert_eq!(Header::deserialize(&mut BufReader::new([Header::Binary.code()].as_ref())), Ok(Header::Binary));
         assert_eq!(Header::deserialize(&mut BufReader::new([Header::ARRAY_CODE, Header::Boolean.code()].as_ref())), Ok(Header::Array(Box::new(Header::Boolean))));
         assert_eq!(Header::deserialize(&mut BufReader::new([vec![Header::MAP_CODE], vec![Header::Boolean.code()], Header::serialize_map_key("test"), Header::Boolean.serialize()].concat().as_slice())), Ok(Header::Map(indexmap!{String::from("test") => Header::Boolean})));
+        assert_eq!(Header::deserialize(&mut BufReader::new([Header::Timestamp.code()].as_ref())), Ok(Header::Timestamp));
     }
 }

@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 integer-encoding = "2.1.1"
 indexmap = "1.6.0"
+time = "0.2.24"

@@ -28,7 +28,8 @@ fn validate(header: &Header, body: &Body) -> bool {
                     false
                 }
             })
-        }
+        },
+        (Header::Timestamp, Body::Timestamp(_)) => true,
         _ => false,
     }
 }
@@ -46,6 +47,7 @@ pub fn serialize(header: &Header, body: &Body) -> Result<Vec<u8>, ()> {
 #[cfg(test)]
 mod tests {
     use indexmap::*;
+    use time::OffsetDateTime;
     use crate::{binary::Binary, body::Body, header::Header};
 
     #[test]
@@ -96,6 +98,9 @@ mod tests {
         assert!(super::validate(&header, &Body::Map(indexmap! { String::from("test") => Body::Boolean(true) })));
         assert!(!super::validate(&header, &Body::Map(indexmap! { String::from("test") => Body::UInt(1) })));
         assert!(!super::validate(&header, &Body::Map(indexmap! { String::from("test") => Body::Boolean(true), String::from("test2") => Body::UInt(1) })));
+
+        let header = Header::Timestamp;
+        assert!(super::validate(&header, &Body::Timestamp(OffsetDateTime::unix_epoch())));
     }
 
     #[test]
