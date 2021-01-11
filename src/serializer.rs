@@ -19,7 +19,7 @@ fn validate(header: &Header, body: &Body) -> bool {
         (Header::Binary, Body::Binary(_)) => true,
         (Header::Array(inner_header), Body::Array(inner_body)) => {
             inner_body.iter().all(|v| validate(inner_header, v))
-        },
+        }
         (Header::Map(inner_header), Body::Map(inner_body)) => {
             inner_body.iter().enumerate().all(|(i, v)| {
                 if let Some(h) = inner_header.get_index(i) {
@@ -28,7 +28,7 @@ fn validate(header: &Header, body: &Body) -> bool {
                     false
                 }
             })
-        },
+        }
         (Header::Timestamp, Body::Timestamp(_)) => true,
         _ => false,
     }
@@ -36,26 +36,32 @@ fn validate(header: &Header, body: &Body) -> bool {
 
 pub fn serialize(header: &Header, body: &Body) -> Result<Vec<u8>, ()> {
     if !validate(header, body) {
-        return Err(())
+        return Err(());
     }
 
-    let mut serialized_header= header.serialize();
+    let mut serialized_header = header.serialize();
     serialized_header.append(&mut body.serialize());
     Ok(serialized_header)
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::{binary::Binary, body::Body, header::Header};
     use indexmap::*;
     use time::OffsetDateTime;
-    use crate::{binary::Binary, body::Body, header::Header};
 
     #[test]
     fn validate() {
         let header = Header::Optional(Box::new(Header::Boolean));
         assert!(super::validate(&header, &Body::Optional(Box::new(None))));
-        assert!(super::validate(&header, &Body::Optional(Box::new(Some(Body::Boolean(true))))));
-        assert!(!super::validate(&header, &Body::Optional(Box::new(Some(Body::UInt8(0))))));
+        assert!(super::validate(
+            &header,
+            &Body::Optional(Box::new(Some(Body::Boolean(true))))
+        ));
+        assert!(!super::validate(
+            &header,
+            &Body::Optional(Box::new(Some(Body::UInt8(0))))
+        ));
 
         let header = Header::Boolean;
         assert!(super::validate(&header, &Body::Boolean(true)));
@@ -82,38 +88,79 @@ mod tests {
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::String;
-        assert!(super::validate(&header, &Body::String(String::from("test"))));
+        assert!(super::validate(
+            &header,
+            &Body::String(String::from("test"))
+        ));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::Binary;
-        assert!(super::validate(&header, &Body::Binary(Binary(vec![0, 1, 2, 3, 255]))));
+        assert!(super::validate(
+            &header,
+            &Body::Binary(Binary(vec![0, 1, 2, 3, 255]))
+        ));
 
         let header = Header::Array(Box::new(Header::UInt8));
         assert!(super::validate(&header, &Body::Array(vec![Body::UInt8(0)])));
-        assert!(!super::validate(&header, &Body::Array(vec![Body::Boolean(true)])));
-        assert!(super::validate(&header, &Body::Array(vec![Body::UInt8(0), Body::UInt8(1)])));
-        assert!(!super::validate(&header, &Body::Array(vec![Body::UInt8(0), Body::Boolean(true)])));
+        assert!(!super::validate(
+            &header,
+            &Body::Array(vec![Body::Boolean(true)])
+        ));
+        assert!(super::validate(
+            &header,
+            &Body::Array(vec![Body::UInt8(0), Body::UInt8(1)])
+        ));
+        assert!(!super::validate(
+            &header,
+            &Body::Array(vec![Body::UInt8(0), Body::Boolean(true)])
+        ));
 
         let header = Header::Map(indexmap! { String::from("test") => Header::Boolean });
-        assert!(super::validate(&header, &Body::Map(indexmap! { String::from("test") => Body::Boolean(true) })));
-        assert!(!super::validate(&header, &Body::Map(indexmap! { String::from("test") => Body::UInt(1) })));
-        assert!(!super::validate(&header, &Body::Map(indexmap! { String::from("test") => Body::Boolean(true), String::from("test2") => Body::UInt(1) })));
+        assert!(super::validate(
+            &header,
+            &Body::Map(indexmap! { String::from("test") => Body::Boolean(true) })
+        ));
+        assert!(!super::validate(
+            &header,
+            &Body::Map(indexmap! { String::from("test") => Body::UInt(1) })
+        ));
+        assert!(!super::validate(
+            &header,
+            &Body::Map(
+                indexmap! { String::from("test") => Body::Boolean(true), String::from("test2") => Body::UInt(1) }
+            )
+        ));
 
         let header = Header::Timestamp;
-        assert!(super::validate(&header, &Body::Timestamp(OffsetDateTime::unix_epoch())));
+        assert!(super::validate(
+            &header,
+            &Body::Timestamp(OffsetDateTime::unix_epoch())
+        ));
     }
 
     #[test]
     fn serialize_boolean() {
         let header = Header::Boolean;
-        assert_eq!(super::serialize(&header, &Body::Boolean(false)).unwrap(), [Header::Boolean.code(), 0]);
-        assert_eq!(super::serialize(&header, &Body::Boolean(true)).unwrap(), [Header::Boolean.code(), 1]);
+        assert_eq!(
+            super::serialize(&header, &Body::Boolean(false)).unwrap(),
+            [Header::Boolean.code(), 0]
+        );
+        assert_eq!(
+            super::serialize(&header, &Body::Boolean(true)).unwrap(),
+            [Header::Boolean.code(), 1]
+        );
     }
 
     #[test]
     fn serialize_uint8() {
         let header = Header::UInt8;
-        assert_eq!(super::serialize(&header, &Body::UInt8(0)).unwrap(), [[Header::UInt8.code()], (0u8).to_le_bytes()].concat());
-        assert_eq!(super::serialize(&header, &Body::UInt8(255)).unwrap(), [[Header::UInt8.code()], (255u8).to_le_bytes()].concat());
+        assert_eq!(
+            super::serialize(&header, &Body::UInt8(0)).unwrap(),
+            [[Header::UInt8.code()], (0u8).to_le_bytes()].concat()
+        );
+        assert_eq!(
+            super::serialize(&header, &Body::UInt8(255)).unwrap(),
+            [[Header::UInt8.code()], (255u8).to_le_bytes()].concat()
+        );
     }
 }
