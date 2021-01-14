@@ -365,7 +365,6 @@ mod tests {
                 255
             ]
         );
-        // TODO: Make sure that i64::MAX fails
     }
 
     #[test]
