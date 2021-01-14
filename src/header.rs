@@ -17,6 +17,7 @@ pub enum Header {
     Array(Box<Header>),
     Map(IndexMap<String, Header>),
     Timestamp,
+    Date,
 }
 
 impl Header {
@@ -33,6 +34,7 @@ impl Header {
     const ARRAY_CODE: u8 = 10;
     const MAP_CODE: u8 = 11;
     const TIMESTAMP_CODE: u8 = 12;
+    const DATE_CODE: u8 = 13;
 
     pub const fn body_size(&self) -> BodySize {
         match self {
@@ -49,6 +51,7 @@ impl Header {
             Self::Array(_) => BodySize::Variable,
             Self::Map(_) => BodySize::Variable,
             Self::Timestamp => BodySize::Variable,
+            Self::Date => BodySize::Variable,
         }
     }
 
@@ -95,6 +98,9 @@ impl Header {
             Self::Timestamp => {
                 vec![Self::Timestamp.code()]
             }
+            Self::Date => {
+                vec![Self::Date.code()]
+            }
         }
     }
 
@@ -132,6 +138,7 @@ impl Header {
                 Ok(Self::Map(index_map))
             }
             Some(&Self::TIMESTAMP_CODE) => Ok(Self::Timestamp),
+            Some(&Self::DATE_CODE) => Ok(Self::Date),
             _ => Err(()),
         }
     }
@@ -151,6 +158,7 @@ impl Header {
             Self::Array(_) => Self::ARRAY_CODE,
             Self::Map(_) => Self::MAP_CODE,
             Self::Timestamp => Self::TIMESTAMP_CODE,
+            Self::Date => Self::DATE_CODE,
         }
     }
 
@@ -246,5 +254,9 @@ mod tests {
             Header::deserialize(&mut BufReader::new([Header::Timestamp.code()].as_ref())),
             Ok(Header::Timestamp)
         );
+        assert_eq!(
+            Header::deserialize(&mut BufReader::new([Header::Date.code()].as_ref())),
+            Ok(Header::Date)
+        )
     }
 }

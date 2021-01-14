@@ -22,7 +22,7 @@ mod tests {
     use indexmap::*;
     use integer_encoding::VarInt;
     use std::iter;
-    use time::OffsetDateTime;
+    use time::{Date, OffsetDateTime};
 
     #[test]
     fn deserialize_optional() {
@@ -419,6 +419,19 @@ mod tests {
                     .as_slice()
             ),
             Ok((Header::Timestamp, Body::Timestamp(body)))
+        );
+    }
+
+    #[test]
+    fn deserialize_date() {
+        let body = Date::try_from_yo(2000, 1).unwrap();
+        assert_eq!(
+            super::deserialize(
+                serialize(&Header::Date, &Body::Date(body))
+                    .unwrap()
+                    .as_slice()
+            ),
+            Ok((Header::Date, Body::Date(body)))
         );
     }
 }
