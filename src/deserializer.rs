@@ -21,7 +21,7 @@ mod tests {
     use core::panic;
     use indexmap::*;
     use integer_encoding::VarInt;
-    use std::iter;
+    use std::{collections::HashMap, iter};
     use time::{Date, OffsetDateTime};
 
     #[test]
@@ -406,6 +406,20 @@ mod tests {
                 .as_slice()
             ),
             Ok((header, Body::Map(body)))
+        );
+    }
+
+    #[test]
+    fn deserialize_dynamic_map() {
+        let header = Header::DynamicMap(Box::new(Header::Boolean));
+        let body = Body::DynamicMap({
+            let mut body = HashMap::new();
+            body.insert(String::from("test"), Body::Boolean(true));
+            body
+        });
+        assert_eq!(
+            super::deserialize(serialize(&header, &body).unwrap().as_slice()),
+            Ok((header, body))
         );
     }
 

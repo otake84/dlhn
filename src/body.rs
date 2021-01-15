@@ -5,6 +5,7 @@ use crate::{
 use indexmap::IndexMap;
 use integer_encoding::{VarInt, VarIntReader};
 use std::{
+    collections::HashMap,
     convert::{TryFrom, TryInto},
     io::{BufReader, Read, Write},
 };
@@ -24,6 +25,7 @@ pub enum Body {
     Binary(Binary),
     Array(Vec<Body>),
     Map(IndexMap<String, Body>),
+    DynamicMap(HashMap<String, Body>),
     Timestamp(OffsetDateTime),
     Date(Date),
 }
@@ -53,13 +55,20 @@ impl Body {
             Self::Int8(v) => v.to_le_bytes().to_vec(),
             Self::Float32(v) => v.to_le_bytes().to_vec(),
             Self::Float64(v) => v.to_le_bytes().to_vec(),
-            Self::String(v) => [v.len().encode_var_vec().as_ref(), v.as_bytes()].concat(),
+            Self::String(v) => Self::serialize_string(v),
             Self::Binary(v) => [v.0.len().encode_var_vec().as_ref(), v.0.as_slice()].concat(),
             Self::Array(v) => {
                 let items = v.iter().flat_map(|v| v.serialize()).collect::<Vec<u8>>();
                 [v.len().encode_var_vec(), items].concat()
             }
             Self::Map(v) => v.iter().flat_map(|v| v.1.serialize()).collect::<Vec<u8>>(),
+            Self::DynamicMap(v) => [
+                v.len().encode_var_vec(),
+                v.iter()
+                    .flat_map(|(k, v)| [Self::serialize_string(k), v.serialize()].concat())
+                    .collect(),
+            ]
+            .concat(),
             Self::Timestamp(v) => {
                 let kind_size = 1;
 
@@ -147,11 +156,7 @@ impl Body {
                     .read_varint::<i64>()
                     .map(|v| Self::Int(v.into()))
                     .or(Err(())),
-                Header::String => {
-                    let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
-                    buf_reader.read_exact(&mut body_buf).or(Err(()))?;
-                    String::from_utf8(body_buf).map(Self::String).or(Err(()))
-                }
+                Header::String => Self::deserialize_string(buf_reader).map(Self::String),
                 Header::Binary => {
                     let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
                     buf_reader.read_exact(&mut body_buf).or(Err(()))?;
@@ -172,6 +177,16 @@ impl Body {
                         body.insert(key.clone(), Self::deserialize(h, buf_reader)?);
                     }
                     Ok(Self::Map(body))
+                }
+                Header::DynamicMap(inner_header) => {
+                    let size = buf_reader.read_varint::<usize>().or(Err(()))?;
+                    let mut body = HashMap::with_capacity(size);
+                    for _ in 0..size {
+                        let key = Self::deserialize_string(buf_reader)?;
+                        let value = Self::deserialize(inner_header, buf_reader)?;
+                        body.insert(key, value);
+                    }
+                    Ok(Self::DynamicMap(body))
                 }
                 Header::Timestamp => {
                     let mut kind_buf = [0u8; 1];
@@ -230,6 +245,16 @@ impl Body {
             }
         }
     }
+
+    fn serialize_string(v: &str) -> Vec<u8> {
+        [v.len().encode_var_vec().as_ref(), v.as_bytes()].concat()
+    }
+
+    fn deserialize_string<R: Read>(buf_reader: &mut BufReader<R>) -> Result<String, ()> {
+        let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
+        buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+        String::from_utf8(body_buf).or(Err(()))
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -259,7 +284,7 @@ mod tests {
     use core::panic;
     use indexmap::*;
     use integer_encoding::VarInt;
-    use std::io::BufReader;
+    use std::{collections::HashMap, io::BufReader};
     use time::{Date, NumericalDuration, OffsetDateTime};
 
     #[test]
@@ -765,6 +790,19 @@ mod tests {
                 )
             ),
             Ok(Body::Map(body))
+        );
+    }
+
+    #[test]
+    fn deserialize_dynamic_map() {
+        let mut body = HashMap::new();
+        body.insert(String::from("test"), Body::Boolean(true));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::DynamicMap(Box::new(Header::Boolean)),
+                &mut BufReader::new(Body::DynamicMap(body.clone()).serialize().as_slice())
+            ),
+            Ok(Body::DynamicMap(body))
         );
     }
 

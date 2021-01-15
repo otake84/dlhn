@@ -29,6 +29,9 @@ fn validate(header: &Header, body: &Body) -> bool {
                 }
             })
         }
+        (Header::DynamicMap(inner_header), Body::DynamicMap(inner_body)) => inner_body
+            .iter()
+            .all(|(_key, value)| validate(inner_header, value)),
         (Header::Timestamp, Body::Timestamp(_)) => true,
         (Header::Date, Body::Date(_)) => true,
         _ => false,
@@ -49,6 +52,7 @@ pub fn serialize(header: &Header, body: &Body) -> Result<Vec<u8>, ()> {
 mod tests {
     use crate::{binary::Binary, body::Body, header::Header};
     use indexmap::*;
+    use std::collections::HashMap;
     use time::{Date, OffsetDateTime};
 
     #[test]
@@ -130,6 +134,16 @@ mod tests {
             &Body::Map(
                 indexmap! { String::from("test") => Body::Boolean(true), String::from("test2") => Body::UInt(1) }
             )
+        ));
+
+        let header = Header::DynamicMap(Box::new(Header::Boolean));
+        assert!(super::validate(
+            &header,
+            &Body::DynamicMap({
+                let mut body = HashMap::new();
+                body.insert(String::from("test"), Body::Boolean(true));
+                body
+            })
         ));
 
         let header = Header::Timestamp;
