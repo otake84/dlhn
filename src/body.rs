@@ -2,6 +2,7 @@ use crate::{
     binary::Binary,
     header::{BodySize, Header},
 };
+use bigdecimal::BigDecimal;
 use indexmap::IndexMap;
 use integer_encoding::{VarInt, VarIntReader};
 use num_bigint::BigInt;
@@ -24,6 +25,7 @@ pub enum Body {
     Float32(f32),
     Float64(f64),
     BigInt(BigInt),
+    BigDecimal(BigDecimal),
     String(String),
     Binary(Binary),
     Array(Vec<Body>),
@@ -64,6 +66,15 @@ impl Body {
                 } else {
                     let data = v.to_signed_bytes_le();
                     [data.len().encode_var_vec(), data].concat()
+                }
+            }
+            Self::BigDecimal(v) => {
+                if v.is_zero() {
+                    vec![0]
+                } else {
+                    let (bigint, scale) = v.normalized().as_bigint_and_exponent();
+                    let data = bigint.to_signed_bytes_le();
+                    [data.len().encode_var_vec(), data, scale.encode_var_vec()].concat()
                 }
             }
             Self::String(v) => Self::serialize_string(v),
@@ -173,6 +184,19 @@ impl Body {
                     Ok(Self::BigInt(BigInt::from_signed_bytes_le(
                         body_buf.as_slice(),
                     )))
+                }
+                Header::BigDecimal => {
+                    let size = buf_reader.read_varint::<usize>().or(Err(()))?;
+                    if size == 0 {
+                        Ok(Self::BigDecimal(BigDecimal::from(0)))
+                    } else {
+                        let mut body_buf = vec![0u8; size];
+                        buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                        Ok(Self::BigDecimal(BigDecimal::new(
+                            BigInt::from_signed_bytes_le(body_buf.as_slice()),
+                            buf_reader.read_varint::<i64>().or(Err(()))?,
+                        )))
+                    }
                 }
                 Header::String => Self::deserialize_string(buf_reader).map(Self::String),
                 Header::Binary => {
@@ -299,6 +323,7 @@ impl TryFrom<u8> for TimestampSize {
 mod tests {
     use super::{Body, TimestampSize};
     use crate::{binary::Binary, header::Header};
+    use bigdecimal::BigDecimal;
     use core::panic;
     use indexmap::*;
     use integer_encoding::VarInt;
@@ -401,6 +426,61 @@ mod tests {
         assert_eq!(
             Body::BigInt(BigInt::from(i128::MAX) + 1).serialize(),
             [17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 0]
+        );
+    }
+
+    #[test]
+    fn serialize_bigdecimal() {
+        assert_eq!(Body::BigDecimal(BigDecimal::from(0)).serialize(), [0]);
+
+        assert_eq!(
+            Body::BigDecimal(BigDecimal::new(BigInt::from(1), 0)).serialize(),
+            [1, 1, 0]
+        );
+
+        assert_eq!(
+            Body::BigDecimal(BigDecimal::new(BigInt::from(1), -1)).serialize(),
+            [1, 1, 1]
+        );
+
+        assert_eq!(
+            Body::BigDecimal(BigDecimal::new(BigInt::from(1), 1)).serialize(),
+            [1, 1, 2]
+        );
+
+        assert_eq!(
+            Body::BigDecimal(BigDecimal::new(BigInt::from(10), 0)).serialize(),
+            [1, 1, 1]
+        );
+
+        assert_eq!(
+            Body::BigDecimal(BigDecimal::new(BigInt::from(1), 63)).serialize(),
+            [1, 1, 126]
+        );
+
+        assert_eq!(
+            Body::BigDecimal(BigDecimal::new(BigInt::from(1), 64)).serialize(),
+            [1, 1, 128, 1]
+        );
+
+        assert_eq!(
+            Body::BigDecimal(BigDecimal::new(BigInt::from(1), -64)).serialize(),
+            [1, 1, 127]
+        );
+
+        assert_eq!(
+            Body::BigDecimal(BigDecimal::new(BigInt::from(1), -65)).serialize(),
+            [1, 1, 129, 1]
+        );
+
+        assert_eq!(
+            Body::BigDecimal(BigDecimal::new(BigInt::from(i16::MIN), 0)).serialize(),
+            [2, 0, 128, 0]
+        );
+
+        assert_eq!(
+            Body::BigDecimal(BigDecimal::new(BigInt::from(i16::MAX), 0)).serialize(),
+            [2, 255, 127, 0]
         );
     }
 
@@ -990,6 +1070,99 @@ mod tests {
         assert_eq!(
             super::Body::deserialize(
                 &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+    }
+
+    #[test]
+    fn deserialize_bigdecimal() {
+        let body = Body::BigDecimal(BigDecimal::from(0));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigDecimal,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(1), 0));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigDecimal,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(1), -1));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigDecimal,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(1), 1));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigDecimal,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(1), 63));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigDecimal,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(1), 64));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigDecimal,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(1), -64));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigDecimal,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(1), -65));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigDecimal,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(i16::MIN), 0));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigDecimal,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(i16::MAX), 0));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigDecimal,
                 &mut BufReader::new(body.serialize().as_slice())
             ),
             Ok(body)

@@ -18,6 +18,7 @@ pub fn deserialize<R: Read>(read: R) -> Result<(Header, Body), ()> {
 #[cfg(test)]
 mod tests {
     use crate::{binary::Binary, body::Body, header::Header, serializer::serialize};
+    use bigdecimal::BigDecimal;
     use core::panic;
     use indexmap::*;
     use integer_encoding::VarInt;
@@ -429,6 +430,69 @@ mod tests {
         assert_eq!(
             super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
             Ok((Header::BigInt, body))
+        );
+    }
+
+    #[test]
+    fn deserialize_bigdecimal() {
+        let body = Body::BigDecimal(BigDecimal::from(0));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigDecimal, &body).unwrap().as_slice()),
+            Ok((Header::BigDecimal, body))
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(1), 0));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigDecimal, &body).unwrap().as_slice()),
+            Ok((Header::BigDecimal, body))
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(1), -1));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigDecimal, &body).unwrap().as_slice()),
+            Ok((Header::BigDecimal, body))
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(1), 1));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigDecimal, &body).unwrap().as_slice()),
+            Ok((Header::BigDecimal, body))
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(1), 63));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigDecimal, &body).unwrap().as_slice()),
+            Ok((Header::BigDecimal, body))
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(1), 64));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigDecimal, &body).unwrap().as_slice()),
+            Ok((Header::BigDecimal, body))
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(1), -64));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigDecimal, &body).unwrap().as_slice()),
+            Ok((Header::BigDecimal, body))
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(1), -65));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigDecimal, &body).unwrap().as_slice()),
+            Ok((Header::BigDecimal, body))
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(i16::MIN), 0));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigDecimal, &body).unwrap().as_slice()),
+            Ok((Header::BigDecimal, body))
+        );
+
+        let body = Body::BigDecimal(BigDecimal::new(BigInt::from(i16::MAX), 0));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigDecimal, &body).unwrap().as_slice()),
+            Ok((Header::BigDecimal, body))
         );
     }
 
