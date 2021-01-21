@@ -3,16 +3,9 @@ use std::io::{BufReader, Read};
 
 pub fn deserialize<R: Read>(read: R) -> Result<(Header, Body), ()> {
     let mut buf_reader = BufReader::new(read);
-
-    if let Ok(header) = Header::deserialize(&mut buf_reader) {
-        if let Ok(body) = Body::deserialize(&header, &mut buf_reader) {
-            Ok((header, body))
-        } else {
-            Err(())
-        }
-    } else {
-        Err(())
-    }
+    let header = Header::deserialize(&mut buf_reader)?;
+    let body = Body::deserialize(&header, &mut buf_reader)?;
+    Ok((header, body))
 }
 
 #[cfg(test)]
