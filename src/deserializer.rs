@@ -148,13 +148,36 @@ mod tests {
             Ok((header.clone(), body))
         );
 
-        let body = Body::UInt16(u16::MIN);
+        let body = Body::UInt16(u16::MAX);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+    }
+
+    #[test]
+    fn deserialize_uint32() {
+        let header = Header::UInt32;
+
+        let body = Body::UInt32(u8::MIN as u32);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::UInt16(u16::MAX);
+        let body = Body::UInt32(u8::MAX as u32);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::UInt32(u16::MAX as u32);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::UInt32(u32::MAX);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
