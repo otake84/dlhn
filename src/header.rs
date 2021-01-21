@@ -138,29 +138,29 @@ impl Header {
         let mut buf = [0u8; 1];
         buf_reader.read_exact(&mut buf).or(Err(()))?;
 
-        match buf.first() {
-            Some(&Self::OPTIONAL_CODE) => {
+        match *buf.first().ok_or(())? {
+            Self::OPTIONAL_CODE => {
                 let inner = Self::deserialize(buf_reader)?;
                 Ok(Self::Optional(Box::new(inner)))
             }
-            Some(&Self::BOOLEAN_CODE) => Ok(Self::Boolean),
-            Some(&Self::UINT8_CODE) => Ok(Self::UInt8),
-            Some(&Self::UINT16_CODE) => Ok(Self::UInt16),
-            Some(&Self::UINT32_CODE) => Ok(Self::UInt32),
-            Some(&Self::UINT64_CODE) => Ok(Self::UInt64),
-            Some(&Self::INT_CODE) => Ok(Self::Int),
-            Some(&Self::INT8_CODE) => Ok(Self::Int8),
-            Some(&Self::FLOAT32_CODE) => Ok(Self::Float32),
-            Some(&Self::FLOAT64_CODE) => Ok(Self::Float64),
-            Some(&Self::BIG_INT_CODE) => Ok(Self::BigInt),
-            Some(&Self::BIG_DECIMAL_CODE) => Ok(Self::BigDecimal),
-            Some(&Self::STRING_CODE) => Ok(Self::String),
-            Some(&Self::BINARY_CODE) => Ok(Self::Binary),
-            Some(&Self::ARRAY_CODE) => {
+            Self::BOOLEAN_CODE => Ok(Self::Boolean),
+            Self::UINT8_CODE => Ok(Self::UInt8),
+            Self::UINT16_CODE => Ok(Self::UInt16),
+            Self::UINT32_CODE => Ok(Self::UInt32),
+            Self::UINT64_CODE => Ok(Self::UInt64),
+            Self::INT_CODE => Ok(Self::Int),
+            Self::INT8_CODE => Ok(Self::Int8),
+            Self::FLOAT32_CODE => Ok(Self::Float32),
+            Self::FLOAT64_CODE => Ok(Self::Float64),
+            Self::BIG_INT_CODE => Ok(Self::BigInt),
+            Self::BIG_DECIMAL_CODE => Ok(Self::BigDecimal),
+            Self::STRING_CODE => Ok(Self::String),
+            Self::BINARY_CODE => Ok(Self::Binary),
+            Self::ARRAY_CODE => {
                 let inner = Self::deserialize(buf_reader)?;
                 Ok(Self::Array(Box::new(inner)))
             }
-            Some(&Self::MAP_CODE) => {
+            Self::MAP_CODE => {
                 let size = buf_reader.read_varint::<usize>().or(Err(()))?;
                 let mut index_map: IndexMap<String, Header> = IndexMap::with_capacity(size);
                 for _ in 0..size {
@@ -171,12 +171,12 @@ impl Header {
                 }
                 Ok(Self::Map(index_map))
             }
-            Some(&Self::DYNAMIC_MAP_CODE) => {
+            Self::DYNAMIC_MAP_CODE => {
                 let inner = Self::deserialize(buf_reader)?;
                 Ok(Self::DynamicMap(Box::new(inner)))
             }
-            Some(&Self::TIMESTAMP_CODE) => Ok(Self::Timestamp),
-            Some(&Self::DATE_CODE) => Ok(Self::Date),
+            Self::TIMESTAMP_CODE => Ok(Self::Timestamp),
+            Self::DATE_CODE => Ok(Self::Date),
             _ => Err(()),
         }
     }
