@@ -15,6 +15,7 @@ fn validate(header: &Header, body: &Body) -> bool {
         (Header::Int, Body::Int(_)) => true,
         (Header::Int8, Body::Int8(_)) => true,
         (Header::Float32, Body::Float32(_)) => true,
+        (Header::BigInt, Body::BigInt(_)) => true,
         (Header::String, Body::String(_)) => true,
         (Header::Binary, Body::Binary(_)) => true,
         (Header::Array(inner_header), Body::Array(inner_body)) => {
@@ -52,6 +53,7 @@ pub fn serialize(header: &Header, body: &Body) -> Result<Vec<u8>, ()> {
 mod tests {
     use crate::{binary::Binary, body::Body, header::Header};
     use indexmap::*;
+    use num_bigint::BigInt;
     use std::collections::HashMap;
     use time::{Date, OffsetDateTime};
 
@@ -90,6 +92,10 @@ mod tests {
 
         let header = Header::Float32;
         assert!(super::validate(&header, &Body::Float32(0f32)));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::BigInt;
+        assert!(super::validate(&header, &Body::BigInt(BigInt::from(0))));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::String;

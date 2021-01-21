@@ -21,6 +21,7 @@ mod tests {
     use core::panic;
     use indexmap::*;
     use integer_encoding::VarInt;
+    use num_bigint::BigInt;
     use std::{collections::HashMap, iter};
     use time::{Date, OffsetDateTime};
 
@@ -299,6 +300,135 @@ mod tests {
                 .as_slice()
             ),
             Ok((Header::Float64, Body::Float64(-f64::INFINITY)))
+        );
+    }
+
+    #[test]
+    fn deserialize_bigint() {
+        let body = Body::BigInt(BigInt::from(0));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i8::MIN));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i8::MAX));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i8::MIN) - 1);
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i8::MAX) + 1);
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i16::MIN));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i16::MAX));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i16::MIN) - 1);
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i16::MAX) + 1);
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i32::MIN));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i32::MAX));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i32::MIN) - 1);
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i32::MAX) + 1);
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i64::MIN));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i64::MAX));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i64::MIN) - 1);
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i64::MAX) + 1);
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i128::MIN));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i128::MAX));
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i128::MIN) - 1);
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
+        );
+
+        let body = Body::BigInt(BigInt::from(i128::MAX) + 1);
+        assert_eq!(
+            super::deserialize(serialize(&Header::BigInt, &body).unwrap().as_slice()),
+            Ok((Header::BigInt, body))
         );
     }
 

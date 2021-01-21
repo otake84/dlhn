@@ -4,6 +4,8 @@ use crate::{
 };
 use indexmap::IndexMap;
 use integer_encoding::{VarInt, VarIntReader};
+use num_bigint::BigInt;
+use num_traits::Zero;
 use std::{
     collections::HashMap,
     convert::{TryFrom, TryInto},
@@ -21,6 +23,7 @@ pub enum Body {
     Int8(i8),
     Float32(f32),
     Float64(f64),
+    BigInt(BigInt),
     String(String),
     Binary(Binary),
     Array(Vec<Body>),
@@ -55,6 +58,14 @@ impl Body {
             Self::Int8(v) => v.to_le_bytes().to_vec(),
             Self::Float32(v) => v.to_le_bytes().to_vec(),
             Self::Float64(v) => v.to_le_bytes().to_vec(),
+            Self::BigInt(v) => {
+                if v.is_zero() {
+                    vec![0]
+                } else {
+                    let data = v.to_signed_bytes_le();
+                    [data.len().encode_var_vec(), data].concat()
+                }
+            }
             Self::String(v) => Self::serialize_string(v),
             Self::Binary(v) => [v.0.len().encode_var_vec().as_ref(), v.0.as_slice()].concat(),
             Self::Array(v) => {
@@ -156,6 +167,13 @@ impl Body {
                     .read_varint::<i64>()
                     .map(|v| Self::Int(v.into()))
                     .or(Err(())),
+                Header::BigInt => {
+                    let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
+                    buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                    Ok(Self::BigInt(BigInt::from_signed_bytes_le(
+                        body_buf.as_slice(),
+                    )))
+                }
                 Header::String => Self::deserialize_string(buf_reader).map(Self::String),
                 Header::Binary => {
                     let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
@@ -284,8 +302,107 @@ mod tests {
     use core::panic;
     use indexmap::*;
     use integer_encoding::VarInt;
+    use num_bigint::BigInt;
     use std::{collections::HashMap, io::BufReader};
     use time::{Date, NumericalDuration, OffsetDateTime};
+
+    #[test]
+    fn serialize_bigint() {
+        assert_eq!(Body::BigInt(BigInt::from(0)).serialize(), [0]);
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i8::MIN)).serialize(),
+            [[1], i8::MIN.to_le_bytes()].concat()
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i8::MAX)).serialize(),
+            [[1], i8::MAX.to_le_bytes()].concat()
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i16::MIN)).serialize(),
+            [vec![2], i16::MIN.to_le_bytes().to_vec()].concat()
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i16::MAX)).serialize(),
+            [vec![2], i16::MAX.to_le_bytes().to_vec()].concat()
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i16::MIN) - 1).serialize(),
+            [3, 255, 127, 255]
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i16::MAX) + 1).serialize(),
+            [3, 0, 128, 0]
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i32::MIN)).serialize(),
+            [vec![4], i32::MIN.to_le_bytes().to_vec()].concat()
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i32::MAX)).serialize(),
+            [vec![4], i32::MAX.to_le_bytes().to_vec()].concat()
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i32::MIN) - 1).serialize(),
+            [5, 255, 255, 255, 127, 255]
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i32::MAX) + 1).serialize(),
+            [5, 0, 0, 0, 128, 0]
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i64::MIN)).serialize(),
+            [vec![8], i64::MIN.to_le_bytes().to_vec()].concat()
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i64::MAX)).serialize(),
+            [vec![8], i64::MAX.to_le_bytes().to_vec()].concat()
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i64::MIN) - 1).serialize(),
+            [9, 255, 255, 255, 255, 255, 255, 255, 127, 255]
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i64::MAX) + 1).serialize(),
+            [9, 0, 0, 0, 0, 0, 0, 0, 128, 0]
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i128::MIN)).serialize(),
+            [vec![16], i128::MIN.to_le_bytes().to_vec()].concat()
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i128::MAX)).serialize(),
+            [vec![16], i128::MAX.to_le_bytes().to_vec()].concat()
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i128::MIN) - 1).serialize(),
+            [
+                17, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 127,
+                255
+            ]
+        );
+
+        assert_eq!(
+            Body::BigInt(BigInt::from(i128::MAX) + 1).serialize(),
+            [17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 0]
+        );
+    }
 
     #[test]
     fn serialize_timestamp32() {
@@ -684,6 +801,198 @@ mod tests {
                 &mut BufReader::new((-f64::INFINITY).to_le_bytes().as_ref())
             ),
             Ok(Body::Float64(-f64::INFINITY))
+        );
+    }
+
+    #[test]
+    fn deserialize_bigint() {
+        let body = Body::BigInt(BigInt::from(0));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i8::MIN));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i8::MAX));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i8::MIN) - 1);
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i8::MAX) + 1);
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i16::MIN));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i16::MAX));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i16::MIN) - 1);
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i16::MAX) + 1);
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i32::MIN));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i32::MAX));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i32::MIN) - 1);
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i32::MAX) + 1);
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i64::MIN));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i64::MAX));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i64::MIN) - 1);
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i64::MAX) + 1);
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i128::MIN));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i128::MAX));
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i128::MIN) - 1);
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::BigInt(BigInt::from(i128::MAX) + 1);
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::BigInt,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
         );
     }
 
