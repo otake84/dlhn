@@ -62,50 +62,6 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_uint() {
-        assert_eq!(
-            super::deserialize(
-                [Header::UInt.serialize(), 0u8.encode_var_vec()]
-                    .concat()
-                    .as_slice()
-            ),
-            Ok((Header::UInt, Body::UInt(0)))
-        );
-        assert_eq!(
-            super::deserialize(
-                [Header::UInt.serialize(), u8::MAX.encode_var_vec()]
-                    .concat()
-                    .as_slice()
-            ),
-            Ok((Header::UInt, Body::UInt(u8::MAX as u64)))
-        );
-        assert_eq!(
-            super::deserialize(
-                [Header::UInt.serialize(), u16::MAX.encode_var_vec()]
-                    .concat()
-                    .as_slice()
-            ),
-            Ok((Header::UInt, Body::UInt(u16::MAX as u64)))
-        );
-        assert_eq!(
-            super::deserialize(
-                [Header::UInt.serialize(), u32::MAX.encode_var_vec()]
-                    .concat()
-                    .as_slice()
-            ),
-            Ok((Header::UInt, Body::UInt(u32::MAX as u64)))
-        );
-        assert_eq!(
-            super::deserialize(
-                [Header::UInt.serialize(), u64::MAX.encode_var_vec()]
-                    .concat()
-                    .as_slice()
-            ),
-            Ok((Header::UInt, Body::UInt(u64::MAX as u64)))
-        );
-    }
-
-    #[test]
     fn deserialize_uint8() {
         assert_eq!(
             super::deserialize(
@@ -171,6 +127,41 @@ mod tests {
         );
 
         let body = Body::UInt32(u32::MAX);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+    }
+
+    #[test]
+    fn deserialize_uint64() {
+        let header = Header::UInt64;
+
+        let body = Body::UInt64(u8::MIN as u64);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::UInt64(u8::MAX as u64);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::UInt64(u16::MAX as u64);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::UInt64(u32::MAX as u64);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::UInt64(u64::MAX);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))

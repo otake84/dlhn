@@ -10,10 +10,10 @@ fn validate(header: &Header, body: &Body) -> bool {
             }
         }
         (Header::Boolean, Body::Boolean(_)) => true,
-        (Header::UInt, Body::UInt(_)) => true,
         (Header::UInt8, Body::UInt8(_)) => true,
         (Header::UInt16, Body::UInt16(_)) => true,
         (Header::UInt32, Body::UInt32(_)) => true,
+        (Header::UInt64, Body::UInt64(_)) => true,
         (Header::Int, Body::Int(_)) => true,
         (Header::Int8, Body::Int8(_)) => true,
         (Header::Float32, Body::Float32(_)) => true,
@@ -79,10 +79,6 @@ mod tests {
         assert!(super::validate(&header, &Body::Boolean(true)));
         assert!(!super::validate(&header, &Body::UInt8(0)));
 
-        let header = Header::UInt;
-        assert!(super::validate(&header, &Body::UInt(0)));
-        assert!(!super::validate(&header, &Body::Boolean(true)));
-
         let header = Header::UInt8;
         assert!(super::validate(&header, &Body::UInt8(0)));
         assert!(!super::validate(&header, &Body::Boolean(true)));
@@ -93,6 +89,10 @@ mod tests {
 
         let header = Header::UInt32;
         assert!(super::validate(&header, &Body::UInt32(0)));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::UInt64;
+        assert!(super::validate(&header, &Body::UInt64(0)));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::Int;
@@ -157,12 +157,12 @@ mod tests {
         ));
         assert!(!super::validate(
             &header,
-            &Body::Map(indexmap! { String::from("test") => Body::UInt(1) })
+            &Body::Map(indexmap! { String::from("test") => Body::UInt8(0) })
         ));
         assert!(!super::validate(
             &header,
             &Body::Map(
-                indexmap! { String::from("test") => Body::Boolean(true), String::from("test2") => Body::UInt(1) }
+                indexmap! { String::from("test") => Body::Boolean(true), String::from("test2") => Body::UInt8(0) }
             )
         ));
 

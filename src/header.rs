@@ -6,10 +6,10 @@ use std::io::{BufReader, Read};
 pub enum Header {
     Optional(Box<Header>),
     Boolean,
-    UInt,
     UInt8,
     UInt16,
     UInt32,
+    UInt64,
     Int,
     Int8,
     Float32,
@@ -28,10 +28,10 @@ pub enum Header {
 impl Header {
     const OPTIONAL_CODE: u8 = 0;
     const BOOLEAN_CODE: u8 = 1;
-    const UINT_CODE: u8 = 2;
-    const UINT8_CODE: u8 = 3;
-    const UINT16_CODE: u8 = 4;
-    const UINT32_CODE: u8 = 5;
+    const UINT8_CODE: u8 = 2;
+    const UINT16_CODE: u8 = 3;
+    const UINT32_CODE: u8 = 4;
+    const UINT64_CODE: u8 = 5;
     const INT_CODE: u8 = 6;
     const INT8_CODE: u8 = 7;
     const FLOAT32_CODE: u8 = 8;
@@ -50,10 +50,10 @@ impl Header {
         match self {
             Self::Optional(_) => BodySize::Variable,
             Self::Boolean => BodySize::Fix(1),
-            Self::UInt => BodySize::Variable,
             Self::UInt8 => BodySize::Fix(1),
             Self::UInt16 => BodySize::Variable,
             Self::UInt32 => BodySize::Variable,
+            Self::UInt64 => BodySize::Variable,
             Self::Int => BodySize::Variable,
             Self::Int8 => BodySize::Fix(1),
             Self::Float32 => BodySize::Fix(4),
@@ -76,9 +76,6 @@ impl Header {
             Self::Boolean => {
                 vec![Self::Boolean.code()]
             }
-            Self::UInt => {
-                vec![Self::UInt.code()]
-            }
             Self::UInt8 => {
                 vec![Self::UInt8.code()]
             }
@@ -87,6 +84,9 @@ impl Header {
             }
             Self::UInt32 => {
                 vec![Self::UInt32.code()]
+            }
+            Self::UInt64 => {
+                vec![Self::UInt64.code()]
             }
             Self::Int => {
                 vec![Self::Int.code()]
@@ -144,10 +144,10 @@ impl Header {
                 Ok(Self::Optional(Box::new(inner)))
             }
             Some(&Self::BOOLEAN_CODE) => Ok(Self::Boolean),
-            Some(&Self::UINT_CODE) => Ok(Self::UInt),
             Some(&Self::UINT8_CODE) => Ok(Self::UInt8),
             Some(&Self::UINT16_CODE) => Ok(Self::UInt16),
             Some(&Self::UINT32_CODE) => Ok(Self::UInt32),
+            Some(&Self::UINT64_CODE) => Ok(Self::UInt64),
             Some(&Self::INT_CODE) => Ok(Self::Int),
             Some(&Self::INT8_CODE) => Ok(Self::Int8),
             Some(&Self::FLOAT32_CODE) => Ok(Self::Float32),
@@ -185,10 +185,10 @@ impl Header {
         match self {
             Self::Optional(_) => Self::OPTIONAL_CODE,
             Self::Boolean => Self::BOOLEAN_CODE,
-            Self::UInt => Self::UINT_CODE,
             Self::UInt8 => Self::UINT8_CODE,
             Self::UInt16 => Self::UINT16_CODE,
             Self::UInt32 => Self::UINT32_CODE,
+            Self::UInt64 => Self::UINT64_CODE,
             Self::Int => Self::INT_CODE,
             Self::Int8 => Self::INT8_CODE,
             Self::Float32 => Self::FLOAT32_CODE,
@@ -241,10 +241,6 @@ mod tests {
             Ok(Header::Boolean)
         );
         assert_eq!(
-            Header::deserialize(&mut BufReader::new([Header::UInt.code()].as_ref())),
-            Ok(Header::UInt)
-        );
-        assert_eq!(
             Header::deserialize(&mut BufReader::new([Header::UInt8.code()].as_ref())),
             Ok(Header::UInt8)
         );
@@ -255,6 +251,10 @@ mod tests {
         assert_eq!(
             Header::deserialize(&mut BufReader::new([Header::UInt32.code()].as_ref())),
             Ok(Header::UInt32)
+        );
+        assert_eq!(
+            Header::deserialize(&mut BufReader::new([Header::UInt64.code()].as_ref())),
+            Ok(Header::UInt64)
         );
         assert_eq!(
             Header::deserialize(&mut BufReader::new([Header::Int.code()].as_ref())),
