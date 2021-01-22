@@ -25,6 +25,7 @@ pub enum Body {
     Int(i64),
     Int8(i8),
     Int16(i16),
+    Int32(i32),
     Float32(f32),
     Float64(f64),
     BigInt(BigInt),
@@ -64,6 +65,7 @@ impl Body {
             Self::Int(v) => v.encode_var_vec(),
             Self::Int8(v) => v.to_le_bytes().to_vec(),
             Self::Int16(v) => v.encode_var_vec(),
+            Self::Int32(v) => v.encode_var_vec(),
             Self::Float32(v) => v.to_le_bytes().to_vec(),
             Self::Float64(v) => v.to_le_bytes().to_vec(),
             Self::BigInt(v) => {
@@ -190,6 +192,7 @@ impl Body {
                     .or(Err(())),
                 Header::Int => buf_reader.read_varint::<i64>().map(Self::Int).or(Err(())),
                 Header::Int16 => buf_reader.read_varint::<i16>().map(Self::Int16).or(Err(())),
+                Header::Int32 => buf_reader.read_varint::<i32>().map(Self::Int32).or(Err(())),
                 Header::BigInt => {
                     let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
                     buf_reader.read_exact(&mut body_buf).or(Err(()))?;
@@ -383,6 +386,17 @@ mod tests {
         assert_eq!(Body::Int16(i8::MAX as i16).serialize(), [254, 1]);
         assert_eq!(Body::Int16(i16::MIN).serialize(), [255, 255, 3]);
         assert_eq!(Body::Int16(i16::MAX).serialize(), [254, 255, 3]);
+    }
+
+    #[test]
+    fn serialize_int32() {
+        assert_eq!(Body::Int32(0).serialize(), [0]);
+        assert_eq!(Body::Int32(i8::MIN as i32).serialize(), [255, 1]);
+        assert_eq!(Body::Int32(i8::MAX as i32).serialize(), [254, 1]);
+        assert_eq!(Body::Int32(i16::MIN as i32).serialize(), [255, 255, 3]);
+        assert_eq!(Body::Int32(i16::MAX as i32).serialize(), [254, 255, 3]);
+        assert_eq!(Body::Int32(i32::MIN).serialize(), [255, 255, 255, 255, 15]);
+        assert_eq!(Body::Int32(i32::MAX).serialize(), [254, 255, 255, 255, 15]);
     }
 
     #[test]
@@ -937,6 +951,53 @@ mod tests {
         );
 
         let body = Body::Int16(i16::MAX);
+        assert_eq!(
+            super::Body::deserialize(&header, &mut BufReader::new(body.serialize().as_slice())),
+            Ok(body)
+        );
+    }
+
+    #[test]
+    fn deserialize_int32() {
+        let header = Header::Int32;
+
+        let body = Body::Int32(0);
+        assert_eq!(
+            super::Body::deserialize(&header, &mut BufReader::new(body.serialize().as_slice())),
+            Ok(body)
+        );
+
+        let body = Body::Int32(i8::MIN as i32);
+        assert_eq!(
+            super::Body::deserialize(&header, &mut BufReader::new(body.serialize().as_slice())),
+            Ok(body)
+        );
+
+        let body = Body::Int32(i8::MAX as i32);
+        assert_eq!(
+            super::Body::deserialize(&header, &mut BufReader::new(body.serialize().as_slice())),
+            Ok(body)
+        );
+
+        let body = Body::Int32(i16::MIN as i32);
+        assert_eq!(
+            super::Body::deserialize(&header, &mut BufReader::new(body.serialize().as_slice())),
+            Ok(body)
+        );
+
+        let body = Body::Int32(i16::MAX as i32);
+        assert_eq!(
+            super::Body::deserialize(&header, &mut BufReader::new(body.serialize().as_slice())),
+            Ok(body)
+        );
+
+        let body = Body::Int32(i32::MIN);
+        assert_eq!(
+            super::Body::deserialize(&header, &mut BufReader::new(body.serialize().as_slice())),
+            Ok(body)
+        );
+
+        let body = Body::Int32(i32::MAX);
         assert_eq!(
             super::Body::deserialize(&header, &mut BufReader::new(body.serialize().as_slice())),
             Ok(body)
