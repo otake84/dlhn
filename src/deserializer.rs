@@ -736,15 +736,15 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_timestamp() {
+    fn deserialize_datetime() {
         let body = OffsetDateTime::unix_epoch();
         assert_eq!(
             super::deserialize(
-                serialize(&Header::Timestamp, &Body::Timestamp(body))
+                serialize(&Header::DateTime, &Body::DateTime(body))
                     .unwrap()
                     .as_slice()
             ),
-            Ok((Header::Timestamp, Body::Timestamp(body)))
+            Ok((Header::DateTime, Body::DateTime(body)))
         );
     }
 

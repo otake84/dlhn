@@ -35,7 +35,7 @@ pub enum Body {
     Array(Vec<Body>),
     Map(IndexMap<String, Body>),
     DynamicMap(HashMap<String, Body>),
-    Timestamp(OffsetDateTime),
+    DateTime(OffsetDateTime),
     Date(Date),
 }
 
@@ -99,7 +99,7 @@ impl Body {
                     .collect(),
             ]
             .concat(),
-            Self::Timestamp(v) => {
+            Self::DateTime(v) => {
                 let kind_size = 1;
 
                 if v.unix_timestamp() >> 34 == 0 {
@@ -107,23 +107,22 @@ impl Body {
 
                     if v & 0xff_ff_ff_ff_00_00_00_00 == 0 {
                         let mut buf =
-                            Vec::with_capacity(kind_size + TimestampSize::Timestamp32 as usize);
-                        buf.write(&(TimestampSize::Timestamp32 as u8).to_le_bytes())
+                            Vec::with_capacity(kind_size + DateTimeSize::DateTime32 as usize);
+                        buf.write(&(DateTimeSize::DateTime32 as u8).to_le_bytes())
                             .unwrap();
                         buf.write(&(v as u32).to_le_bytes()).unwrap();
                         buf
                     } else {
                         let mut buf =
-                            Vec::with_capacity(kind_size + TimestampSize::Timestamp64 as usize);
-                        buf.write(&(TimestampSize::Timestamp64 as u8).to_le_bytes())
+                            Vec::with_capacity(kind_size + DateTimeSize::DateTime64 as usize);
+                        buf.write(&(DateTimeSize::DateTime64 as u8).to_le_bytes())
                             .unwrap();
                         buf.write(&v.to_le_bytes()).unwrap();
                         buf
                     }
                 } else {
-                    let mut buf =
-                        Vec::with_capacity(kind_size + TimestampSize::Timestamp96 as usize);
-                    buf.write(&(TimestampSize::Timestamp96 as u8).to_le_bytes())
+                    let mut buf = Vec::with_capacity(kind_size + DateTimeSize::DateTime96 as usize);
+                    buf.write(&(DateTimeSize::DateTime96 as u8).to_le_bytes())
                         .unwrap();
                     buf.write(&v.time().nanosecond().to_le_bytes()).unwrap();
                     buf.write(&v.unix_timestamp().to_le_bytes()).unwrap();
@@ -245,23 +244,23 @@ impl Body {
                     }
                     Ok(Self::DynamicMap(body))
                 }
-                Header::Timestamp => {
+                Header::DateTime => {
                     let mut kind_buf = [0u8; 1];
                     buf_reader.read_exact(&mut kind_buf).or(Err(()))?;
 
-                    match TimestampSize::try_from(u8::from_le_bytes(kind_buf)) {
-                        Ok(TimestampSize::Timestamp32) => {
-                            let mut second_buf = [0u8; TimestampSize::Timestamp32 as usize];
+                    match DateTimeSize::try_from(u8::from_le_bytes(kind_buf)) {
+                        Ok(DateTimeSize::DateTime32) => {
+                            let mut second_buf = [0u8; DateTimeSize::DateTime32 as usize];
                             buf_reader.read_exact(&mut second_buf).or(Err(()))?;
 
-                            Ok(Self::Timestamp(
+                            Ok(Self::DateTime(
                                 OffsetDateTime::unix_epoch()
                                     + u32::from_le_bytes(second_buf).seconds(),
                             ))
                         }
-                        Ok(TimestampSize::Timestamp64) => {
+                        Ok(DateTimeSize::DateTime64) => {
                             let mut nanosecond_and_second_buf =
-                                [0u8; TimestampSize::Timestamp64 as usize];
+                                [0u8; DateTimeSize::DateTime64 as usize];
                             buf_reader
                                 .read_exact(&mut nanosecond_and_second_buf)
                                 .or(Err(()))?;
@@ -269,12 +268,12 @@ impl Body {
                             let value = u64::from_le_bytes(nanosecond_and_second_buf);
                             let nanosecond = value >> 34;
                             let second = value & 0x00_00_00_03_ff_ff_ff_ff;
-                            Ok(Self::Timestamp(
+                            Ok(Self::DateTime(
                                 OffsetDateTime::from_unix_timestamp(second as i64)
                                     + (nanosecond as u32).nanoseconds(),
                             ))
                         }
-                        Ok(TimestampSize::Timestamp96) => {
+                        Ok(DateTimeSize::DateTime96) => {
                             let mut nanosecond_buf = [0u8; 4];
                             buf_reader.read_exact(&mut nanosecond_buf).or(Err(()))?;
                             let nanosecond = u32::from_le_bytes(nanosecond_buf);
@@ -283,7 +282,7 @@ impl Body {
                             buf_reader.read_exact(&mut unix_timestamp_buf).or(Err(()))?;
                             let unix_timestamp = i64::from_le_bytes(unix_timestamp_buf);
 
-                            Ok(Self::Timestamp(
+                            Ok(Self::DateTime(
                                 OffsetDateTime::from_unix_timestamp(unix_timestamp)
                                     + nanosecond.nanoseconds(),
                             ))
@@ -315,20 +314,20 @@ impl Body {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-enum TimestampSize {
-    Timestamp32 = 4,
-    Timestamp64 = 8,
-    Timestamp96 = 12,
+enum DateTimeSize {
+    DateTime32 = 4,
+    DateTime64 = 8,
+    DateTime96 = 12,
 }
 
-impl TryFrom<u8> for TimestampSize {
+impl TryFrom<u8> for DateTimeSize {
     type Error = ();
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            v if v == TimestampSize::Timestamp32 as u8 => Ok(TimestampSize::Timestamp32),
-            v if v == TimestampSize::Timestamp64 as u8 => Ok(TimestampSize::Timestamp64),
-            v if v == TimestampSize::Timestamp96 as u8 => Ok(TimestampSize::Timestamp96),
+            v if v == Self::DateTime32 as u8 => Ok(Self::DateTime32),
+            v if v == Self::DateTime64 as u8 => Ok(Self::DateTime64),
+            v if v == Self::DateTime96 as u8 => Ok(Self::DateTime96),
             _ => Err(()),
         }
     }
@@ -336,7 +335,7 @@ impl TryFrom<u8> for TimestampSize {
 
 #[cfg(test)]
 mod tests {
-    use super::{Body, TimestampSize};
+    use super::{Body, DateTimeSize};
     use crate::{binary::Binary, header::Header};
     use bigdecimal::BigDecimal;
     use core::panic;
@@ -578,25 +577,25 @@ mod tests {
     }
 
     #[test]
-    fn serialize_timestamp32() {
+    fn serialize_datetime32() {
         assert_eq!(
-            Body::Timestamp(OffsetDateTime::unix_epoch()).serialize(),
-            [TimestampSize::Timestamp32 as u8, 0, 0, 0, 0]
+            Body::DateTime(OffsetDateTime::unix_epoch()).serialize(),
+            [DateTimeSize::DateTime32 as u8, 0, 0, 0, 0]
         );
         assert_eq!(
-            Body::Timestamp(OffsetDateTime::from_unix_timestamp(u32::MAX as i64)).serialize(),
-            [TimestampSize::Timestamp32 as u8, 255, 255, 255, 255]
+            Body::DateTime(OffsetDateTime::from_unix_timestamp(u32::MAX as i64)).serialize(),
+            [DateTimeSize::DateTime32 as u8, 255, 255, 255, 255]
         );
     }
 
     #[test]
-    fn serialize_timestamp64() {
+    fn serialize_datetime64() {
         assert_eq!(
-            Body::Timestamp(OffsetDateTime::unix_epoch() + 1.nanoseconds()).serialize(),
-            [TimestampSize::Timestamp64 as u8, 0, 0, 0, 0, 4, 0, 0, 0]
+            Body::DateTime(OffsetDateTime::unix_epoch() + 1.nanoseconds()).serialize(),
+            [DateTimeSize::DateTime64 as u8, 0, 0, 0, 0, 4, 0, 0, 0]
         );
         assert_eq!(
-            Body::Timestamp(
+            Body::DateTime(
                 OffsetDateTime::from_unix_timestamp((1 << 34) - 1)
                     + 999.milliseconds()
                     + 999.microseconds()
@@ -604,7 +603,7 @@ mod tests {
             )
             .serialize(),
             [
-                TimestampSize::Timestamp64 as u8,
+                DateTimeSize::DateTime64 as u8,
                 255,
                 255,
                 255,
@@ -618,9 +617,9 @@ mod tests {
     }
 
     #[test]
-    fn serialize_timestamp96() {
+    fn serialize_datetime96() {
         assert_eq!(
-            Body::Timestamp(
+            Body::DateTime(
                 OffsetDateTime::from_unix_timestamp((1 << 34) - 1)
                     + 999.milliseconds()
                     + 999.microseconds()
@@ -629,7 +628,7 @@ mod tests {
             )
             .serialize(),
             [
-                TimestampSize::Timestamp96 as u8,
+                DateTimeSize::DateTime96 as u8,
                 0,
                 0,
                 0,
@@ -645,9 +644,9 @@ mod tests {
             ]
         );
         assert_eq!(
-            Body::Timestamp(OffsetDateTime::from_unix_timestamp(1 << 34)).serialize(),
+            Body::DateTime(OffsetDateTime::from_unix_timestamp(1 << 34)).serialize(),
             [
-                TimestampSize::Timestamp96 as u8,
+                DateTimeSize::DateTime96 as u8,
                 0,
                 0,
                 0,
@@ -663,9 +662,9 @@ mod tests {
             ]
         );
         assert_eq!(
-            Body::Timestamp(OffsetDateTime::unix_epoch() - 1.nanoseconds()).serialize(),
+            Body::DateTime(OffsetDateTime::unix_epoch() - 1.nanoseconds()).serialize(),
             [
-                TimestampSize::Timestamp96 as u8,
+                DateTimeSize::DateTime96 as u8,
                 255,
                 201,
                 154,
@@ -1512,20 +1511,20 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_timestamp32() {
-        let body = Body::Timestamp(OffsetDateTime::unix_epoch());
+    fn deserialize_datetime32() {
+        let body = Body::DateTime(OffsetDateTime::unix_epoch());
         assert_eq!(
             super::Body::deserialize(
-                &Header::Timestamp,
+                &Header::DateTime,
                 &mut BufReader::new(body.serialize().as_slice())
             ),
             Ok(body)
         );
 
-        let body = Body::Timestamp(OffsetDateTime::from_unix_timestamp(u32::MAX as i64));
+        let body = Body::DateTime(OffsetDateTime::from_unix_timestamp(u32::MAX as i64));
         assert_eq!(
             super::Body::deserialize(
-                &Header::Timestamp,
+                &Header::DateTime,
                 &mut BufReader::new(body.serialize().as_slice())
             ),
             Ok(body)
@@ -1533,17 +1532,17 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_timestamp64() {
-        let body = Body::Timestamp(OffsetDateTime::unix_epoch() + 1.nanoseconds());
+    fn deserialize_datetime64() {
+        let body = Body::DateTime(OffsetDateTime::unix_epoch() + 1.nanoseconds());
         assert_eq!(
             super::Body::deserialize(
-                &Header::Timestamp,
+                &Header::DateTime,
                 &mut BufReader::new(body.serialize().as_slice())
             ),
             Ok(body)
         );
 
-        let body = Body::Timestamp(
+        let body = Body::DateTime(
             OffsetDateTime::from_unix_timestamp((1 << 34) - 1)
                 + 999.milliseconds()
                 + 999.microseconds()
@@ -1551,7 +1550,7 @@ mod tests {
         );
         assert_eq!(
             super::Body::deserialize(
-                &Header::Timestamp,
+                &Header::DateTime,
                 &mut BufReader::new(body.serialize().as_slice())
             ),
             Ok(body)
@@ -1559,8 +1558,8 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_timestamp96() {
-        let body = Body::Timestamp(
+    fn deserialize_datetime96() {
+        let body = Body::DateTime(
             OffsetDateTime::from_unix_timestamp((1 << 34) - 1)
                 + 999.milliseconds()
                 + 999.microseconds()
@@ -1569,25 +1568,25 @@ mod tests {
         );
         assert_eq!(
             super::Body::deserialize(
-                &Header::Timestamp,
+                &Header::DateTime,
                 &mut BufReader::new(body.serialize().as_slice())
             ),
             Ok(body)
         );
 
-        let body = Body::Timestamp(OffsetDateTime::from_unix_timestamp(1 << 34));
+        let body = Body::DateTime(OffsetDateTime::from_unix_timestamp(1 << 34));
         assert_eq!(
             super::Body::deserialize(
-                &Header::Timestamp,
+                &Header::DateTime,
                 &mut BufReader::new(body.serialize().as_slice())
             ),
             Ok(body)
         );
 
-        let body = Body::Timestamp(OffsetDateTime::unix_epoch() - 1.nanoseconds());
+        let body = Body::DateTime(OffsetDateTime::unix_epoch() - 1.nanoseconds());
         assert_eq!(
             super::Body::deserialize(
-                &Header::Timestamp,
+                &Header::DateTime,
                 &mut BufReader::new(body.serialize().as_slice())
             ),
             Ok(body)

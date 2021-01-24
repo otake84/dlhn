@@ -39,7 +39,7 @@ fn validate(header: &Header, body: &Body) -> bool {
         (Header::DynamicMap(inner_header), Body::DynamicMap(inner_body)) => inner_body
             .iter()
             .all(|(_key, value)| validate(inner_header, value)),
-        (Header::Timestamp, Body::Timestamp(_)) => true,
+        (Header::DateTime, Body::DateTime(_)) => true,
         (Header::Date, Body::Date(_)) => true,
         _ => false,
     }
@@ -185,18 +185,21 @@ mod tests {
                 body
             })
         ));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
 
-        let header = Header::Timestamp;
+        let header = Header::DateTime;
         assert!(super::validate(
             &header,
-            &Body::Timestamp(OffsetDateTime::unix_epoch())
+            &Body::DateTime(OffsetDateTime::unix_epoch())
         ));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::Date;
         assert!(super::validate(
             &header,
             &Body::Date(Date::try_from_yo(2000, 1).unwrap())
         ));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
     }
 
     #[test]

@@ -23,7 +23,7 @@ pub enum Header {
     Array(Box<Header>),
     Map(IndexMap<String, Header>),
     DynamicMap(Box<Header>),
-    Timestamp,
+    DateTime,
     Date,
 }
 
@@ -47,7 +47,7 @@ impl Header {
     const ARRAY_CODE: u8 = 16;
     const MAP_CODE: u8 = 17;
     const DYNAMIC_MAP_CODE: u8 = 18;
-    const TIMESTAMP_CODE: u8 = 19;
+    const DATETIME_CODE: u8 = 19;
     const DATE_CODE: u8 = 20;
 
     pub const fn body_size(&self) -> BodySize {
@@ -71,7 +71,7 @@ impl Header {
             Self::Array(_) => BodySize::Variable,
             Self::Map(_) => BodySize::Variable,
             Self::DynamicMap(_) => BodySize::Variable,
-            Self::Timestamp => BodySize::Variable,
+            Self::DateTime => BodySize::Variable,
             Self::Date => BodySize::Variable,
         }
     }
@@ -137,8 +137,8 @@ impl Header {
             Self::DynamicMap(inner) => {
                 vec![vec![Self::DYNAMIC_MAP_CODE], inner.serialize()].concat()
             }
-            Self::Timestamp => {
-                vec![Self::Timestamp.code()]
+            Self::DateTime => {
+                vec![Self::DateTime.code()]
             }
             Self::Date => {
                 vec![Self::Date.code()]
@@ -189,7 +189,7 @@ impl Header {
                 let inner = Self::deserialize(buf_reader)?;
                 Ok(Self::DynamicMap(Box::new(inner)))
             }
-            Self::TIMESTAMP_CODE => Ok(Self::Timestamp),
+            Self::DATETIME_CODE => Ok(Self::DateTime),
             Self::DATE_CODE => Ok(Self::Date),
             _ => Err(()),
         }
@@ -216,7 +216,7 @@ impl Header {
             Self::Array(_) => Self::ARRAY_CODE,
             Self::Map(_) => Self::MAP_CODE,
             Self::DynamicMap(_) => Self::DYNAMIC_MAP_CODE,
-            Self::Timestamp => Self::TIMESTAMP_CODE,
+            Self::DateTime => Self::DATETIME_CODE,
             Self::Date => Self::DATE_CODE,
         }
     }
@@ -344,8 +344,8 @@ mod tests {
             )))))
         );
         assert_eq!(
-            Header::deserialize(&mut BufReader::new([Header::Timestamp.code()].as_ref())),
-            Ok(Header::Timestamp)
+            Header::deserialize(&mut BufReader::new([Header::DateTime.code()].as_ref())),
+            Ok(Header::DateTime)
         );
         assert_eq!(
             Header::deserialize(&mut BufReader::new([Header::Date.code()].as_ref())),
