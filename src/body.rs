@@ -35,8 +35,8 @@ pub enum Body {
     Array(Vec<Body>),
     Map(IndexMap<String, Body>),
     DynamicMap(HashMap<String, Body>),
-    DateTime(OffsetDateTime),
     Date(Date),
+    DateTime(OffsetDateTime),
 }
 
 impl Body {
@@ -99,6 +99,11 @@ impl Body {
                     .collect(),
             ]
             .concat(),
+            Self::Date(v) => [
+                (v.year() - Self::DATE_OFFSET).encode_var_vec(),
+                (v.ordinal() - 1).encode_var_vec(),
+            ]
+            .concat(),
             Self::DateTime(v) => {
                 let kind_size = 1;
 
@@ -129,11 +134,6 @@ impl Body {
                     buf
                 }
             }
-            Self::Date(v) => [
-                (v.year() - Self::DATE_OFFSET).encode_var_vec(),
-                (v.ordinal() - 1).encode_var_vec(),
-            ]
-            .concat(),
         }
     }
 
@@ -244,6 +244,13 @@ impl Body {
                     }
                     Ok(Self::DynamicMap(body))
                 }
+                Header::Date => {
+                    let year = buf_reader.read_varint::<i32>().or(Err(()))? + Self::DATE_OFFSET;
+                    let ordinal = buf_reader.read_varint::<u16>().or(Err(()))? + 1;
+                    let date = Date::try_from_yo(year, ordinal).or(Err(()))?;
+
+                    Ok(Self::Date(date))
+                }
                 Header::DateTime => {
                     let mut kind_buf = [0u8; 1];
                     buf_reader.read_exact(&mut kind_buf).or(Err(()))?;
@@ -289,13 +296,6 @@ impl Body {
                         }
                         Err(_) => Err(()),
                     }
-                }
-                Header::Date => {
-                    let year = buf_reader.read_varint::<i32>().or(Err(()))? + Self::DATE_OFFSET;
-                    let ordinal = buf_reader.read_varint::<u16>().or(Err(()))? + 1;
-                    let date = Date::try_from_yo(year, ordinal).or(Err(()))?;
-
-                    Ok(Self::Date(date))
                 }
                 _ => Err(()),
             }
@@ -577,6 +577,34 @@ mod tests {
     }
 
     #[test]
+    fn serialize_date() {
+        assert_eq!(
+            Body::Date(Date::try_from_yo(2000, 1).unwrap()).serialize(),
+            [0, 0]
+        );
+        assert_eq!(
+            Body::Date(Date::try_from_yo(1936, 1).unwrap()).serialize(),
+            [127, 0]
+        );
+        assert_eq!(
+            Body::Date(Date::try_from_yo(1935, 1).unwrap()).serialize(),
+            [129, 1, 0]
+        );
+        assert_eq!(
+            Body::Date(Date::try_from_yo(2063, 128).unwrap()).serialize(),
+            [126, 127]
+        );
+        assert_eq!(
+            Body::Date(Date::try_from_yo(2064, 129).unwrap()).serialize(),
+            [128, 1, 128, 1]
+        );
+        assert_eq!(
+            Body::Date(Date::try_from_yo(2000, 366).unwrap()).serialize(),
+            [0, 237, 2]
+        );
+    }
+
+    #[test]
     fn serialize_datetime32() {
         assert_eq!(
             Body::DateTime(OffsetDateTime::unix_epoch()).serialize(),
@@ -678,34 +706,6 @@ mod tests {
                 255,
                 255
             ]
-        );
-    }
-
-    #[test]
-    fn serialize_date() {
-        assert_eq!(
-            Body::Date(Date::try_from_yo(2000, 1).unwrap()).serialize(),
-            [0, 0]
-        );
-        assert_eq!(
-            Body::Date(Date::try_from_yo(1936, 1).unwrap()).serialize(),
-            [127, 0]
-        );
-        assert_eq!(
-            Body::Date(Date::try_from_yo(1935, 1).unwrap()).serialize(),
-            [129, 1, 0]
-        );
-        assert_eq!(
-            Body::Date(Date::try_from_yo(2063, 128).unwrap()).serialize(),
-            [126, 127]
-        );
-        assert_eq!(
-            Body::Date(Date::try_from_yo(2064, 129).unwrap()).serialize(),
-            [128, 1, 128, 1]
-        );
-        assert_eq!(
-            Body::Date(Date::try_from_yo(2000, 366).unwrap()).serialize(),
-            [0, 237, 2]
         );
     }
 
@@ -1511,6 +1511,63 @@ mod tests {
     }
 
     #[test]
+    fn deserialize_date() {
+        let body = Body::Date(Date::try_from_yo(2000, 1).unwrap());
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::Date,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::Date(Date::try_from_yo(1936, 1).unwrap());
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::Date,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::Date(Date::try_from_yo(1935, 1).unwrap());
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::Date,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::Date(Date::try_from_yo(2063, 128).unwrap());
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::Date,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::Date(Date::try_from_yo(2064, 129).unwrap());
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::Date,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+
+        let body = Body::Date(Date::try_from_yo(2000, 366).unwrap());
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::Date,
+                &mut BufReader::new(body.serialize().as_slice())
+            ),
+            Ok(body)
+        );
+    }
+
+    #[test]
     fn deserialize_datetime32() {
         let body = Body::DateTime(OffsetDateTime::unix_epoch());
         assert_eq!(
@@ -1587,63 +1644,6 @@ mod tests {
         assert_eq!(
             super::Body::deserialize(
                 &Header::DateTime,
-                &mut BufReader::new(body.serialize().as_slice())
-            ),
-            Ok(body)
-        );
-    }
-
-    #[test]
-    fn deserialize_date() {
-        let body = Body::Date(Date::try_from_yo(2000, 1).unwrap());
-        assert_eq!(
-            super::Body::deserialize(
-                &Header::Date,
-                &mut BufReader::new(body.serialize().as_slice())
-            ),
-            Ok(body)
-        );
-
-        let body = Body::Date(Date::try_from_yo(1936, 1).unwrap());
-        assert_eq!(
-            super::Body::deserialize(
-                &Header::Date,
-                &mut BufReader::new(body.serialize().as_slice())
-            ),
-            Ok(body)
-        );
-
-        let body = Body::Date(Date::try_from_yo(1935, 1).unwrap());
-        assert_eq!(
-            super::Body::deserialize(
-                &Header::Date,
-                &mut BufReader::new(body.serialize().as_slice())
-            ),
-            Ok(body)
-        );
-
-        let body = Body::Date(Date::try_from_yo(2063, 128).unwrap());
-        assert_eq!(
-            super::Body::deserialize(
-                &Header::Date,
-                &mut BufReader::new(body.serialize().as_slice())
-            ),
-            Ok(body)
-        );
-
-        let body = Body::Date(Date::try_from_yo(2064, 129).unwrap());
-        assert_eq!(
-            super::Body::deserialize(
-                &Header::Date,
-                &mut BufReader::new(body.serialize().as_slice())
-            ),
-            Ok(body)
-        );
-
-        let body = Body::Date(Date::try_from_yo(2000, 366).unwrap());
-        assert_eq!(
-            super::Body::deserialize(
-                &Header::Date,
                 &mut BufReader::new(body.serialize().as_slice())
             ),
             Ok(body)

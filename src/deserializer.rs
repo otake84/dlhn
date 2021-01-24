@@ -736,19 +736,6 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_datetime() {
-        let body = OffsetDateTime::unix_epoch();
-        assert_eq!(
-            super::deserialize(
-                serialize(&Header::DateTime, &Body::DateTime(body))
-                    .unwrap()
-                    .as_slice()
-            ),
-            Ok((Header::DateTime, Body::DateTime(body)))
-        );
-    }
-
-    #[test]
     fn deserialize_date() {
         let body = Date::try_from_yo(2000, 1).unwrap();
         assert_eq!(
@@ -758,6 +745,19 @@ mod tests {
                     .as_slice()
             ),
             Ok((Header::Date, Body::Date(body)))
+        );
+    }
+
+    #[test]
+    fn deserialize_datetime() {
+        let body = OffsetDateTime::unix_epoch();
+        assert_eq!(
+            super::deserialize(
+                serialize(&Header::DateTime, &Body::DateTime(body))
+                    .unwrap()
+                    .as_slice()
+            ),
+            Ok((Header::DateTime, Body::DateTime(body)))
         );
     }
 }
