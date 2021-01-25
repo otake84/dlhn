@@ -40,7 +40,8 @@ pub enum Body {
 }
 
 impl Body {
-    const DATE_OFFSET: i32 = 2000;
+    const DATE_YEAR_OFFSET: i32 = 2000;
+    const DATE_ORDINAL_OFFSET: u16 = 1;
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
@@ -100,8 +101,8 @@ impl Body {
             ]
             .concat(),
             Self::Date(v) => [
-                (v.year() - Self::DATE_OFFSET).encode_var_vec(),
-                (v.ordinal() - 1).encode_var_vec(),
+                (v.year() - Self::DATE_YEAR_OFFSET).encode_var_vec(),
+                (v.ordinal() - Self::DATE_ORDINAL_OFFSET).encode_var_vec(),
             ]
             .concat(),
             Self::DateTime(v) => {
@@ -245,8 +246,8 @@ impl Body {
                     Ok(Self::DynamicMap(body))
                 }
                 Header::Date => {
-                    let year = buf_reader.read_varint::<i32>().or(Err(()))? + Self::DATE_OFFSET;
-                    let ordinal = buf_reader.read_varint::<u16>().or(Err(()))? + 1;
+                    let year = buf_reader.read_varint::<i32>().or(Err(()))? + Self::DATE_YEAR_OFFSET;
+                    let ordinal = buf_reader.read_varint::<u16>().or(Err(()))? + Self::DATE_ORDINAL_OFFSET;
                     let date = Date::try_from_yo(year, ordinal).or(Err(()))?;
 
                     Ok(Self::Date(date))
