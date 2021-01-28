@@ -16,6 +16,7 @@ pub enum Header {
     Int64,
     Float32,
     Float64,
+    BigUInt,
     BigInt,
     BigDecimal,
     String,
@@ -40,15 +41,16 @@ impl Header {
     const INT64_CODE: u8 = 9;
     const FLOAT32_CODE: u8 = 10;
     const FLOAT64_CODE: u8 = 11;
-    const BIG_INT_CODE: u8 = 12;
-    const BIG_DECIMAL_CODE: u8 = 13;
-    const STRING_CODE: u8 = 14;
-    const BINARY_CODE: u8 = 15;
-    const ARRAY_CODE: u8 = 16;
-    const MAP_CODE: u8 = 17;
-    const DYNAMIC_MAP_CODE: u8 = 18;
-    const DATE_CODE: u8 = 19;
-    const DATETIME_CODE: u8 = 20;
+    const BIG_UINT_CODE: u8 = 12;
+    const BIG_INT_CODE: u8 = 13;
+    const BIG_DECIMAL_CODE: u8 = 14;
+    const STRING_CODE: u8 = 15;
+    const BINARY_CODE: u8 = 16;
+    const ARRAY_CODE: u8 = 17;
+    const MAP_CODE: u8 = 18;
+    const DYNAMIC_MAP_CODE: u8 = 19;
+    const DATE_CODE: u8 = 20;
+    const DATETIME_CODE: u8 = 21;
 
     pub const fn body_size(&self) -> BodySize {
         match self {
@@ -64,6 +66,7 @@ impl Header {
             Self::Int64 => BodySize::Variable,
             Self::Float32 => BodySize::Fix(4),
             Self::Float64 => BodySize::Fix(8),
+            Self::BigUInt => BodySize::Variable,
             Self::BigInt => BodySize::Variable,
             Self::BigDecimal => BodySize::Variable,
             Self::String => BodySize::Variable,
@@ -111,6 +114,9 @@ impl Header {
             }
             Self::Float64 => {
                 vec![Self::Float64.code()]
+            }
+            Self::BigUInt => {
+                vec![Self::BigUInt.code()]
             }
             Self::BigInt => {
                 vec![Self::BigInt.code()]
@@ -166,6 +172,7 @@ impl Header {
             Self::INT64_CODE => Ok(Self::Int64),
             Self::FLOAT32_CODE => Ok(Self::Float32),
             Self::FLOAT64_CODE => Ok(Self::Float64),
+            Self::BIG_UINT_CODE => Ok(Self::BigUInt),
             Self::BIG_INT_CODE => Ok(Self::BigInt),
             Self::BIG_DECIMAL_CODE => Ok(Self::BigDecimal),
             Self::STRING_CODE => Ok(Self::String),
@@ -209,6 +216,7 @@ impl Header {
             Self::Int64 => Self::INT64_CODE,
             Self::Float32 => Self::FLOAT32_CODE,
             Self::Float64 => Self::FLOAT64_CODE,
+            Self::BigUInt => Self::BIG_UINT_CODE,
             Self::BigInt => Self::BIG_INT_CODE,
             Self::BigDecimal => Self::BIG_DECIMAL_CODE,
             Self::String => Self::STRING_CODE,
@@ -297,6 +305,10 @@ mod tests {
         assert_eq!(
             Header::deserialize(&mut BufReader::new(Header::Float64.serialize().as_slice())),
             Ok(Header::Float64)
+        );
+        assert_eq!(
+            Header::deserialize(&mut BufReader::new(Header::BigUInt.serialize().as_slice())),
+            Ok(Header::BigUInt)
         );
         assert_eq!(
             Header::deserialize(&mut BufReader::new(Header::BigInt.serialize().as_slice())),

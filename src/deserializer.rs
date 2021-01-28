@@ -15,7 +15,7 @@ mod tests {
     use core::panic;
     use indexmap::*;
     use integer_encoding::VarInt;
-    use num_bigint::BigInt;
+    use num_bigint::{BigInt, BigUint};
     use std::{collections::HashMap, iter};
     use time::{Date, OffsetDateTime};
 
@@ -420,6 +420,32 @@ mod tests {
             ),
             Ok((Header::Float64, Body::Float64(-f64::INFINITY)))
         );
+    }
+
+    #[test]
+    fn deserialize_biguint() {
+        vec![
+            BigUint::from(0u8),
+            BigUint::from(1u8),
+            BigUint::from(u8::MAX),
+            BigUint::from(u8::MAX) + 1u8,
+            BigUint::from(u16::MAX),
+            BigUint::from(u16::MAX) + 1u8,
+            BigUint::from(u32::MAX),
+            BigUint::from(u32::MAX) + 1u8,
+            BigUint::from(u64::MAX),
+            BigUint::from(u64::MAX) + 1u8,
+            BigUint::from(u128::MAX),
+            BigUint::from(u128::MAX) + 1u8,
+        ]
+        .into_iter()
+        .map(Body::BigUInt)
+        .for_each(|body| {
+            assert_eq!(
+                super::deserialize(serialize(&Header::BigUInt, &body).unwrap().as_slice()),
+                Ok((Header::BigUInt, body))
+            );
+        });
     }
 
     #[test]

@@ -5,7 +5,7 @@ use crate::{
 use bigdecimal::BigDecimal;
 use indexmap::IndexMap;
 use integer_encoding::{VarInt, VarIntReader};
-use num_bigint::BigInt;
+use num_bigint::{BigInt, BigUint};
 use num_traits::Zero;
 use std::{
     collections::HashMap,
@@ -28,6 +28,7 @@ pub enum Body {
     Int64(i64),
     Float32(f32),
     Float64(f64),
+    BigUInt(BigUint),
     BigInt(BigInt),
     BigDecimal(BigDecimal),
     String(String),
@@ -69,6 +70,14 @@ impl Body {
             Self::Int64(v) => v.encode_var_vec(),
             Self::Float32(v) => v.to_le_bytes().to_vec(),
             Self::Float64(v) => v.to_le_bytes().to_vec(),
+            Self::BigUInt(v) => {
+                if v.is_zero() {
+                    vec![0]
+                } else {
+                    let data = v.to_bytes_le();
+                    [data.len().encode_var_vec(), data].concat()
+                }
+            }
             Self::BigInt(v) => {
                 if v.is_zero() {
                     vec![0]
@@ -193,6 +202,11 @@ impl Body {
                 Header::Int16 => buf_reader.read_varint::<i16>().map(Self::Int16).or(Err(())),
                 Header::Int32 => buf_reader.read_varint::<i32>().map(Self::Int32).or(Err(())),
                 Header::Int64 => buf_reader.read_varint::<i64>().map(Self::Int64).or(Err(())),
+                Header::BigUInt => {
+                    let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
+                    buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                    Ok(Self::BigUInt(BigUint::from_bytes_le(body_buf.as_slice())))
+                }
                 Header::BigInt => {
                     let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
                     buf_reader.read_exact(&mut body_buf).or(Err(()))?;
@@ -246,8 +260,10 @@ impl Body {
                     Ok(Self::DynamicMap(body))
                 }
                 Header::Date => {
-                    let year = buf_reader.read_varint::<i32>().or(Err(()))? + Self::DATE_YEAR_OFFSET;
-                    let ordinal = buf_reader.read_varint::<u16>().or(Err(()))? + Self::DATE_ORDINAL_OFFSET;
+                    let year =
+                        buf_reader.read_varint::<i32>().or(Err(()))? + Self::DATE_YEAR_OFFSET;
+                    let ordinal =
+                        buf_reader.read_varint::<u16>().or(Err(()))? + Self::DATE_ORDINAL_OFFSET;
                     let date = Date::try_from_yo(year, ordinal).or(Err(()))?;
 
                     Ok(Self::Date(date))
@@ -342,7 +358,7 @@ mod tests {
     use core::panic;
     use indexmap::*;
     use integer_encoding::VarInt;
-    use num_bigint::BigInt;
+    use num_bigint::{BigInt, BigUint};
     use std::{collections::HashMap, io::BufReader};
     use time::{Date, NumericalDuration, OffsetDateTime};
 
@@ -421,6 +437,44 @@ mod tests {
         assert_eq!(
             Body::Int64(i64::MAX).serialize(),
             [254, 255, 255, 255, 255, 255, 255, 255, 255, 1]
+        );
+    }
+
+    #[test]
+    fn serialize_biguint() {
+        assert_eq!(Body::BigUInt(BigUint::from(0u8)).serialize(), [0]);
+        assert_eq!(Body::BigUInt(BigUint::from(u8::MAX)).serialize(), [1, 255]);
+        assert_eq!(
+            Body::BigUInt(BigUint::from(u16::MAX)).serialize(),
+            [2, 255, 255]
+        );
+        assert_eq!(
+            Body::BigUInt(BigUint::from(u16::MAX) + 1u8).serialize(),
+            [3, 0, 0, 1]
+        );
+        assert_eq!(
+            Body::BigUInt(BigUint::from(u32::MAX)).serialize(),
+            [4, 255, 255, 255, 255]
+        );
+        assert_eq!(
+            Body::BigUInt(BigUint::from(u32::MAX) + 1u8).serialize(),
+            [5, 0, 0, 0, 0, 1]
+        );
+        assert_eq!(
+            Body::BigUInt(BigUint::from(u64::MAX)).serialize(),
+            [8, 255, 255, 255, 255, 255, 255, 255, 255]
+        );
+        assert_eq!(
+            Body::BigUInt(BigUint::from(u64::MAX) + 1u8).serialize(),
+            [9, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        );
+        assert_eq!(
+            Body::BigUInt(BigUint::from(u128::MAX)).serialize(),
+            [16, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]
+        );
+        assert_eq!(
+            Body::BigUInt(BigUint::from(u128::MAX) + 1u8).serialize(),
+            [17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
         );
     }
 
@@ -1105,6 +1159,35 @@ mod tests {
             ),
             Ok(Body::Float64(-f64::INFINITY))
         );
+    }
+
+    #[test]
+    fn deserialize_biguint() {
+        vec![
+            BigUint::from(0u8),
+            BigUint::from(1u8),
+            BigUint::from(u8::MAX),
+            BigUint::from(u8::MAX) + 1u8,
+            BigUint::from(u16::MAX),
+            BigUint::from(u16::MAX) + 1u8,
+            BigUint::from(u32::MAX),
+            BigUint::from(u32::MAX) + 1u8,
+            BigUint::from(u64::MAX),
+            BigUint::from(u64::MAX) + 1u8,
+            BigUint::from(u128::MAX),
+            BigUint::from(u128::MAX) + 1u8,
+        ]
+        .into_iter()
+        .map(Body::BigUInt)
+        .for_each(|body| {
+            assert_eq!(
+                super::Body::deserialize(
+                    &Header::BigUInt,
+                    &mut BufReader::new(body.serialize().as_slice())
+                ),
+                Ok(body)
+            );
+        });
     }
 
     #[test]

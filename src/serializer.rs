@@ -20,6 +20,7 @@ fn validate(header: &Header, body: &Body) -> bool {
         (Header::Int64, Body::Int64(_)) => true,
         (Header::Float32, Body::Float32(_)) => true,
         (Header::Float64, Body::Float64(_)) => true,
+        (Header::BigUInt, Body::BigUInt(_)) => true,
         (Header::BigInt, Body::BigInt(_)) => true,
         (Header::BigDecimal, Body::BigDecimal(_)) => true,
         (Header::String, Body::String(_)) => true,
@@ -60,7 +61,7 @@ mod tests {
     use crate::{binary::Binary, body::Body, header::Header};
     use bigdecimal::BigDecimal;
     use indexmap::*;
-    use num_bigint::BigInt;
+    use num_bigint::{BigInt, BigUint};
     use std::collections::HashMap;
     use time::{Date, OffsetDateTime};
 
@@ -119,6 +120,10 @@ mod tests {
 
         let header = Header::Float64;
         assert!(super::validate(&header, &Body::Float64(0f64)));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::BigUInt;
+        assert!(super::validate(&header, &Body::BigUInt(BigUint::from(0u8))));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::BigInt;
