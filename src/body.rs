@@ -60,16 +60,16 @@ impl Body {
                     vec![0]
                 }
             }
-            Self::UInt8(v) => v.to_le_bytes().to_vec(),
+            Self::UInt8(v) => Vec::from(v.to_le_bytes()),
             Self::UInt16(v) => v.encode_var_vec(),
             Self::UInt32(v) => v.encode_var_vec(),
             Self::UInt64(v) => v.encode_var_vec(),
-            Self::Int8(v) => v.to_le_bytes().to_vec(),
+            Self::Int8(v) => Vec::from(v.to_le_bytes()),
             Self::Int16(v) => v.encode_var_vec(),
             Self::Int32(v) => v.encode_var_vec(),
             Self::Int64(v) => v.encode_var_vec(),
-            Self::Float32(v) => v.to_le_bytes().to_vec(),
-            Self::Float64(v) => v.to_le_bytes().to_vec(),
+            Self::Float32(v) => Vec::from(v.to_le_bytes()),
+            Self::Float64(v) => Vec::from(v.to_le_bytes()),
             Self::BigUInt(v) => {
                 if v.is_zero() {
                     vec![0]
