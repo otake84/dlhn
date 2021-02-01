@@ -1,4 +1,4 @@
-use crate::serialize_string;
+use crate::{deserialize_string, serialize_string};
 use indexmap::IndexMap;
 use integer_encoding::{VarInt, VarIntReader};
 use std::io::{BufReader, Read};
@@ -52,33 +52,6 @@ impl Header {
     const DYNAMIC_MAP_CODE: u8 = 19;
     const DATE_CODE: u8 = 20;
     const DATETIME_CODE: u8 = 21;
-
-    pub const fn body_size(&self) -> BodySize {
-        match self {
-            Self::Optional(_) => BodySize::Variable,
-            Self::Boolean => BodySize::Fix(1),
-            Self::UInt8 => BodySize::Fix(1),
-            Self::UInt16 => BodySize::Variable,
-            Self::UInt32 => BodySize::Variable,
-            Self::UInt64 => BodySize::Variable,
-            Self::Int8 => BodySize::Fix(1),
-            Self::Int16 => BodySize::Variable,
-            Self::Int32 => BodySize::Variable,
-            Self::Int64 => BodySize::Variable,
-            Self::Float32 => BodySize::Fix(4),
-            Self::Float64 => BodySize::Fix(8),
-            Self::BigUInt => BodySize::Variable,
-            Self::BigInt => BodySize::Variable,
-            Self::BigDecimal => BodySize::Variable,
-            Self::String => BodySize::Variable,
-            Self::Binary => BodySize::Variable,
-            Self::Array(_) => BodySize::Variable,
-            Self::Map(_) => BodySize::Variable,
-            Self::DynamicMap(_) => BodySize::Variable,
-            Self::Date => BodySize::Variable,
-            Self::DateTime => BodySize::Variable,
-        }
-    }
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
@@ -197,7 +170,7 @@ impl Header {
                 let mut index_map: IndexMap<String, Header> = IndexMap::with_capacity(size);
                 for _ in 0..size {
                     index_map.insert(
-                        Self::deserialize_map_key(buf_reader)?,
+                        deserialize_string(buf_reader)?,
                         Self::deserialize(buf_reader)?,
                     );
                 }
@@ -239,18 +212,6 @@ impl Header {
             Self::DateTime => Self::DATETIME_CODE,
         }
     }
-
-    fn deserialize_map_key<R: Read>(buf_reader: &mut BufReader<R>) -> Result<String, ()> {
-        let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
-        buf_reader.read_exact(&mut body_buf).or(Err(()))?;
-        String::from_utf8(body_buf).or(Err(()))
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum BodySize {
-    Fix(usize),
-    Variable,
 }
 
 #[cfg(test)]

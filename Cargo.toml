@@ -20,3 +20,7 @@ iai = "0.1.1"
 [[bench]]
 name = "my_benchmark"
 harness = false
+
+[[bench]]
+name = "deserialize_benchmark"
+harness = false
