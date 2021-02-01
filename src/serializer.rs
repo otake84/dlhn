@@ -29,6 +29,10 @@ fn validate(header: &Header, body: &Body) -> bool {
             inner_body.iter().all(|v| validate(inner_header, v))
         }
         (Header::Map(inner_header), Body::Map(inner_body)) => {
+            if inner_header.len() != inner_body.len() {
+                return false;
+            }
+
             inner_body.iter().enumerate().all(|(i, v)| {
                 if let Some(h) = inner_header.get_index(i) {
                     validate(h.1, v.1)

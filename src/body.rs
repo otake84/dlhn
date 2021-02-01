@@ -74,46 +74,63 @@ impl Body {
                 if v.is_zero() {
                     vec![0]
                 } else {
-                    let data = v.to_bytes_le();
-                    [data.len().encode_var_vec(), data].concat()
+                    let mut data = v.to_bytes_le();
+                    let mut buf = data.len().encode_var_vec();
+                    buf.append(&mut data);
+                    buf
                 }
             }
             Self::BigInt(v) => {
                 if v.is_zero() {
                     vec![0]
                 } else {
-                    let data = v.to_signed_bytes_le();
-                    [data.len().encode_var_vec(), data].concat()
+                    let mut data = v.to_signed_bytes_le();
+                    let mut buf = data.len().encode_var_vec();
+                    buf.append(&mut data);
+                    buf
                 }
             }
             Self::BigDecimal(v) => {
                 if v.is_zero() {
                     vec![0]
                 } else {
-                    let (bigint, scale) = v.normalized().as_bigint_and_exponent();
-                    let data = bigint.to_signed_bytes_le();
-                    [data.len().encode_var_vec(), data, scale.encode_var_vec()].concat()
+                    let (bigint, scale) = v.normalized().into_bigint_and_exponent();
+                    let mut data = bigint.to_signed_bytes_le();
+                    let mut buf = data.len().encode_var_vec();
+                    buf.append(&mut data);
+                    buf.append(&mut scale.encode_var_vec());
+                    buf
                 }
             }
             Self::String(v) => Self::serialize_string(v),
-            Self::Binary(v) => [v.0.len().encode_var_vec().as_ref(), v.0.as_slice()].concat(),
-            Self::Array(v) => {
-                let items = v.iter().flat_map(|v| v.serialize()).collect::<Vec<u8>>();
-                [v.len().encode_var_vec(), items].concat()
+            Self::Binary(v) => {
+                let mut buf = v.0.len().encode_var_vec();
+                buf.extend(v.0.as_slice());
+                buf
             }
-            Self::Map(v) => v.iter().flat_map(|v| v.1.serialize()).collect::<Vec<u8>>(),
-            Self::DynamicMap(v) => [
-                v.len().encode_var_vec(),
-                v.iter()
-                    .flat_map(|(k, v)| [Self::serialize_string(k), v.serialize()].concat())
-                    .collect(),
-            ]
-            .concat(),
-            Self::Date(v) => [
-                (v.year() - Self::DATE_YEAR_OFFSET).encode_var_vec(),
-                (v.ordinal() - Self::DATE_ORDINAL_OFFSET).encode_var_vec(),
-            ]
-            .concat(),
+            Self::Array(v) => {
+                let mut buf = v.len().encode_var_vec();
+                v.iter().for_each(|v| buf.append(&mut v.serialize()));
+                buf
+            }
+            Self::Map(v) => {
+                let mut buf = Vec::new();
+                v.values().for_each(|v| buf.append(&mut v.serialize()));
+                buf
+            }
+            Self::DynamicMap(v) => {
+                let mut buf = v.len().encode_var_vec();
+                v.iter().for_each(|(k, v)| {
+                    buf.append(&mut Self::serialize_string(k));
+                    buf.append(&mut v.serialize());
+                });
+                buf
+            }
+            Self::Date(v) => {
+                let mut buf = (v.year() - Self::DATE_YEAR_OFFSET).encode_var_vec();
+                buf.append(&mut (v.ordinal() - Self::DATE_ORDINAL_OFFSET).encode_var_vec());
+                buf
+            }
             Self::DateTime(v) => {
                 let kind_size = 1;
 
@@ -320,7 +337,9 @@ impl Body {
     }
 
     fn serialize_string(v: &str) -> Vec<u8> {
-        [v.len().encode_var_vec().as_ref(), v.as_bytes()].concat()
+        let mut buf = v.len().encode_var_vec();
+        buf.extend(v.as_bytes());
+        buf
     }
 
     fn deserialize_string<R: Read>(buf_reader: &mut BufReader<R>) -> Result<String, ()> {

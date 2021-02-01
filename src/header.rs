@@ -81,7 +81,11 @@ impl Header {
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
-            Self::Optional(inner) => vec![vec![Self::OPTIONAL_CODE], inner.serialize()].concat(),
+            Self::Optional(inner) => {
+                let mut buf = vec![Self::OPTIONAL_CODE];
+                buf.append(&mut inner.serialize());
+                buf
+            }
             Self::Boolean => {
                 vec![Self::Boolean.code()]
             }
@@ -130,18 +134,24 @@ impl Header {
             Self::Binary => {
                 vec![Self::Binary.code()]
             }
-            Self::Array(inner) => vec![vec![Self::ARRAY_CODE], inner.serialize()].concat(),
-            Self::Map(inner) => vec![
-                vec![Self::MAP_CODE],
-                inner.len().encode_var_vec(),
-                inner
-                    .iter()
-                    .flat_map(|v| [Self::serialize_map_key(v.0), v.1.serialize()].concat())
-                    .collect(),
-            ]
-            .concat(),
+            Self::Array(inner) => {
+                let mut buf = vec![Self::ARRAY_CODE];
+                buf.append(&mut inner.serialize());
+                buf
+            }
+            Self::Map(inner) => {
+                let mut buf = vec![Self::MAP_CODE];
+                buf.append(&mut inner.len().encode_var_vec());
+                inner.iter().for_each(|(k, v)| {
+                    buf.append(&mut Self::serialize_map_key(k));
+                    buf.append(&mut v.serialize());
+                });
+                buf
+            }
             Self::DynamicMap(inner) => {
-                vec![vec![Self::DYNAMIC_MAP_CODE], inner.serialize()].concat()
+                let mut buf = vec![Self::DYNAMIC_MAP_CODE];
+                buf.append(&mut inner.serialize());
+                buf
             }
             Self::Date => {
                 vec![Self::Date.code()]
@@ -230,7 +240,9 @@ impl Header {
     }
 
     fn serialize_map_key(v: &str) -> Vec<u8> {
-        [v.len().encode_var_vec().as_ref(), v.as_bytes()].concat()
+        let mut buf = v.len().encode_var_vec();
+        buf.extend(v.as_bytes());
+        buf
     }
 
     fn deserialize_map_key<R: Read>(buf_reader: &mut BufReader<R>) -> Result<String, ()> {
