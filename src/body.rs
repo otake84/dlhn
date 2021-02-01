@@ -1,6 +1,7 @@
 use crate::{
     binary::Binary,
     header::{BodySize, Header},
+    serialize_string,
 };
 use bigdecimal::BigDecimal;
 use indexmap::IndexMap;
@@ -102,7 +103,7 @@ impl Body {
                     buf
                 }
             }
-            Self::String(v) => Self::serialize_string(v),
+            Self::String(v) => serialize_string(v),
             Self::Binary(v) => {
                 let mut buf = v.0.len().encode_var_vec();
                 buf.extend(v.0.as_slice());
@@ -121,7 +122,7 @@ impl Body {
             Self::DynamicMap(v) => {
                 let mut buf = v.len().encode_var_vec();
                 v.iter().for_each(|(k, v)| {
-                    buf.append(&mut Self::serialize_string(k));
+                    buf.append(&mut serialize_string(k));
                     buf.append(&mut v.serialize());
                 });
                 buf
@@ -334,12 +335,6 @@ impl Body {
                 _ => Err(()),
             }
         }
-    }
-
-    fn serialize_string(v: &str) -> Vec<u8> {
-        let mut buf = v.len().encode_var_vec();
-        buf.extend(v.as_bytes());
-        buf
     }
 
     fn deserialize_string<R: Read>(buf_reader: &mut BufReader<R>) -> Result<String, ()> {

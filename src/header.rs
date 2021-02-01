@@ -1,3 +1,4 @@
+use crate::serialize_string;
 use indexmap::IndexMap;
 use integer_encoding::{VarInt, VarIntReader};
 use std::io::{BufReader, Read};
@@ -143,7 +144,7 @@ impl Header {
                 let mut buf = vec![Self::MAP_CODE];
                 buf.append(&mut inner.len().encode_var_vec());
                 inner.iter().for_each(|(k, v)| {
-                    buf.append(&mut Self::serialize_map_key(k));
+                    buf.append(&mut serialize_string(k));
                     buf.append(&mut v.serialize());
                 });
                 buf
@@ -237,12 +238,6 @@ impl Header {
             Self::Date => Self::DATE_CODE,
             Self::DateTime => Self::DATETIME_CODE,
         }
-    }
-
-    fn serialize_map_key(v: &str) -> Vec<u8> {
-        let mut buf = v.len().encode_var_vec();
-        buf.extend(v.as_bytes());
-        buf
     }
 
     fn deserialize_map_key<R: Read>(buf_reader: &mut BufReader<R>) -> Result<String, ()> {
