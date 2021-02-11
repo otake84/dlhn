@@ -65,6 +65,10 @@ pub fn serialize_without_validate(header: &Header, body: &Body) -> Vec<u8> {
     buf
 }
 
+pub fn serialize_body(body: &Body) -> Vec<u8> {
+    body.serialize()
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{binary::Binary, body::Body, header::Header};
@@ -239,6 +243,30 @@ mod tests {
         assert_eq!(
             super::serialize(&header, &Body::UInt8(255)).unwrap(),
             [[Header::UInt8.code()], (255u8).to_le_bytes()].concat()
+        );
+    }
+
+    #[test]
+    fn serialize_body_boolean() {
+        assert_eq!(
+            super::serialize_body(&Body::Boolean(false)),
+            [0]
+        );
+        assert_eq!(
+            super::serialize_body(&Body::Boolean(true)),
+            [1]
+        );
+    }
+
+    #[test]
+    fn serialize_body_uint8() {
+        assert_eq!(
+            super::serialize_body(&Body::UInt8(0)),
+            0u8.to_le_bytes()
+        );
+        assert_eq!(
+            super::serialize_body(&Body::UInt8(255)),
+            255u8.to_le_bytes()
         );
     }
 }
