@@ -248,22 +248,13 @@ mod tests {
 
     #[test]
     fn serialize_body_boolean() {
-        assert_eq!(
-            super::serialize_body(&Body::Boolean(false)),
-            [0]
-        );
-        assert_eq!(
-            super::serialize_body(&Body::Boolean(true)),
-            [1]
-        );
+        assert_eq!(super::serialize_body(&Body::Boolean(false)), [0]);
+        assert_eq!(super::serialize_body(&Body::Boolean(true)), [1]);
     }
 
     #[test]
     fn serialize_body_uint8() {
-        assert_eq!(
-            super::serialize_body(&Body::UInt8(0)),
-            0u8.to_le_bytes()
-        );
+        assert_eq!(super::serialize_body(&Body::UInt8(0)), 0u8.to_le_bytes());
         assert_eq!(
             super::serialize_body(&Body::UInt8(255)),
             255u8.to_le_bytes()
