@@ -55,9 +55,14 @@ pub fn serialize(header: &Header, body: &Body) -> Result<Vec<u8>, ()> {
         return Err(());
     }
 
-    let mut serialized_header = header.serialize();
-    serialized_header.append(&mut body.serialize());
-    Ok(serialized_header)
+    Ok(serialize_without_validate(header, body))
+}
+
+#[inline]
+pub fn serialize_without_validate(header: &Header, body: &Body) -> Vec<u8> {
+    let mut buf = header.serialize();
+    buf.append(&mut body.serialize());
+    buf
 }
 
 #[cfg(test)]

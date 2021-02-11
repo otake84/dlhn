@@ -22,5 +22,9 @@ name = "serialize_benchmark"
 harness = false
 
 [[bench]]
+name = "serialize_without_validate"
+harness = false
+
+[[bench]]
 name = "deserialize_benchmark"
 harness = false
