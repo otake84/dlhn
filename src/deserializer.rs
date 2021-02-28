@@ -85,19 +85,19 @@ mod tests {
     fn deserialize_var_uint16() {
         let header = Header::VarUInt16;
 
-        let body = Body::UInt16(u8::MIN as u16);
+        let body = Body::VarUInt16(u8::MIN as u16);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::UInt16(u8::MAX as u16);
+        let body = Body::VarUInt16(u8::MAX as u16);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::UInt16(u16::MAX);
+        let body = Body::VarUInt16(u16::MAX);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
@@ -105,28 +105,28 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_uint32() {
-        let header = Header::UInt32;
+    fn deserialize_var_uint32() {
+        let header = Header::VarUInt32;
 
-        let body = Body::UInt32(u8::MIN as u32);
+        let body = Body::VarUInt32(u8::MIN as u32);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::UInt32(u8::MAX as u32);
+        let body = Body::VarUInt32(u8::MAX as u32);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::UInt32(u16::MAX as u32);
+        let body = Body::VarUInt32(u16::MAX as u32);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::UInt32(u32::MAX);
+        let body = Body::VarUInt32(u32::MAX);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
