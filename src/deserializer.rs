@@ -232,46 +232,46 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_int32() {
-        let header = Header::Int32;
+    fn deserialize_var_int32() {
+        let header = Header::VarInt32;
 
-        let body = Body::Int32(0);
+        let body = Body::VarInt32(0);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::Int32(i8::MIN as i32);
+        let body = Body::VarInt32(i8::MIN as i32);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::Int32(i8::MAX as i32);
+        let body = Body::VarInt32(i8::MAX as i32);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::Int32(i16::MIN as i32);
+        let body = Body::VarInt32(i16::MIN as i32);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::Int32(i16::MAX as i32);
+        let body = Body::VarInt32(i16::MAX as i32);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::Int32(i32::MIN);
+        let body = Body::VarInt32(i32::MIN);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::Int32(i32::MAX);
+        let body = Body::VarInt32(i32::MAX);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
