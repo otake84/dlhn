@@ -82,8 +82,8 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_uint16() {
-        let header = Header::UInt16;
+    fn deserialize_var_uint16() {
+        let header = Header::VarUInt16;
 
         let body = Body::UInt16(u8::MIN as u16);
         assert_eq!(

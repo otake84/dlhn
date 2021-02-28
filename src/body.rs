@@ -192,7 +192,7 @@ impl Body {
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::UInt8(u8::from_le_bytes(body_buf)))
             }
-            Header::UInt16 => buf_reader
+            Header::VarUInt16 => buf_reader
                 .read_varint::<u16>()
                 .map(Self::UInt16)
                 .or(Err(())),
@@ -347,7 +347,7 @@ mod tests {
     use time::{Date, NumericalDuration, OffsetDateTime};
 
     #[test]
-    fn serialize_uint16() {
+    fn serialize_var_uint16() {
         assert_eq!(Body::UInt16(u8::MIN as u16).serialize(), [0]);
         assert_eq!(Body::UInt16(u8::MAX as u16).serialize(), [255, 1]);
         assert_eq!(Body::UInt16(u16::MAX).serialize(), [255, 255, 3]);
@@ -775,8 +775,8 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_uint16() {
-        let header = Header::UInt16;
+    fn deserialize_var_uint16() {
+        let header = Header::VarUInt16;
 
         let body = Body::UInt16(u8::MIN as u16);
         assert_eq!(
