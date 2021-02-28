@@ -21,7 +21,7 @@ pub enum Body {
     Int8(i8),
     VarInt16(i16),
     VarInt32(i32),
-    Int64(i64),
+    VarInt64(i64),
     Float32(f32),
     Float64(f64),
     BigUInt(BigUint),
@@ -67,7 +67,7 @@ impl Body {
             Self::Int8(v) => Vec::from(v.to_le_bytes()),
             Self::VarInt16(v) => v.encode_var_vec(),
             Self::VarInt32(v) => v.encode_var_vec(),
-            Self::Int64(v) => v.encode_var_vec(),
+            Self::VarInt64(v) => v.encode_var_vec(),
             Self::Float32(v) => Vec::from(v.to_le_bytes()),
             Self::Float64(v) => Vec::from(v.to_le_bytes()),
             Self::BigUInt(v) => {
@@ -217,7 +217,10 @@ impl Body {
                 .read_varint::<i32>()
                 .map(Self::VarInt32)
                 .or(Err(())),
-            Header::Int64 => buf_reader.read_varint::<i64>().map(Self::Int64).or(Err(())),
+            Header::VarInt64 => buf_reader
+                .read_varint::<i64>()
+                .map(Self::VarInt64)
+                .or(Err(())),
             Header::Float32 => {
                 let mut body_buf = [0u8; 4];
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
@@ -412,26 +415,26 @@ mod tests {
     }
 
     #[test]
-    fn serialize_int64() {
-        assert_eq!(Body::Int64(0).serialize(), [0]);
-        assert_eq!(Body::Int64(i8::MIN as i64).serialize(), [255, 1]);
-        assert_eq!(Body::Int64(i8::MAX as i64).serialize(), [254, 1]);
-        assert_eq!(Body::Int64(i16::MIN as i64).serialize(), [255, 255, 3]);
-        assert_eq!(Body::Int64(i16::MAX as i64).serialize(), [254, 255, 3]);
+    fn serialize_var_int64() {
+        assert_eq!(Body::VarInt64(0).serialize(), [0]);
+        assert_eq!(Body::VarInt64(i8::MIN as i64).serialize(), [255, 1]);
+        assert_eq!(Body::VarInt64(i8::MAX as i64).serialize(), [254, 1]);
+        assert_eq!(Body::VarInt64(i16::MIN as i64).serialize(), [255, 255, 3]);
+        assert_eq!(Body::VarInt64(i16::MAX as i64).serialize(), [254, 255, 3]);
         assert_eq!(
-            Body::Int64(i32::MIN as i64).serialize(),
+            Body::VarInt64(i32::MIN as i64).serialize(),
             [255, 255, 255, 255, 15]
         );
         assert_eq!(
-            Body::Int64(i32::MAX as i64).serialize(),
+            Body::VarInt64(i32::MAX as i64).serialize(),
             [254, 255, 255, 255, 15]
         );
         assert_eq!(
-            Body::Int64(i64::MIN).serialize(),
+            Body::VarInt64(i64::MIN).serialize(),
             [255, 255, 255, 255, 255, 255, 255, 255, 255, 1]
         );
         assert_eq!(
-            Body::Int64(i64::MAX).serialize(),
+            Body::VarInt64(i64::MAX).serialize(),
             [254, 255, 255, 255, 255, 255, 255, 255, 255, 1]
         );
     }
@@ -985,69 +988,69 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_int64() {
+    fn deserialize_var_int64() {
         assert_eq!(
             super::Body::deserialize(
-                &Header::Int64,
+                &Header::VarInt64,
                 &mut BufReader::new(0i8.encode_var_vec().as_slice())
             ),
-            Ok(Body::Int64(0))
+            Ok(Body::VarInt64(0))
         );
         assert_eq!(
             super::Body::deserialize(
-                &Header::Int64,
+                &Header::VarInt64,
                 &mut BufReader::new(i8::MIN.encode_var_vec().as_slice())
             ),
-            Ok(Body::Int64(i8::MIN as i64))
+            Ok(Body::VarInt64(i8::MIN as i64))
         );
         assert_eq!(
             super::Body::deserialize(
-                &Header::Int64,
+                &Header::VarInt64,
                 &mut BufReader::new(i8::MAX.encode_var_vec().as_slice())
             ),
-            Ok(Body::Int64(i8::MAX as i64))
+            Ok(Body::VarInt64(i8::MAX as i64))
         );
         assert_eq!(
             super::Body::deserialize(
-                &Header::Int64,
+                &Header::VarInt64,
                 &mut BufReader::new(i16::MIN.encode_var_vec().as_slice())
             ),
-            Ok(Body::Int64(i16::MIN as i64))
+            Ok(Body::VarInt64(i16::MIN as i64))
         );
         assert_eq!(
             super::Body::deserialize(
-                &Header::Int64,
+                &Header::VarInt64,
                 &mut BufReader::new(i16::MAX.encode_var_vec().as_slice())
             ),
-            Ok(Body::Int64(i16::MAX as i64))
+            Ok(Body::VarInt64(i16::MAX as i64))
         );
         assert_eq!(
             super::Body::deserialize(
-                &Header::Int64,
+                &Header::VarInt64,
                 &mut BufReader::new(i32::MIN.encode_var_vec().as_slice())
             ),
-            Ok(Body::Int64(i32::MIN as i64))
+            Ok(Body::VarInt64(i32::MIN as i64))
         );
         assert_eq!(
             super::Body::deserialize(
-                &Header::Int64,
+                &Header::VarInt64,
                 &mut BufReader::new(i32::MAX.encode_var_vec().as_slice())
             ),
-            Ok(Body::Int64(i32::MAX as i64))
+            Ok(Body::VarInt64(i32::MAX as i64))
         );
         assert_eq!(
             super::Body::deserialize(
-                &Header::Int64,
+                &Header::VarInt64,
                 &mut BufReader::new(i64::MIN.encode_var_vec().as_slice())
             ),
-            Ok(Body::Int64(i64::MIN as i64))
+            Ok(Body::VarInt64(i64::MIN as i64))
         );
         assert_eq!(
             super::Body::deserialize(
-                &Header::Int64,
+                &Header::VarInt64,
                 &mut BufReader::new(i64::MAX.encode_var_vec().as_slice())
             ),
-            Ok(Body::Int64(i64::MAX as i64))
+            Ok(Body::VarInt64(i64::MAX as i64))
         );
     }
 

@@ -14,7 +14,7 @@ pub enum Header {
     Int8,
     VarInt16,
     VarInt32,
-    Int64,
+    VarInt64,
     Float32,
     Float64,
     BigUInt,
@@ -39,7 +39,7 @@ impl Header {
     const INT8_CODE: u8 = 6;
     const VAR_INT16_CODE: u8 = 7;
     const VAR_INT32_CODE: u8 = 8;
-    const INT64_CODE: u8 = 9;
+    const VAR_INT64_CODE: u8 = 9;
     const FLOAT32_CODE: u8 = 10;
     const FLOAT64_CODE: u8 = 11;
     const BIG_UINT_CODE: u8 = 12;
@@ -84,8 +84,8 @@ impl Header {
             Self::VarInt32 => {
                 vec![Self::VarInt32.code()]
             }
-            Self::Int64 => {
-                vec![Self::Int64.code()]
+            Self::VarInt64 => {
+                vec![Self::VarInt64.code()]
             }
             Self::Float32 => {
                 vec![Self::Float32.code()]
@@ -153,7 +153,7 @@ impl Header {
             Self::INT8_CODE => Ok(Self::Int8),
             Self::VAR_INT16_CODE => Ok(Self::VarInt16),
             Self::VAR_INT32_CODE => Ok(Self::VarInt32),
-            Self::INT64_CODE => Ok(Self::Int64),
+            Self::VAR_INT64_CODE => Ok(Self::VarInt64),
             Self::FLOAT32_CODE => Ok(Self::Float32),
             Self::FLOAT64_CODE => Ok(Self::Float64),
             Self::BIG_UINT_CODE => Ok(Self::BigUInt),
@@ -197,7 +197,7 @@ impl Header {
             Self::Int8 => Self::INT8_CODE,
             Self::VarInt16 => Self::VAR_INT16_CODE,
             Self::VarInt32 => Self::VAR_INT32_CODE,
-            Self::Int64 => Self::INT64_CODE,
+            Self::VarInt64 => Self::VAR_INT64_CODE,
             Self::Float32 => Self::FLOAT32_CODE,
             Self::Float64 => Self::FLOAT64_CODE,
             Self::BigUInt => Self::BIG_UINT_CODE,
@@ -269,8 +269,8 @@ mod tests {
             Ok(Header::VarInt32)
         );
         assert_eq!(
-            Header::deserialize(&mut BufReader::new(Header::Int64.serialize().as_slice())),
-            Ok(Header::Int64)
+            Header::deserialize(&mut BufReader::new(Header::VarInt64.serialize().as_slice())),
+            Ok(Header::VarInt64)
         );
         assert_eq!(
             Header::deserialize(&mut BufReader::new(Header::Float32.serialize().as_slice())),
