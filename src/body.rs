@@ -19,7 +19,7 @@ pub enum Body {
     VarUInt32(u32),
     VarUInt64(u64),
     Int8(i8),
-    Int16(i16),
+    VarInt16(i16),
     Int32(i32),
     Int64(i64),
     Float32(f32),
@@ -65,7 +65,7 @@ impl Body {
             Self::VarUInt32(v) => v.encode_var_vec(),
             Self::VarUInt64(v) => v.encode_var_vec(),
             Self::Int8(v) => Vec::from(v.to_le_bytes()),
-            Self::Int16(v) => v.encode_var_vec(),
+            Self::VarInt16(v) => v.encode_var_vec(),
             Self::Int32(v) => v.encode_var_vec(),
             Self::Int64(v) => v.encode_var_vec(),
             Self::Float32(v) => Vec::from(v.to_le_bytes()),
@@ -209,7 +209,10 @@ impl Body {
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Int8(i8::from_le_bytes(body_buf)))
             }
-            Header::Int16 => buf_reader.read_varint::<i16>().map(Self::Int16).or(Err(())),
+            Header::VarInt16 => buf_reader
+                .read_varint::<i16>()
+                .map(Self::VarInt16)
+                .or(Err(())),
             Header::Int32 => buf_reader.read_varint::<i32>().map(Self::Int32).or(Err(())),
             Header::Int64 => buf_reader.read_varint::<i64>().map(Self::Int64).or(Err(())),
             Header::Float32 => {
@@ -380,12 +383,12 @@ mod tests {
     }
 
     #[test]
-    fn serialize_int16() {
-        assert_eq!(Body::Int16(0).serialize(), [0]);
-        assert_eq!(Body::Int16(i8::MIN as i16).serialize(), [255, 1]);
-        assert_eq!(Body::Int16(i8::MAX as i16).serialize(), [254, 1]);
-        assert_eq!(Body::Int16(i16::MIN).serialize(), [255, 255, 3]);
-        assert_eq!(Body::Int16(i16::MAX).serialize(), [254, 255, 3]);
+    fn serialize_var_int16() {
+        assert_eq!(Body::VarInt16(0).serialize(), [0]);
+        assert_eq!(Body::VarInt16(i8::MIN as i16).serialize(), [255, 1]);
+        assert_eq!(Body::VarInt16(i8::MAX as i16).serialize(), [254, 1]);
+        assert_eq!(Body::VarInt16(i16::MIN).serialize(), [255, 255, 3]);
+        assert_eq!(Body::VarInt16(i16::MAX).serialize(), [254, 255, 3]);
     }
 
     #[test]
@@ -891,34 +894,34 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_int16() {
-        let header = Header::Int16;
+    fn deserialize_var_int16() {
+        let header = Header::VarInt16;
 
-        let body = Body::Int16(0);
+        let body = Body::VarInt16(0);
         assert_eq!(
             super::Body::deserialize(&header, &mut BufReader::new(body.serialize().as_slice())),
             Ok(body)
         );
 
-        let body = Body::Int16(i8::MIN as i16);
+        let body = Body::VarInt16(i8::MIN as i16);
         assert_eq!(
             super::Body::deserialize(&header, &mut BufReader::new(body.serialize().as_slice())),
             Ok(body)
         );
 
-        let body = Body::Int16(i8::MAX as i16);
+        let body = Body::VarInt16(i8::MAX as i16);
         assert_eq!(
             super::Body::deserialize(&header, &mut BufReader::new(body.serialize().as_slice())),
             Ok(body)
         );
 
-        let body = Body::Int16(i16::MIN);
+        let body = Body::VarInt16(i16::MIN);
         assert_eq!(
             super::Body::deserialize(&header, &mut BufReader::new(body.serialize().as_slice())),
             Ok(body)
         );
 
-        let body = Body::Int16(i16::MAX);
+        let body = Body::VarInt16(i16::MAX);
         assert_eq!(
             super::Body::deserialize(&header, &mut BufReader::new(body.serialize().as_slice())),
             Ok(body)

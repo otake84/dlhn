@@ -197,34 +197,34 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_int16() {
-        let header = Header::Int16;
+    fn deserialize_var_int16() {
+        let header = Header::VarInt16;
 
-        let body = Body::Int16(0);
+        let body = Body::VarInt16(0);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::Int16(i8::MIN as i16);
+        let body = Body::VarInt16(i8::MIN as i16);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::Int16(i8::MAX as i16);
+        let body = Body::VarInt16(i8::MAX as i16);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::Int16(i16::MIN);
+        let body = Body::VarInt16(i16::MIN);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::Int16(i16::MAX);
+        let body = Body::VarInt16(i16::MAX);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
