@@ -7,6 +7,7 @@ use num_traits::Zero;
 use std::{
     collections::HashMap,
     io::{BufReader, Read, Write},
+    mem::MaybeUninit,
 };
 use time::{Date, NumericalDuration, OffsetDateTime};
 
@@ -173,7 +174,7 @@ impl Body {
     ) -> Result<Body, ()> {
         match header {
             Header::Optional(inner_header) => {
-                let mut buf = [0u8; 1];
+                let mut buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
                 buf_reader.read_exact(&mut buf).or(Err(()))?;
                 match buf[0] {
                     0 => Ok(Self::Optional(Box::new(None))),
@@ -185,7 +186,7 @@ impl Body {
                 }
             }
             Header::Boolean => {
-                let mut body_buf = [0u8; 1];
+                let mut body_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 match body_buf[0] {
                     0 => Ok(Self::Boolean(false)),
@@ -194,22 +195,22 @@ impl Body {
                 }
             }
             Header::UInt8 => {
-                let mut body_buf = [0u8; 1];
+                let mut body_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::UInt8(u8::from_le_bytes(body_buf)))
             }
             Header::UInt16 => {
-                let mut body_buf = [0u8; 2];
+                let mut body_buf: [u8; 2] = unsafe { MaybeUninit::uninit().assume_init() };
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::UInt16(u16::from_le_bytes(body_buf)))
             }
             Header::UInt32 => {
-                let mut body_buf = [0u8; 4];
+                let mut body_buf: [u8; 4] = unsafe { MaybeUninit::uninit().assume_init() };
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::UInt32(u32::from_le_bytes(body_buf)))
             }
             Header::UInt64 => {
-                let mut body_buf = [0u8; 8];
+                let mut body_buf: [u8; 8] = unsafe { MaybeUninit::uninit().assume_init() };
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::UInt64(u64::from_le_bytes(body_buf)))
             }
@@ -226,7 +227,7 @@ impl Body {
                 .map(Self::VarUInt64)
                 .or(Err(())),
             Header::Int8 => {
-                let mut body_buf = [0u8; 1];
+                let mut body_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Int8(i8::from_le_bytes(body_buf)))
             }
@@ -243,12 +244,12 @@ impl Body {
                 .map(Self::VarInt64)
                 .or(Err(())),
             Header::Float32 => {
-                let mut body_buf = [0u8; 4];
+                let mut body_buf: [u8; 4] = unsafe { MaybeUninit::uninit().assume_init() };
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Float32(f32::from_le_bytes(body_buf)))
             }
             Header::Float64 => {
-                let mut body_buf = [0u8; 8];
+                let mut body_buf: [u8; 8] = unsafe { MaybeUninit::uninit().assume_init() };
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Float64(f64::from_le_bytes(body_buf)))
             }
@@ -317,12 +318,13 @@ impl Body {
                 Ok(Self::Date(date))
             }
             Header::DateTime => {
-                let mut kind_buf = [0u8; 1];
+                let mut kind_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
                 buf_reader.read_exact(&mut kind_buf).or(Err(()))?;
 
                 match u8::from_le_bytes(kind_buf) {
                     Self::DATETIME_32_SIZE => {
-                        let mut second_buf = [0u8; Body::DATETIME_32_SIZE as usize];
+                        let mut second_buf: [u8; Body::DATETIME_32_SIZE as usize] =
+                            unsafe { MaybeUninit::uninit().assume_init() };
                         buf_reader.read_exact(&mut second_buf).or(Err(()))?;
 
                         Ok(Self::DateTime(
@@ -330,7 +332,8 @@ impl Body {
                         ))
                     }
                     Self::DATETIME_64_SIZE => {
-                        let mut nanosecond_and_second_buf = [0u8; Body::DATETIME_64_SIZE as usize];
+                        let mut nanosecond_and_second_buf: [u8; Body::DATETIME_64_SIZE as usize] =
+                            unsafe { MaybeUninit::uninit().assume_init() };
                         buf_reader
                             .read_exact(&mut nanosecond_and_second_buf)
                             .or(Err(()))?;
@@ -344,11 +347,13 @@ impl Body {
                         ))
                     }
                     Self::DATETIME_96_SIZE => {
-                        let mut nanosecond_buf = [0u8; 4];
+                        let mut nanosecond_buf: [u8; 4] =
+                            unsafe { MaybeUninit::uninit().assume_init() };
                         buf_reader.read_exact(&mut nanosecond_buf).or(Err(()))?;
                         let nanosecond = u32::from_le_bytes(nanosecond_buf);
 
-                        let mut unix_timestamp_buf = [0u8; 8];
+                        let mut unix_timestamp_buf: [u8; 8] =
+                            unsafe { MaybeUninit::uninit().assume_init() };
                         buf_reader.read_exact(&mut unix_timestamp_buf).or(Err(()))?;
                         let unix_timestamp = i64::from_le_bytes(unix_timestamp_buf);
 

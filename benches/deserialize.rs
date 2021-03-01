@@ -15,13 +15,25 @@ fn deserialize_uint8() -> Result<(Header, Body), ()> {
     deserialize([2u8, 255].as_ref())
 }
 
+fn deserialize_uint16() -> Result<(Header, Body), ()> {
+    deserialize([3u8, 255, 255].as_ref())
+}
+
+fn deserialize_uint32() -> Result<(Header, Body), ()> {
+    deserialize([4u8, 255, 255, 255, 255].as_ref())
+}
+
+fn deserialize_uint64() -> Result<(Header, Body), ()> {
+    deserialize([5u8, 255, 255, 255, 255, 255, 255, 255, 255].as_ref())
+}
+
 fn deserialize_int8() -> Result<(Header, Body), ()> {
-    deserialize([6u8, 255].as_ref())
+    deserialize([9u8, 255].as_ref())
 }
 
 fn deserialize_float32() -> Result<(Header, Body), ()> {
     deserialize(
-        [vec![10u8], 1.1f32.to_le_bytes().to_vec()]
+        [vec![13u8], 1.1f32.to_le_bytes().to_vec()]
             .concat()
             .as_slice(),
     )
@@ -29,7 +41,7 @@ fn deserialize_float32() -> Result<(Header, Body), ()> {
 
 fn deserialize_float64() -> Result<(Header, Body), ()> {
     deserialize(
-        [vec![11u8], 1.1f64.to_le_bytes().to_vec()]
+        [vec![14u8], 1.1f64.to_le_bytes().to_vec()]
             .concat()
             .as_slice(),
     )
@@ -67,6 +79,9 @@ main!(
     deserialize_optional,
     deserialize_boolean,
     deserialize_uint8,
+    deserialize_uint16,
+    deserialize_uint32,
+    deserialize_uint64,
     deserialize_int8,
     deserialize_float32,
     deserialize_float64,

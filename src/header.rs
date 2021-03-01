@@ -1,7 +1,10 @@
 use crate::{deserialize_string, serialize_string};
 use indexmap::IndexMap;
 use integer_encoding::{VarInt, VarIntReader};
-use std::io::{BufReader, Read};
+use std::{
+    io::{BufReader, Read},
+    mem::MaybeUninit,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Header {
@@ -152,7 +155,7 @@ impl Header {
     }
 
     pub(crate) fn deserialize<R: Read>(buf_reader: &mut BufReader<R>) -> Result<Header, ()> {
-        let mut buf = [0u8; 1];
+        let mut buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
         buf_reader.read_exact(&mut buf).or(Err(()))?;
 
         match *buf.first().ok_or(())? {
