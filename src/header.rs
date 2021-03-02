@@ -20,6 +20,7 @@ pub enum Header {
     Int8,
     Int16,
     Int32,
+    Int64,
     VarInt16,
     VarInt32,
     VarInt64,
@@ -50,21 +51,22 @@ impl Header {
     const INT8_CODE: u8 = 9;
     const INT16_CODE: u8 = 10;
     const INT32_CODE: u8 = 11;
-    const VAR_INT16_CODE: u8 = 12;
-    const VAR_INT32_CODE: u8 = 13;
-    const VAR_INT64_CODE: u8 = 14;
-    const FLOAT32_CODE: u8 = 15;
-    const FLOAT64_CODE: u8 = 16;
-    const BIG_UINT_CODE: u8 = 17;
-    const BIG_INT_CODE: u8 = 18;
-    const BIG_DECIMAL_CODE: u8 = 19;
-    const STRING_CODE: u8 = 20;
-    const BINARY_CODE: u8 = 21;
-    const ARRAY_CODE: u8 = 22;
-    const MAP_CODE: u8 = 23;
-    const DYNAMIC_MAP_CODE: u8 = 24;
-    const DATE_CODE: u8 = 25;
-    const DATETIME_CODE: u8 = 26;
+    const INT64_CODE: u8 = 12;
+    const VAR_INT16_CODE: u8 = 13;
+    const VAR_INT32_CODE: u8 = 14;
+    const VAR_INT64_CODE: u8 = 15;
+    const FLOAT32_CODE: u8 = 16;
+    const FLOAT64_CODE: u8 = 17;
+    const BIG_UINT_CODE: u8 = 18;
+    const BIG_INT_CODE: u8 = 19;
+    const BIG_DECIMAL_CODE: u8 = 20;
+    const STRING_CODE: u8 = 21;
+    const BINARY_CODE: u8 = 22;
+    const ARRAY_CODE: u8 = 23;
+    const MAP_CODE: u8 = 24;
+    const DYNAMIC_MAP_CODE: u8 = 25;
+    const DATE_CODE: u8 = 26;
+    const DATETIME_CODE: u8 = 27;
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
@@ -105,6 +107,9 @@ impl Header {
             }
             Self::Int32 => {
                 vec![Self::Int32.code()]
+            }
+            Self::Int64 => {
+                vec![Self::Int64.code()]
             }
             Self::VarInt16 => {
                 vec![Self::VarInt16.code()]
@@ -184,6 +189,7 @@ impl Header {
             Self::INT8_CODE => Ok(Self::Int8),
             Self::INT16_CODE => Ok(Self::Int16),
             Self::INT32_CODE => Ok(Self::Int32),
+            Self::INT64_CODE => Ok(Self::Int64),
             Self::VAR_INT16_CODE => Ok(Self::VarInt16),
             Self::VAR_INT32_CODE => Ok(Self::VarInt32),
             Self::VAR_INT64_CODE => Ok(Self::VarInt64),
@@ -233,6 +239,7 @@ impl Header {
             Self::Int8 => Self::INT8_CODE,
             Self::Int16 => Self::INT16_CODE,
             Self::Int32 => Self::INT32_CODE,
+            Self::Int64 => Self::INT64_CODE,
             Self::VarInt16 => Self::VAR_INT16_CODE,
             Self::VarInt32 => Self::VAR_INT32_CODE,
             Self::VarInt64 => Self::VAR_INT64_CODE,
@@ -317,6 +324,10 @@ mod tests {
         assert_eq!(
             Header::deserialize(&mut BufReader::new(Header::Int32.serialize().as_slice())),
             Ok(Header::Int32)
+        );
+        assert_eq!(
+            Header::deserialize(&mut BufReader::new(Header::Int64.serialize().as_slice())),
+            Ok(Header::Int64)
         );
         assert_eq!(
             Header::deserialize(&mut BufReader::new(Header::VarInt16.serialize().as_slice())),

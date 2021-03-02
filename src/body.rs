@@ -27,6 +27,7 @@ pub enum Body {
     Int8(i8),
     Int16(i16),
     Int32(i32),
+    Int64(i64),
     VarInt16(i16),
     VarInt32(i32),
     VarInt64(i64),
@@ -78,6 +79,7 @@ impl Body {
             Self::Int8(v) => Vec::from(v.to_le_bytes()),
             Self::Int16(v) => Vec::from(v.to_le_bytes()),
             Self::Int32(v) => Vec::from(v.to_le_bytes()),
+            Self::Int64(v) => Vec::from(v.to_le_bytes()),
             Self::VarInt16(v) => v.encode_var_vec(),
             Self::VarInt32(v) => v.encode_var_vec(),
             Self::VarInt64(v) => v.encode_var_vec(),
@@ -246,6 +248,11 @@ impl Body {
                 let mut body_buf: [u8; 4] = unsafe { MaybeUninit::uninit().assume_init() };
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Int32(i32::from_le_bytes(body_buf)))
+            }
+            Header::Int64 => {
+                let mut body_buf: [u8; 8] = unsafe { MaybeUninit::uninit().assume_init() };
+                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                Ok(Self::Int64(i64::from_le_bytes(body_buf)))
             }
             Header::VarInt16 => buf_reader
                 .read_varint::<i16>()
@@ -473,6 +480,13 @@ mod tests {
         assert_eq!(Body::Int32(i32::MIN).serialize(), i32::MIN.to_le_bytes());
         assert_eq!(Body::Int32(0).serialize(), 0i32.to_le_bytes());
         assert_eq!(Body::Int32(i32::MAX).serialize(), i32::MAX.to_le_bytes());
+    }
+
+    #[test]
+    fn serialize_int64() {
+        assert_eq!(Body::Int64(i64::MIN).serialize(), i64::MIN.to_le_bytes());
+        assert_eq!(Body::Int64(0).serialize(), 0i64.to_le_bytes());
+        assert_eq!(Body::Int64(i64::MAX).serialize(), i64::MAX.to_le_bytes());
     }
 
     #[test]
