@@ -26,6 +26,7 @@ pub enum Body {
     VarUInt64(u64),
     Int8(i8),
     Int16(i16),
+    Int32(i32),
     VarInt16(i16),
     VarInt32(i32),
     VarInt64(i64),
@@ -76,6 +77,7 @@ impl Body {
             Self::VarUInt64(v) => v.encode_var_vec(),
             Self::Int8(v) => Vec::from(v.to_le_bytes()),
             Self::Int16(v) => Vec::from(v.to_le_bytes()),
+            Self::Int32(v) => Vec::from(v.to_le_bytes()),
             Self::VarInt16(v) => v.encode_var_vec(),
             Self::VarInt32(v) => v.encode_var_vec(),
             Self::VarInt64(v) => v.encode_var_vec(),
@@ -239,6 +241,11 @@ impl Body {
                 let mut body_buf: [u8; 2] = unsafe { MaybeUninit::uninit().assume_init() };
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Int16(i16::from_le_bytes(body_buf)))
+            }
+            Header::Int32 => {
+                let mut body_buf: [u8; 4] = unsafe { MaybeUninit::uninit().assume_init() };
+                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                Ok(Self::Int32(i32::from_le_bytes(body_buf)))
             }
             Header::VarInt16 => buf_reader
                 .read_varint::<i16>()
@@ -459,6 +466,13 @@ mod tests {
         assert_eq!(Body::Int16(i16::MIN).serialize(), i16::MIN.to_le_bytes());
         assert_eq!(Body::Int16(0).serialize(), 0i16.to_le_bytes());
         assert_eq!(Body::Int16(i16::MAX).serialize(), i16::MAX.to_le_bytes());
+    }
+
+    #[test]
+    fn serialize_int32() {
+        assert_eq!(Body::Int32(i32::MIN).serialize(), i32::MIN.to_le_bytes());
+        assert_eq!(Body::Int32(0).serialize(), 0i32.to_le_bytes());
+        assert_eq!(Body::Int32(i32::MAX).serialize(), i32::MAX.to_le_bytes());
     }
 
     #[test]
@@ -1060,6 +1074,31 @@ mod tests {
                 &mut BufReader::new(i16::MAX.to_le_bytes().as_ref())
             ),
             Ok(Body::Int16(i16::MAX))
+        );
+    }
+
+    #[test]
+    fn deserialize_int32() {
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::Int32,
+                &mut BufReader::new(i32::MIN.to_le_bytes().as_ref())
+            ),
+            Ok(Body::Int32(i32::MIN))
+        );
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::Int32,
+                &mut BufReader::new(0i32.to_le_bytes().as_ref())
+            ),
+            Ok(Body::Int32(0))
+        );
+        assert_eq!(
+            super::Body::deserialize(
+                &Header::Int32,
+                &mut BufReader::new(i32::MAX.to_le_bytes().as_ref())
+            ),
+            Ok(Body::Int32(i32::MAX))
         );
     }
 

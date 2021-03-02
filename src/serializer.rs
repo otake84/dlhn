@@ -19,6 +19,7 @@ fn validate(header: &Header, body: &Body) -> bool {
         (Header::VarUInt64, Body::VarUInt64(_)) => true,
         (Header::Int8, Body::Int8(_)) => true,
         (Header::Int16, Body::Int16(_)) => true,
+        (Header::Int32, Body::Int32(_)) => true,
         (Header::VarInt16, Body::VarInt16(_)) => true,
         (Header::VarInt32, Body::VarInt32(_)) => true,
         (Header::VarInt64, Body::VarInt64(_)) => true,
@@ -133,6 +134,10 @@ mod tests {
 
         let header = Header::Int16;
         assert!(super::validate(&header, &Body::Int16(0)));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::Int32;
+        assert!(super::validate(&header, &Body::Int32(0)));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::VarInt16;
