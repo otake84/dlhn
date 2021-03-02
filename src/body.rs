@@ -1,4 +1,6 @@
-use crate::{binary::Binary, deserialize_string, header::Header, serialize_string};
+use crate::{
+    binary::Binary, deserialize_string, header::Header, new_dynamic_buf, serialize_string,
+};
 use bigdecimal::BigDecimal;
 use indexmap::IndexMap;
 use integer_encoding::{VarInt, VarIntReader};
@@ -254,12 +256,12 @@ impl Body {
                 Ok(Self::Float64(f64::from_le_bytes(body_buf)))
             }
             Header::BigUInt => {
-                let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
+                let mut body_buf = new_dynamic_buf(buf_reader.read_varint::<usize>().or(Err(()))?);
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::BigUInt(BigUint::from_bytes_le(body_buf.as_slice())))
             }
             Header::BigInt => {
-                let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
+                let mut body_buf = new_dynamic_buf(buf_reader.read_varint::<usize>().or(Err(()))?);
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::BigInt(BigInt::from_signed_bytes_le(
                     body_buf.as_slice(),
@@ -270,7 +272,7 @@ impl Body {
                 if size == 0 {
                     Ok(Self::BigDecimal(BigDecimal::from(0)))
                 } else {
-                    let mut body_buf = vec![0u8; size];
+                    let mut body_buf = new_dynamic_buf(size);
                     buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                     Ok(Self::BigDecimal(BigDecimal::new(
                         BigInt::from_signed_bytes_le(body_buf.as_slice()),
@@ -280,7 +282,7 @@ impl Body {
             }
             Header::String => deserialize_string(buf_reader).map(Self::String),
             Header::Binary => {
-                let mut body_buf = vec![0u8; buf_reader.read_varint::<usize>().or(Err(()))?];
+                let mut body_buf = new_dynamic_buf(buf_reader.read_varint::<usize>().or(Err(()))?);
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Binary(Binary(body_buf)))
             }
