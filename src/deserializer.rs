@@ -257,6 +257,34 @@ mod tests {
     }
 
     #[test]
+    fn deserialize_int16() {
+        assert_eq!(
+            super::deserialize(
+                [Header::Int16.serialize(), i16::MIN.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::Int16, Body::Int16(i16::MIN)))
+        );
+        assert_eq!(
+            super::deserialize(
+                [Header::Int16.serialize(), 0i16.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::Int16, Body::Int16(0)))
+        );
+        assert_eq!(
+            super::deserialize(
+                [Header::Int16.serialize(), i16::MAX.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::Int16, Body::Int16(i16::MAX)))
+        );
+    }
+
+    #[test]
     fn deserialize_var_int16() {
         let header = Header::VarInt16;
 
