@@ -1,6 +1,4 @@
-use crate::{
-    binary::Binary, deserialize_string, header::Header, new_dynamic_buf, serialize_string,
-};
+use crate::{deserialize_string, header::Header, new_dynamic_buf, serialize_string};
 use bigdecimal::BigDecimal;
 use indexmap::IndexMap;
 use integer_encoding::{VarInt, VarIntReader};
@@ -37,7 +35,7 @@ pub enum Body {
     BigInt(BigInt),
     BigDecimal(BigDecimal),
     String(String),
-    Binary(Binary),
+    Binary(Vec<u8>),
     Array(Vec<Body>),
     Map(IndexMap<String, Body>),
     DynamicMap(HashMap<String, Body>),
@@ -119,8 +117,8 @@ impl Body {
             }
             Self::String(v) => serialize_string(v),
             Self::Binary(v) => {
-                let mut buf = v.0.len().encode_var_vec();
-                buf.extend(v.0.as_slice());
+                let mut buf = v.len().encode_var_vec();
+                buf.extend(v.as_slice());
                 buf
             }
             Self::Array(v) => {
@@ -305,7 +303,7 @@ impl Body {
             Header::Binary => {
                 let mut body_buf = new_dynamic_buf(buf_reader.read_varint::<usize>().or(Err(()))?);
                 buf_reader.read_exact(&mut body_buf).or(Err(()))?;
-                Ok(Self::Binary(Binary(body_buf)))
+                Ok(Self::Binary(body_buf))
             }
             Header::Array(inner_header) => {
                 let size = buf_reader.read_varint::<usize>().or(Err(()))?;
@@ -395,7 +393,7 @@ impl Body {
 #[cfg(test)]
 mod tests {
     use super::Body;
-    use crate::{binary::Binary, header::Header};
+    use crate::header::Header;
     use bigdecimal::BigDecimal;
     use core::panic;
     use indexmap::*;
@@ -1688,12 +1686,12 @@ mod tests {
 
     #[test]
     fn deserialize_binary() {
-        let body = Binary(vec![0, 1, 2, 3, 255]);
+        let body = vec![0, 1, 2, 3, 255];
         assert_eq!(
             super::Body::deserialize(
                 &Header::Binary,
                 &mut BufReader::new(
-                    [body.0.len().encode_var_vec(), body.0.clone()]
+                    [body.len().encode_var_vec(), body.clone()]
                         .concat()
                         .as_slice()
                 )

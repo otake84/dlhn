@@ -1,7 +1,6 @@
 use integer_encoding::{VarInt, VarIntReader};
 use std::io::{BufReader, Read};
 
-pub mod binary;
 pub mod body;
 pub mod deserializer;
 pub mod header;

@@ -1,5 +1,5 @@
 use bigdecimal::BigDecimal;
-use dullahan::{binary::Binary, body::Body, header::Header, serializer::serialize};
+use dullahan::{body::Body, header::Header, serializer::serialize};
 use iai::main;
 use indexmap::IndexMap;
 use num_bigint::{BigInt, BigUint};
@@ -49,7 +49,7 @@ fn serialize_bigdecimal() -> Result<Vec<u8>, ()> {
 }
 
 fn serialize_binary() -> Result<Vec<u8>, ()> {
-    serialize(&Header::Binary, &Body::Binary(Binary(vec![1, 2, 3, 4, 5])))
+    serialize(&Header::Binary, &Body::Binary(vec![1, 2, 3, 4, 5]))
 }
 
 fn serialize_array() -> Result<Vec<u8>, ()> {

@@ -10,7 +10,7 @@ pub fn deserialize<R: Read>(read: R) -> Result<(Header, Body), ()> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{binary::Binary, body::Body, header::Header, serializer::serialize};
+    use crate::{body::Body, header::Header, serializer::serialize};
     use bigdecimal::BigDecimal;
     use core::panic;
     use indexmap::*;
@@ -804,31 +804,24 @@ mod tests {
     fn deserialize_binary() {
         assert_eq!(
             super::deserialize(
-                serialize(
-                    &Header::Binary,
-                    &Body::Binary(Binary(vec![0, 1, 2, 3, 255]))
-                )
-                .unwrap()
-                .as_slice()
+                serialize(&Header::Binary, &Body::Binary(vec![0, 1, 2, 3, 255]))
+                    .unwrap()
+                    .as_slice()
             ),
-            Ok((Header::Binary, Body::Binary(Binary(vec![0, 1, 2, 3, 255]))))
+            Ok((Header::Binary, Body::Binary(vec![0, 1, 2, 3, 255])))
         );
         assert_eq!(
             super::deserialize(
                 serialize(
                     &Header::Binary,
-                    &Body::Binary(Binary(
-                        iter::repeat(255u8).take(u16::MAX as usize).collect()
-                    ))
+                    &Body::Binary(iter::repeat(255u8).take(u16::MAX as usize).collect())
                 )
                 .unwrap()
                 .as_slice()
             ),
             Ok((
                 Header::Binary,
-                Body::Binary(Binary(
-                    iter::repeat(255u8).take(u16::MAX as usize).collect()
-                ))
+                Body::Binary(iter::repeat(255u8).take(u16::MAX as usize).collect())
             ))
         );
     }

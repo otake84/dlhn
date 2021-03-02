@@ -1,7 +1,5 @@
 use bigdecimal::BigDecimal;
-use dullahan::{
-    binary::Binary, body::Body, deserializer::deserialize, header::Header, serializer::serialize,
-};
+use dullahan::{body::Body, deserializer::deserialize, header::Header, serializer::serialize};
 use iai::main;
 use indexmap::IndexMap;
 use num_bigint::{BigInt, BigUint};
@@ -84,7 +82,7 @@ fn deserialize_string() -> Result<(Header, Body), ()> {
 }
 
 fn deserialize_binary() -> Result<(Header, Body), ()> {
-    let body = Binary(vec![0, 1, 2, 3, 255]);
+    let body = vec![0, 1, 2, 3, 255];
     deserialize(
         serialize(&Header::Binary, &Body::Binary(body))
             .unwrap()

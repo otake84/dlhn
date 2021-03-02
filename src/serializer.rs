@@ -77,7 +77,7 @@ pub fn serialize_body(body: &Body) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{binary::Binary, body::Body, header::Header};
+    use crate::{body::Body, header::Header};
     use bigdecimal::BigDecimal;
     use indexmap::*;
     use num_bigint::{BigInt, BigUint};
@@ -190,7 +190,7 @@ mod tests {
         let header = Header::Binary;
         assert!(super::validate(
             &header,
-            &Body::Binary(Binary(vec![0, 1, 2, 3, 255]))
+            &Body::Binary(vec![0, 1, 2, 3, 255])
         ));
 
         let header = Header::Array(Box::new(Header::UInt8));
