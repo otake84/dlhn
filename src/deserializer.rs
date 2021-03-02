@@ -83,50 +83,81 @@ mod tests {
 
     #[test]
     fn deserialize_uint16() {
-        let header = Header::UInt16;
-
-        let body = Body::UInt16(u8::MIN as u16);
         assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
+            super::deserialize(
+                [Header::UInt16.serialize(), u16::MIN.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::UInt16, Body::UInt16(u16::MIN)))
         );
-
-        let body = Body::UInt16(u8::MAX as u16);
         assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
-        );
-
-        let body = Body::UInt16(u16::MAX);
-        assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
+            super::deserialize(
+                [Header::UInt16.serialize(), u16::MAX.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::UInt16, Body::UInt16(u16::MAX)))
         );
     }
 
     #[test]
     fn deserialize_uint32() {
-        let header = Header::UInt32;
+        assert_eq!(
+            super::deserialize(
+                [Header::UInt32.serialize(), u32::MIN.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::UInt32, Body::UInt32(u32::MIN)))
+        );
+        assert_eq!(
+            super::deserialize(
+                [Header::UInt32.serialize(), u32::MAX.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::UInt32, Body::UInt32(u32::MAX)))
+        );
+    }
 
-        let body = Body::UInt32(u8::MIN as u32);
+    #[test]
+    fn deserialize_uint64() {
+        assert_eq!(
+            super::deserialize(
+                [Header::UInt64.serialize(), u64::MIN.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::UInt64, Body::UInt64(u64::MIN)))
+        );
+        assert_eq!(
+            super::deserialize(
+                [Header::UInt64.serialize(), u64::MAX.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::UInt64, Body::UInt64(u64::MAX)))
+        );
+    }
+
+    #[test]
+    fn deserialize_var_uint16() {
+        let header = Header::VarUInt16;
+
+        let body = Body::VarUInt16(u8::MIN as u16);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::UInt32(u8::MAX as u32);
+        let body = Body::VarUInt16(u8::MAX as u16);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::UInt32(u16::MAX as u32);
-        assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
-        );
-
-        let body = Body::UInt32(u32::MAX);
+        let body = Body::VarUInt16(u16::MAX);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
@@ -134,34 +165,63 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_uint64() {
-        let header = Header::UInt64;
+    fn deserialize_var_uint32() {
+        let header = Header::VarUInt32;
 
-        let body = Body::UInt64(u8::MIN as u64);
+        let body = Body::VarUInt32(u8::MIN as u32);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::UInt64(u8::MAX as u64);
+        let body = Body::VarUInt32(u8::MAX as u32);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::UInt64(u16::MAX as u64);
+        let body = Body::VarUInt32(u16::MAX as u32);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::UInt64(u32::MAX as u64);
+        let body = Body::VarUInt32(u32::MAX);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+    }
+
+    #[test]
+    fn deserialize_var_uint64() {
+        let header = Header::VarUInt64;
+
+        let body = Body::VarUInt64(u8::MIN as u64);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
         );
 
-        let body = Body::UInt64(u64::MAX);
+        let body = Body::VarUInt64(u8::MAX as u64);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::VarUInt64(u16::MAX as u64);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::VarUInt64(u32::MAX as u64);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::VarUInt64(u64::MAX);
         assert_eq!(
             super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
             Ok((header.clone(), body))
@@ -198,83 +258,57 @@ mod tests {
 
     #[test]
     fn deserialize_int16() {
-        let header = Header::Int16;
-
-        let body = Body::Int16(0);
         assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
+            super::deserialize(
+                [Header::Int16.serialize(), i16::MIN.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::Int16, Body::Int16(i16::MIN)))
         );
-
-        let body = Body::Int16(i8::MIN as i16);
         assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
+            super::deserialize(
+                [Header::Int16.serialize(), 0i16.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::Int16, Body::Int16(0)))
         );
-
-        let body = Body::Int16(i8::MAX as i16);
         assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
-        );
-
-        let body = Body::Int16(i16::MIN);
-        assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
-        );
-
-        let body = Body::Int16(i16::MAX);
-        assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
+            super::deserialize(
+                [Header::Int16.serialize(), i16::MAX.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::Int16, Body::Int16(i16::MAX)))
         );
     }
 
     #[test]
     fn deserialize_int32() {
-        let header = Header::Int32;
-
-        let body = Body::Int32(0);
         assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
+            super::deserialize(
+                [Header::Int32.serialize(), i32::MIN.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::Int32, Body::Int32(i32::MIN)))
         );
-
-        let body = Body::Int32(i8::MIN as i32);
         assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
+            super::deserialize(
+                [Header::Int32.serialize(), 0i32.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::Int32, Body::Int32(0)))
         );
-
-        let body = Body::Int32(i8::MAX as i32);
         assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
-        );
-
-        let body = Body::Int32(i16::MIN as i32);
-        assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
-        );
-
-        let body = Body::Int32(i16::MAX as i32);
-        assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
-        );
-
-        let body = Body::Int32(i32::MIN);
-        assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
-        );
-
-        let body = Body::Int32(i32::MAX);
-        assert_eq!(
-            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
-            Ok((header.clone(), body))
+            super::deserialize(
+                [Header::Int32.serialize(), i32::MAX.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::Int32, Body::Int32(i32::MAX)))
         );
     }
 
@@ -282,7 +316,15 @@ mod tests {
     fn deserialize_int64() {
         assert_eq!(
             super::deserialize(
-                [Header::Int64.serialize(), 0i8.encode_var_vec()]
+                [Header::Int64.serialize(), i64::MIN.to_le_bytes().to_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::Int64, Body::Int64(i64::MIN)))
+        );
+        assert_eq!(
+            super::deserialize(
+                [Header::Int64.serialize(), 0i64.to_le_bytes().to_vec()]
                     .concat()
                     .as_slice()
             ),
@@ -290,67 +332,169 @@ mod tests {
         );
         assert_eq!(
             super::deserialize(
-                [Header::Int64.serialize(), i8::MIN.encode_var_vec()]
+                [Header::Int64.serialize(), i64::MAX.to_le_bytes().to_vec()]
                     .concat()
                     .as_slice()
             ),
-            Ok((Header::Int64, Body::Int64(i8::MIN as i64)))
+            Ok((Header::Int64, Body::Int64(i64::MAX)))
+        );
+    }
+
+    #[test]
+    fn deserialize_var_int16() {
+        let header = Header::VarInt16;
+
+        let body = Body::VarInt16(0);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::VarInt16(i8::MIN as i16);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::VarInt16(i8::MAX as i16);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::VarInt16(i16::MIN);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::VarInt16(i16::MAX);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+    }
+
+    #[test]
+    fn deserialize_var_int32() {
+        let header = Header::VarInt32;
+
+        let body = Body::VarInt32(0);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::VarInt32(i8::MIN as i32);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::VarInt32(i8::MAX as i32);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::VarInt32(i16::MIN as i32);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::VarInt32(i16::MAX as i32);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::VarInt32(i32::MIN);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+
+        let body = Body::VarInt32(i32::MAX);
+        assert_eq!(
+            super::deserialize([header.serialize(), body.serialize()].concat().as_slice()),
+            Ok((header.clone(), body))
+        );
+    }
+
+    #[test]
+    fn deserialize_var_int64() {
+        assert_eq!(
+            super::deserialize(
+                [Header::VarInt64.serialize(), 0i8.encode_var_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::VarInt64, Body::VarInt64(0)))
         );
         assert_eq!(
             super::deserialize(
-                [Header::Int64.serialize(), i8::MAX.encode_var_vec()]
+                [Header::VarInt64.serialize(), i8::MIN.encode_var_vec()]
                     .concat()
                     .as_slice()
             ),
-            Ok((Header::Int64, Body::Int64(i8::MAX as i64)))
+            Ok((Header::VarInt64, Body::VarInt64(i8::MIN as i64)))
         );
         assert_eq!(
             super::deserialize(
-                [Header::Int64.serialize(), i16::MIN.encode_var_vec()]
+                [Header::VarInt64.serialize(), i8::MAX.encode_var_vec()]
                     .concat()
                     .as_slice()
             ),
-            Ok((Header::Int64, Body::Int64(i16::MIN as i64)))
+            Ok((Header::VarInt64, Body::VarInt64(i8::MAX as i64)))
         );
         assert_eq!(
             super::deserialize(
-                [Header::Int64.serialize(), i16::MAX.encode_var_vec()]
+                [Header::VarInt64.serialize(), i16::MIN.encode_var_vec()]
                     .concat()
                     .as_slice()
             ),
-            Ok((Header::Int64, Body::Int64(i16::MAX as i64)))
+            Ok((Header::VarInt64, Body::VarInt64(i16::MIN as i64)))
         );
         assert_eq!(
             super::deserialize(
-                [Header::Int64.serialize(), i32::MIN.encode_var_vec()]
+                [Header::VarInt64.serialize(), i16::MAX.encode_var_vec()]
                     .concat()
                     .as_slice()
             ),
-            Ok((Header::Int64, Body::Int64(i32::MIN as i64)))
+            Ok((Header::VarInt64, Body::VarInt64(i16::MAX as i64)))
         );
         assert_eq!(
             super::deserialize(
-                [Header::Int64.serialize(), i32::MAX.encode_var_vec()]
+                [Header::VarInt64.serialize(), i32::MIN.encode_var_vec()]
                     .concat()
                     .as_slice()
             ),
-            Ok((Header::Int64, Body::Int64(i32::MAX as i64)))
+            Ok((Header::VarInt64, Body::VarInt64(i32::MIN as i64)))
         );
         assert_eq!(
             super::deserialize(
-                [Header::Int64.serialize(), i64::MIN.encode_var_vec()]
+                [Header::VarInt64.serialize(), i32::MAX.encode_var_vec()]
                     .concat()
                     .as_slice()
             ),
-            Ok((Header::Int64, Body::Int64(i64::MIN as i64)))
+            Ok((Header::VarInt64, Body::VarInt64(i32::MAX as i64)))
         );
         assert_eq!(
             super::deserialize(
-                [Header::Int64.serialize(), i64::MAX.encode_var_vec()]
+                [Header::VarInt64.serialize(), i64::MIN.encode_var_vec()]
                     .concat()
                     .as_slice()
             ),
-            Ok((Header::Int64, Body::Int64(i64::MAX as i64)))
+            Ok((Header::VarInt64, Body::VarInt64(i64::MIN as i64)))
+        );
+        assert_eq!(
+            super::deserialize(
+                [Header::VarInt64.serialize(), i64::MAX.encode_var_vec()]
+                    .concat()
+                    .as_slice()
+            ),
+            Ok((Header::VarInt64, Body::VarInt64(i64::MAX as i64)))
         );
     }
 

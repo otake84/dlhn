@@ -14,10 +14,16 @@ fn validate(header: &Header, body: &Body) -> bool {
         (Header::UInt16, Body::UInt16(_)) => true,
         (Header::UInt32, Body::UInt32(_)) => true,
         (Header::UInt64, Body::UInt64(_)) => true,
+        (Header::VarUInt16, Body::VarUInt16(_)) => true,
+        (Header::VarUInt32, Body::VarUInt32(_)) => true,
+        (Header::VarUInt64, Body::VarUInt64(_)) => true,
         (Header::Int8, Body::Int8(_)) => true,
         (Header::Int16, Body::Int16(_)) => true,
         (Header::Int32, Body::Int32(_)) => true,
         (Header::Int64, Body::Int64(_)) => true,
+        (Header::VarInt16, Body::VarInt16(_)) => true,
+        (Header::VarInt32, Body::VarInt32(_)) => true,
+        (Header::VarInt64, Body::VarInt64(_)) => true,
         (Header::Float32, Body::Float32(_)) => true,
         (Header::Float64, Body::Float64(_)) => true,
         (Header::BigUInt, Body::BigUInt(_)) => true,
@@ -111,6 +117,18 @@ mod tests {
         assert!(super::validate(&header, &Body::UInt64(0)));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
+        let header = Header::VarUInt16;
+        assert!(super::validate(&header, &Body::VarUInt16(0)));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::VarUInt32;
+        assert!(super::validate(&header, &Body::VarUInt32(0)));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::VarUInt64;
+        assert!(super::validate(&header, &Body::VarUInt64(0)));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
         let header = Header::Int8;
         assert!(super::validate(&header, &Body::Int8(0)));
         assert!(!super::validate(&header, &Body::Boolean(true)));
@@ -125,6 +143,18 @@ mod tests {
 
         let header = Header::Int64;
         assert!(super::validate(&header, &Body::Int64(0)));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::VarInt16;
+        assert!(super::validate(&header, &Body::VarInt16(0)));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::VarInt32;
+        assert!(super::validate(&header, &Body::VarInt32(0)));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::VarInt64;
+        assert!(super::validate(&header, &Body::VarInt64(0)));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::Float32;
