@@ -8,6 +8,12 @@ pub fn deserialize<R: Read>(read: R) -> Result<(Header, Body), ()> {
     Ok((header, body))
 }
 
+pub fn deserialize_with_separated_header<R: Read>(read: R, header: Header) -> Result<(Header, Body), ()> {
+    let mut buf_reader = BufReader::new(read);
+    let body = Body::deserialize(&header, &mut buf_reader)?;
+    Ok((header, body))
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{body::Body, header::Header, serializer::serialize};
@@ -921,6 +927,18 @@ mod tests {
                     .as_slice()
             ),
             Ok((Header::DateTime, Body::DateTime(body)))
+        );
+    }
+
+    #[test]
+    fn deserialize_with_separated_header_boolean() {
+        assert_eq!(
+            super::deserialize_with_separated_header([0u8].as_ref(), Header::Boolean),
+            Ok((Header::Boolean, Body::Boolean(false)))
+        );
+        assert_eq!(
+            super::deserialize_with_separated_header([1u8].as_ref(), Header::Boolean),
+            Ok((Header::Boolean, Body::Boolean(true)))
         );
     }
 }
