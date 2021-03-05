@@ -1,9 +1,8 @@
 use bigdecimal::BigDecimal;
 use dullahan::{body::Body, header::Header, serializer::serialize};
 use iai::main;
-use indexmap::IndexMap;
 use num_bigint::{BigInt, BigUint};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use time::Date;
 
 fn serialize_optional() -> Result<Vec<u8>, ()> {
@@ -69,13 +68,13 @@ fn serialize_array() -> Result<Vec<u8>, ()> {
 fn serialize_map() -> Result<Vec<u8>, ()> {
     serialize(
         &Header::Map({
-            let mut map = IndexMap::new();
+            let mut map = BTreeMap::new();
             map.insert(String::from("key1"), Header::Boolean);
             map.insert(String::from("key2"), Header::UInt8);
             map
         }),
         &Body::Map({
-            let mut map = IndexMap::new();
+            let mut map = BTreeMap::new();
             map.insert(String::from("key1"), Body::Boolean(true));
             map.insert(String::from("key2"), Body::UInt8(u8::MAX));
             map

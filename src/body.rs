@@ -1,11 +1,10 @@
 use crate::{deserialize_string, header::Header, new_dynamic_buf, serialize_string};
 use bigdecimal::BigDecimal;
-use indexmap::IndexMap;
 use integer_encoding::{VarInt, VarIntReader};
 use num_bigint::{BigInt, BigUint};
 use num_traits::Zero;
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     io::{BufReader, Read, Write},
     mem::MaybeUninit,
 };
@@ -37,7 +36,7 @@ pub enum Body {
     String(String),
     Binary(Vec<u8>),
     Array(Vec<Body>),
-    Map(IndexMap<String, Body>),
+    Map(BTreeMap<String, Body>),
     DynamicMap(HashMap<String, Body>),
     Date(Date),
     DateTime(OffsetDateTime),
@@ -314,7 +313,7 @@ impl Body {
                 Ok(Self::Array(body))
             }
             Header::Map(inner_header) => {
-                let mut body: IndexMap<String, Body> = IndexMap::with_capacity(inner_header.len());
+                let mut body = BTreeMap::new();
                 for (key, h) in inner_header.iter() {
                     body.insert(key.clone(), Self::deserialize(h, buf_reader)?);
                 }
@@ -396,10 +395,12 @@ mod tests {
     use crate::header::Header;
     use bigdecimal::BigDecimal;
     use core::panic;
-    use indexmap::*;
     use integer_encoding::VarInt;
     use num_bigint::{BigInt, BigUint};
-    use std::{collections::HashMap, io::BufReader};
+    use std::{
+        collections::{BTreeMap, HashMap},
+        io::BufReader,
+    };
     use time::{Date, NumericalDuration, OffsetDateTime};
 
     #[test]
@@ -1729,23 +1730,39 @@ mod tests {
 
     #[test]
     fn deserialize_map() {
-        let body: IndexMap<String, Body> = indexmap! { String::from("test") => Body::Boolean(true), String::from("test2") => Body::UInt8(u8::MAX) };
+        let body = {
+            let mut map = BTreeMap::new();
+            map.insert(String::from("test"), Body::Boolean(true));
+            map.insert(String::from("test2"), Body::UInt8(u8::MAX));
+            map
+        };
         assert_eq!(
             super::Body::deserialize(
-                &Header::Map(
-                    indexmap! { String::from("test") => Header::Boolean, String::from("test2") => Header::UInt8 }
-                ),
+                &Header::Map({
+                    let mut map = BTreeMap::new();
+                    map.insert(String::from("test"), Header::Boolean);
+                    map.insert(String::from("test2"), Header::UInt8);
+                    map
+                }),
                 &mut BufReader::new([1u8, u8::MAX].as_ref())
             ),
             Ok(Body::Map(body))
         );
 
-        let body: IndexMap<String, Body> = indexmap! { String::from("test") => Body::String(String::from("aaaa")), String::from("test2") =>Body::String(String::from("bbbb")) };
+        let body = {
+            let mut map = BTreeMap::new();
+            map.insert(String::from("test"), Body::String(String::from("aaaa")));
+            map.insert(String::from("test2"), Body::String(String::from("bbbb")));
+            map
+        };
         assert_eq!(
             super::Body::deserialize(
-                &Header::Map(
-                    indexmap! { String::from("test") => Header::String, String::from("test2") => Header::String }
-                ),
+                &Header::Map({
+                    let mut map = BTreeMap::new();
+                    map.insert(String::from("test"), Header::String);
+                    map.insert(String::from("test2"), Header::String);
+                    map
+                }),
                 &mut BufReader::new(
                     body.iter()
                         .flat_map(|v| if let Body::String(value) = v.1 {

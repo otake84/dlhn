@@ -1,7 +1,7 @@
 use crate::{deserialize_string, serialize_string};
-use indexmap::IndexMap;
 use integer_encoding::{VarInt, VarIntReader};
 use std::{
+    collections::BTreeMap,
     io::{BufReader, Read},
     mem::MaybeUninit,
 };
@@ -32,7 +32,7 @@ pub enum Header {
     String,
     Binary,
     Array(Box<Header>),
-    Map(IndexMap<String, Header>),
+    Map(BTreeMap<String, Header>),
     DynamicMap(Box<Header>),
     Date,
     DateTime,
@@ -206,14 +206,14 @@ impl Header {
             }
             Self::MAP_CODE => {
                 let size = buf_reader.read_varint::<usize>().or(Err(()))?;
-                let mut index_map: IndexMap<String, Header> = IndexMap::with_capacity(size);
+                let mut map = BTreeMap::new();
                 for _ in 0..size {
-                    index_map.insert(
+                    map.insert(
                         deserialize_string(buf_reader)?,
                         Self::deserialize(buf_reader)?,
                     );
                 }
-                Ok(Self::Map(index_map))
+                Ok(Self::Map(map))
             }
             Self::DYNAMIC_MAP_CODE => {
                 let inner = Self::deserialize(buf_reader)?;
@@ -262,8 +262,7 @@ impl Header {
 #[cfg(test)]
 mod tests {
     use super::Header;
-    use indexmap::*;
-    use std::io::BufReader;
+    use std::{collections::BTreeMap, io::BufReader};
 
     #[test]
     fn deserialize() {
@@ -382,16 +381,18 @@ mod tests {
         assert_eq!(
             Header::deserialize(&mut BufReader::new(
                 Header::Map({
-                    let mut map = IndexMap::new();
+                    let mut map = BTreeMap::new();
                     map.insert(String::from("test"), Header::Boolean);
                     map
                 })
                 .serialize()
                 .as_slice()
             )),
-            Ok(Header::Map(
-                indexmap! {String::from("test") => Header::Boolean}
-            ))
+            Ok(Header::Map({
+                let mut map = BTreeMap::new();
+                map.insert(String::from("test"), Header::Boolean);
+                map
+            }))
         );
         assert_eq!(
             Header::deserialize(&mut BufReader::new(

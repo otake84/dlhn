@@ -8,7 +8,10 @@ pub fn deserialize<R: Read>(read: R) -> Result<(Header, Body), ()> {
     Ok((header, body))
 }
 
-pub fn deserialize_with_separated_header<R: Read>(read: R, header: Header) -> Result<(Header, Body), ()> {
+pub fn deserialize_with_separated_header<R: Read>(
+    read: R,
+    header: Header,
+) -> Result<(Header, Body), ()> {
     let mut buf_reader = BufReader::new(read);
     let body = Body::deserialize(&header, &mut buf_reader)?;
     Ok((header, body))
@@ -19,10 +22,12 @@ mod tests {
     use crate::{body::Body, header::Header, serializer::serialize};
     use bigdecimal::BigDecimal;
     use core::panic;
-    use indexmap::*;
     use integer_encoding::VarInt;
     use num_bigint::{BigInt, BigUint};
-    use std::{collections::HashMap, iter};
+    use std::{
+        collections::{BTreeMap, HashMap},
+        iter,
+    };
     use time::{Date, OffsetDateTime};
 
     #[test]
@@ -860,10 +865,19 @@ mod tests {
 
     #[test]
     fn deserialize_map() {
-        let header = Header::Map(
-            indexmap! { String::from("test") => Header::String, String::from("test2") => Header::Boolean },
-        );
-        let body: IndexMap<String, Body> = indexmap! { String::from("test") => Body::String(String::from("aaaa")), String::from("test2") => Body::Boolean(true) };
+        let header = Header::Map({
+            let mut map = BTreeMap::new();
+            map.insert(String::from("test"), Header::String);
+            map.insert(String::from("test2"), Header::Boolean);
+            map
+        });
+        let body = {
+            let mut map = BTreeMap::new();
+            map.insert(String::from("test"), Body::String(String::from("aaaa")));
+            map.insert(String::from("test2"), Body::Boolean(true));
+            map
+        };
+
         assert_eq!(
             super::deserialize(
                 [

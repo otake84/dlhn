@@ -35,17 +35,14 @@ fn validate(header: &Header, body: &Body) -> bool {
             inner_body.iter().all(|v| validate(inner_header, v))
         }
         (Header::Map(inner_header), Body::Map(inner_body)) => {
-            if inner_header.len() != inner_body.len() {
-                return false;
-            }
-
-            inner_body.iter().enumerate().all(|(i, v)| {
-                if let Some(h) = inner_header.get_index(i) {
-                    validate(h.1, v.1)
-                } else {
-                    false
-                }
-            })
+            inner_header.len() == inner_body.len()
+                && inner_body.iter().all(|(k, v)| {
+                    if let Some(h) = inner_header.get(k) {
+                        validate(h, v)
+                    } else {
+                        false
+                    }
+                })
         }
         (Header::DynamicMap(inner_header), Body::DynamicMap(inner_body)) => inner_body
             .iter()
@@ -79,9 +76,8 @@ pub fn serialize_body(body: &Body) -> Vec<u8> {
 mod tests {
     use crate::{body::Body, header::Header};
     use bigdecimal::BigDecimal;
-    use indexmap::*;
     use num_bigint::{BigInt, BigUint};
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
     use time::{Date, OffsetDateTime};
 
     #[test]
@@ -208,20 +204,35 @@ mod tests {
             &Body::Array(vec![Body::UInt8(0), Body::Boolean(true)])
         ));
 
-        let header = Header::Map(indexmap! { String::from("test") => Header::Boolean });
+        let header = Header::Map({
+            let mut map = BTreeMap::new();
+            map.insert(String::from("test"), Header::Boolean);
+            map
+        });
         assert!(super::validate(
             &header,
-            &Body::Map(indexmap! { String::from("test") => Body::Boolean(true) })
+            &Body::Map({
+                let mut map = BTreeMap::new();
+                map.insert(String::from("test"), Body::Boolean(true));
+                map
+            })
         ));
         assert!(!super::validate(
             &header,
-            &Body::Map(indexmap! { String::from("test") => Body::UInt8(0) })
+            &Body::Map({
+                let mut map = BTreeMap::new();
+                map.insert(String::from("test"), Body::UInt8(0));
+                map
+            })
         ));
         assert!(!super::validate(
             &header,
-            &Body::Map(
-                indexmap! { String::from("test") => Body::Boolean(true), String::from("test2") => Body::UInt8(0) }
-            )
+            &Body::Map({
+                let mut map = BTreeMap::new();
+                map.insert(String::from("test"), Body::Boolean(true));
+                map.insert(String::from("test2"), Body::UInt8(0));
+                map
+            })
         ));
 
         let header = Header::DynamicMap(Box::new(Header::Boolean));

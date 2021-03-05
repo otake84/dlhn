@@ -8,7 +8,6 @@ edition = "2018"
 
 [dependencies]
 integer-encoding = "3.0.1"
-indexmap = "1.6.1"
 time = "0.2.24"
 num-traits = "0.2.14"
 num-bigint = "0.3.1"
