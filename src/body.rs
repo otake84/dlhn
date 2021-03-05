@@ -4,7 +4,7 @@ use integer_encoding::{VarInt, VarIntReader};
 use num_bigint::{BigInt, BigUint};
 use num_traits::Zero;
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::BTreeMap,
     io::{BufReader, Read, Write},
     mem::MaybeUninit,
 };
@@ -37,7 +37,7 @@ pub enum Body {
     Binary(Vec<u8>),
     Array(Vec<Body>),
     Map(BTreeMap<String, Body>),
-    DynamicMap(HashMap<String, Body>),
+    DynamicMap(BTreeMap<String, Body>),
     Date(Date),
     DateTime(OffsetDateTime),
 }
@@ -321,7 +321,7 @@ impl Body {
             }
             Header::DynamicMap(inner_header) => {
                 let size = buf_reader.read_varint::<usize>().or(Err(()))?;
-                let mut body = HashMap::with_capacity(size);
+                let mut body = BTreeMap::new();
                 for _ in 0..size {
                     let key = deserialize_string(buf_reader)?;
                     let value = Self::deserialize(inner_header, buf_reader)?;
@@ -397,10 +397,7 @@ mod tests {
     use core::panic;
     use integer_encoding::VarInt;
     use num_bigint::{BigInt, BigUint};
-    use std::{
-        collections::{BTreeMap, HashMap},
-        io::BufReader,
-    };
+    use std::{collections::BTreeMap, io::BufReader};
     use time::{Date, NumericalDuration, OffsetDateTime};
 
     #[test]
@@ -1780,7 +1777,7 @@ mod tests {
 
     #[test]
     fn deserialize_dynamic_map() {
-        let mut body = HashMap::new();
+        let mut body = BTreeMap::new();
         body.insert(String::from("test"), Body::Boolean(true));
         assert_eq!(
             super::Body::deserialize(

@@ -2,7 +2,7 @@ use bigdecimal::BigDecimal;
 use dullahan::{body::Body, header::Header, serializer::serialize};
 use iai::main;
 use num_bigint::{BigInt, BigUint};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use time::Date;
 
 fn serialize_optional() -> Result<Vec<u8>, ()> {
@@ -86,7 +86,7 @@ fn serialize_dynamic_map() -> Result<Vec<u8>, ()> {
     serialize(
         &Header::DynamicMap(Box::new(Header::Boolean)),
         &Body::DynamicMap({
-            let mut map = HashMap::new();
+            let mut map = BTreeMap::new();
             map.insert(String::from("key1"), Body::Boolean(true));
             map.insert(String::from("key2"), Body::Boolean(false));
             map

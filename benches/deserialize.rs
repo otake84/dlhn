@@ -108,6 +108,19 @@ fn deserialize_map() -> Result<(Header, Body), ()> {
     deserialize(serialize(&header, &body).unwrap().as_slice())
 }
 
+fn deserialize_dynamic_map() -> Result<(Header, Body), ()> {
+    let header = Header::DynamicMap(Box::new(Header::Boolean));
+
+    let body = Body::DynamicMap({
+        let mut map = BTreeMap::new();
+        map.insert(String::from("key1"), Body::Boolean(true));
+        map.insert(String::from("key2"), Body::Boolean(false));
+        map
+    });
+
+    deserialize(serialize(&header, &body).unwrap().as_slice())
+}
+
 fn deserialize_datetime96() -> Result<(Header, Body), ()> {
     let body = Body::DateTime(OffsetDateTime::unix_epoch() - 1.nanoseconds());
     deserialize(serialize(&Header::DateTime, &body).unwrap().as_slice())
@@ -129,5 +142,6 @@ main!(
     deserialize_string,
     deserialize_binary,
     deserialize_map,
+    deserialize_dynamic_map,
     deserialize_datetime96,
 );

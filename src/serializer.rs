@@ -77,7 +77,7 @@ mod tests {
     use crate::{body::Body, header::Header};
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
-    use std::collections::{BTreeMap, HashMap};
+    use std::collections::BTreeMap;
     use time::{Date, OffsetDateTime};
 
     #[test]
@@ -239,7 +239,7 @@ mod tests {
         assert!(super::validate(
             &header,
             &Body::DynamicMap({
-                let mut body = HashMap::new();
+                let mut body = BTreeMap::new();
                 body.insert(String::from("test"), Body::Boolean(true));
                 body
             })

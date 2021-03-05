@@ -24,10 +24,7 @@ mod tests {
     use core::panic;
     use integer_encoding::VarInt;
     use num_bigint::{BigInt, BigUint};
-    use std::{
-        collections::{BTreeMap, HashMap},
-        iter,
-    };
+    use std::{collections::BTreeMap, iter};
     use time::{Date, OffsetDateTime};
 
     #[test]
@@ -908,7 +905,7 @@ mod tests {
     fn deserialize_dynamic_map() {
         let header = Header::DynamicMap(Box::new(Header::Boolean));
         let body = Body::DynamicMap({
-            let mut body = HashMap::new();
+            let mut body = BTreeMap::new();
             body.insert(String::from("test"), Body::Boolean(true));
             body
         });
