@@ -5,7 +5,7 @@ use num_bigint::{BigInt, BigUint};
 use num_traits::Zero;
 use std::{
     collections::BTreeMap,
-    io::{BufReader, Read, Write},
+    io::{BufReader, Read},
     mem::MaybeUninit,
 };
 use time::{Date, NumericalDuration, OffsetDateTime};
@@ -152,21 +152,21 @@ impl Body {
                     if v & 0xff_ff_ff_ff_00_00_00_00 == 0 {
                         let mut buf =
                             Vec::with_capacity(kind_size + Body::DATETIME_32_SIZE as usize);
-                        buf.write(&(Body::DATETIME_32_SIZE).to_le_bytes()).unwrap();
-                        buf.write(&(v as u32).to_le_bytes()).unwrap();
+                        buf.extend(&(Body::DATETIME_32_SIZE).to_le_bytes());
+                        buf.extend(&(v as u32).to_le_bytes());
                         buf
                     } else {
                         let mut buf =
                             Vec::with_capacity(kind_size + Body::DATETIME_64_SIZE as usize);
-                        buf.write(&(Body::DATETIME_64_SIZE).to_le_bytes()).unwrap();
-                        buf.write(&v.to_le_bytes()).unwrap();
+                        buf.extend(&(Body::DATETIME_64_SIZE).to_le_bytes());
+                        buf.extend(&v.to_le_bytes());
                         buf
                     }
                 } else {
                     let mut buf = Vec::with_capacity(kind_size + Body::DATETIME_96_SIZE as usize);
-                    buf.write(&(Body::DATETIME_96_SIZE).to_le_bytes()).unwrap();
-                    buf.write(&v.time().nanosecond().to_le_bytes()).unwrap();
-                    buf.write(&v.unix_timestamp().to_le_bytes()).unwrap();
+                    buf.extend(&(Body::DATETIME_96_SIZE).to_le_bytes());
+                    buf.extend(&v.time().nanosecond().to_le_bytes());
+                    buf.extend(&v.unix_timestamp().to_le_bytes());
                     buf
                 }
             }

@@ -3,7 +3,7 @@ use dullahan::{body::Body, header::Header, serializer::serialize};
 use iai::main;
 use num_bigint::{BigInt, BigUint};
 use std::collections::BTreeMap;
-use time::Date;
+use time::{Date, NumericalDuration, OffsetDateTime};
 
 fn serialize_optional() -> Result<Vec<u8>, ()> {
     serialize(
@@ -101,6 +101,11 @@ fn serialize_date() -> Result<Vec<u8>, ()> {
     )
 }
 
+fn serialize_datetime96() -> Result<Vec<u8>, ()> {
+    let body = Body::DateTime(OffsetDateTime::unix_epoch() - 1.nanoseconds());
+    serialize(&Header::DateTime, &body)
+}
+
 main!(
     serialize_optional,
     serialize_uint8,
@@ -116,4 +121,5 @@ main!(
     serialize_map,
     serialize_dynamic_map,
     serialize_date,
+    serialize_datetime96,
 );
