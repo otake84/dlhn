@@ -1,6 +1,6 @@
 use crate::{body::Body, header::Header};
 
-fn validate(header: &Header, body: &Body) -> bool {
+pub(crate) fn validate(header: &Header, body: &Body) -> bool {
     match (header, body) {
         (Header::Optional(inner_header), Body::Optional(inner_body)) => {
             if let Some(v) = &**inner_body {

@@ -6,6 +6,7 @@ pub mod deserializer;
 pub mod header;
 pub mod message;
 pub mod serializer;
+pub mod stream;
 
 #[inline]
 fn serialize_string(v: &str) -> Vec<u8> {
