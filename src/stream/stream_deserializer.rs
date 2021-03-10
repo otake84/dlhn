@@ -7,6 +7,12 @@ pub struct StreamDeserializer<T> {
     buf_reader: BufReader<T>,
 }
 
+impl<T> StreamDeserializer<T> {
+    pub fn header(&self) -> &Header {
+        &self.header
+    }
+}
+
 impl<T: Read> StreamDeserializer<T> {
     pub fn new(reader: T) -> Result<StreamDeserializer<T>, ()> {
         let mut buf_reader = BufReader::new(reader);
