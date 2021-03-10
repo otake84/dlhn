@@ -1,6 +1,7 @@
 use crate::{body::Body, header::Header, serializer::validate};
 use std::io::{BufWriter, Write};
 
+#[derive(Debug)]
 pub struct StreamSerializer<T: Write> {
     header: Header,
     buf_writer: BufWriter<T>,
