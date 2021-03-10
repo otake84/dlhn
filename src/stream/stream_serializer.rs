@@ -1,23 +1,20 @@
 use crate::{body::Body, header::Header, serializer::validate};
-use std::io::{BufWriter, Write};
+use std::io::Write;
 
 #[derive(Debug)]
 pub struct StreamSerializer<T: Write> {
     header: Header,
-    buf_writer: BufWriter<T>,
+    writer: T,
 }
 
 impl<T: Write> StreamSerializer<T> {
     pub fn new(header: Header, writer: T) -> Self {
-        StreamSerializer {
-            header,
-            buf_writer: BufWriter::new(writer),
-        }
+        StreamSerializer { header, writer }
     }
 
     pub fn serialize_header(&mut self) -> Result<usize, ()> {
         let data = self.header.serialize();
-        self.buf_writer
+        self.writer
             .write_all(data.as_slice())
             .and(Ok(data.len()))
             .or(Err(()))
@@ -26,19 +23,19 @@ impl<T: Write> StreamSerializer<T> {
     pub fn serialize_body(&mut self, body: &Body) -> Result<usize, ()> {
         if validate(&self.header, body) {
             let data = body.serialize();
-            self.buf_writer.write_all(data.as_slice()).or(Err(()))?;
+            self.writer.write_all(data.as_slice()).or(Err(()))?;
             Ok(data.len())
         } else {
             Err(())
         }
     }
 
-    pub fn buf_writer(&mut self) -> &mut BufWriter<T> {
-        &mut self.buf_writer
+    pub fn writer(&mut self) -> &mut T {
+        &mut self.writer
     }
 
     pub fn flush(&mut self) -> Result<(), ()> {
-        self.buf_writer.flush().or(Err(()))
+        self.writer.flush().or(Err(()))
     }
 }
 
@@ -67,13 +64,13 @@ mod tests {
             Ok(1)
         );
         assert_eq!(stream_serializer.flush(), Ok(()));
-        assert_eq!(stream_serializer.buf_writer().get_ref().len(), 2);
-        assert_eq!(stream_serializer.buf_writer().get_ref(), &[1, 0]);
+        assert_eq!(stream_serializer.writer().len(), 2);
+        assert_eq!(stream_serializer.writer(), &[1, 0]);
     }
 
     #[test]
     fn serialize_header_and_then_serialize_body() {
-        let writer: Vec<u8> = Vec::new();
+        let writer = Vec::new();
         let mut stream_serializer = StreamSerializer::new(Header::Boolean, writer);
         assert_eq!(stream_serializer.serialize_header(), Ok(1));
         assert_eq!(
@@ -85,7 +82,7 @@ mod tests {
             Ok(1)
         );
         assert_eq!(stream_serializer.flush(), Ok(()));
-        assert_eq!(stream_serializer.buf_writer().get_ref().len(), 3);
-        assert_eq!(stream_serializer.buf_writer().get_ref(), &[1, 1, 0]);
+        assert_eq!(stream_serializer.writer().len(), 3);
+        assert_eq!(stream_serializer.writer(), &[1, 1, 0]);
     }
 }

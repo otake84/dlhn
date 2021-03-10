@@ -44,7 +44,7 @@ mod tests {
         let mut stream_serializer = new_stream_serializer(Vec::new());
 
         let mut stream_deserializer =
-            StreamDeserializer::new(stream_serializer.buf_writer().get_ref().as_slice()).unwrap();
+            StreamDeserializer::new(stream_serializer.writer().as_slice()).unwrap();
         assert_eq!(stream_deserializer.deserialize(), Ok(Body::Boolean(true)));
         assert_eq!(stream_deserializer.deserialize(), Ok(Body::Boolean(false)));
         assert_eq!(stream_deserializer.deserialize(), Err(()));
@@ -53,7 +53,7 @@ mod tests {
     #[test]
     fn position() {
         let mut stream_serializer = new_stream_serializer(Cursor::new(Vec::new()));
-        let cursor = stream_serializer.buf_writer().get_mut();
+        let cursor = stream_serializer.writer();
         cursor.seek(SeekFrom::Start(0)).unwrap();
 
         let mut stream_deserializer = StreamDeserializer::new(cursor).unwrap();
