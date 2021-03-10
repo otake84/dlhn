@@ -1,10 +1,10 @@
 use crate::{body::Body, header::Header};
-use std::io::{BufReader, Read, Seek, SeekFrom};
+use std::io::{Read, Seek, SeekFrom};
 
 #[derive(Debug)]
 pub struct StreamDeserializer<T> {
     header: Header,
-    buf_reader: BufReader<T>,
+    reader: T,
 }
 
 impl<T> StreamDeserializer<T> {
@@ -14,22 +14,21 @@ impl<T> StreamDeserializer<T> {
 }
 
 impl<T: Read> StreamDeserializer<T> {
-    pub fn new(reader: T) -> Result<StreamDeserializer<T>, ()> {
-        let mut buf_reader = BufReader::new(reader);
+    pub fn new(mut reader: T) -> Result<StreamDeserializer<T>, ()> {
         Ok(StreamDeserializer {
-            header: Header::deserialize(&mut buf_reader)?,
-            buf_reader,
+            header: Header::deserialize(&mut reader)?,
+            reader,
         })
     }
 
     pub fn deserialize(&mut self) -> Result<Body, ()> {
-        Body::deserialize(&self.header, &mut self.buf_reader)
+        Body::deserialize(&self.header, &mut self.reader)
     }
 }
 
 impl<T: Seek> StreamDeserializer<T> {
     pub fn position(&mut self) -> Result<u64, ()> {
-        self.buf_reader.seek(SeekFrom::Current(0)).or(Err(()))
+        self.reader.seek(SeekFrom::Current(0)).or(Err(()))
     }
 }
 

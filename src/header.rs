@@ -1,10 +1,6 @@
 use crate::{deserialize_string, serialize_string};
 use integer_encoding::{VarInt, VarIntReader};
-use std::{
-    collections::BTreeMap,
-    io::{BufReader, Read},
-    mem::MaybeUninit,
-};
+use std::{collections::BTreeMap, io::Read, mem::MaybeUninit};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Header {
@@ -169,13 +165,13 @@ impl Header {
         }
     }
 
-    pub(crate) fn deserialize<R: Read>(buf_reader: &mut BufReader<R>) -> Result<Header, ()> {
+    pub(crate) fn deserialize<R: Read>(reader: &mut R) -> Result<Header, ()> {
         let mut buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
-        buf_reader.read_exact(&mut buf).or(Err(()))?;
+        reader.read_exact(&mut buf).or(Err(()))?;
 
         match *buf.first().ok_or(())? {
             Self::OPTIONAL_CODE => {
-                let inner = Self::deserialize(buf_reader)?;
+                let inner = Self::deserialize(reader)?;
                 Ok(Self::Optional(Box::new(inner)))
             }
             Self::BOOLEAN_CODE => Ok(Self::Boolean),
@@ -201,22 +197,19 @@ impl Header {
             Self::STRING_CODE => Ok(Self::String),
             Self::BINARY_CODE => Ok(Self::Binary),
             Self::ARRAY_CODE => {
-                let inner = Self::deserialize(buf_reader)?;
+                let inner = Self::deserialize(reader)?;
                 Ok(Self::Array(Box::new(inner)))
             }
             Self::MAP_CODE => {
-                let size = buf_reader.read_varint::<usize>().or(Err(()))?;
+                let size = reader.read_varint::<usize>().or(Err(()))?;
                 let mut map = BTreeMap::new();
                 for _ in 0..size {
-                    map.insert(
-                        deserialize_string(buf_reader)?,
-                        Self::deserialize(buf_reader)?,
-                    );
+                    map.insert(deserialize_string(reader)?, Self::deserialize(reader)?);
                 }
                 Ok(Self::Map(map))
             }
             Self::DYNAMIC_MAP_CODE => {
-                let inner = Self::deserialize(buf_reader)?;
+                let inner = Self::deserialize(reader)?;
                 Ok(Self::DynamicMap(Box::new(inner)))
             }
             Self::DATE_CODE => Ok(Self::Date),
