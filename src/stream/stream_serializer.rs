@@ -8,10 +8,10 @@ pub struct StreamSerializer<T: Write> {
 }
 
 impl<T: Write> StreamSerializer<T> {
-    pub fn new(header: Header, write: T) -> Self {
+    pub fn new(header: Header, writer: T) -> Self {
         StreamSerializer {
             header,
-            buf_writer: BufWriter::new(write),
+            buf_writer: BufWriter::new(writer),
         }
     }
 
@@ -33,8 +33,8 @@ impl<T: Write> StreamSerializer<T> {
         }
     }
 
-    pub fn get_ref(&self) -> &T {
-        &self.buf_writer.get_ref()
+    pub fn buf_writer(&mut self) -> &mut BufWriter<T> {
+        &mut self.buf_writer
     }
 
     pub fn flush(&mut self) -> Result<(), ()> {
@@ -67,8 +67,8 @@ mod tests {
             Ok(1)
         );
         assert_eq!(stream_serializer.flush(), Ok(()));
-        assert_eq!(stream_serializer.get_ref().len(), 2);
-        assert_eq!(stream_serializer.get_ref(), &[1, 0]);
+        assert_eq!(stream_serializer.buf_writer().get_ref().len(), 2);
+        assert_eq!(stream_serializer.buf_writer().get_ref(), &[1, 0]);
     }
 
     #[test]
@@ -85,7 +85,7 @@ mod tests {
             Ok(1)
         );
         assert_eq!(stream_serializer.flush(), Ok(()));
-        assert_eq!(stream_serializer.get_ref().len(), 3);
-        assert_eq!(stream_serializer.get_ref(), &[1, 1, 0]);
+        assert_eq!(stream_serializer.buf_writer().get_ref().len(), 3);
+        assert_eq!(stream_serializer.buf_writer().get_ref(), &[1, 1, 0]);
     }
 }
