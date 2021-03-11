@@ -1,6 +1,6 @@
 use crate::{deserialize_string, serialize_string};
 use integer_encoding::{VarInt, VarIntReader};
-use std::{collections::BTreeMap, io::Read, mem::MaybeUninit};
+use std::{collections::BTreeMap, convert::TryFrom, io::Read, mem::MaybeUninit};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Header {
@@ -32,7 +32,7 @@ pub enum Header {
     DynamicMap(Box<Header>),
     Date,
     DateTime,
-    Extension(u8),
+    Extension(ExtensionCode),
 }
 
 impl Header {
@@ -167,7 +167,7 @@ impl Header {
                 vec![Self::DateTime.code()]
             }
             Self::Extension(code) => {
-                vec![*code]
+                vec![code.code()]
             }
         }
     }
@@ -222,7 +222,7 @@ impl Header {
             Self::DATE_CODE => Ok(Self::Date),
             Self::DATETIME_CODE => Ok(Self::DateTime),
             code @ Self::EXTENSION_RANGE_START..=Self::EXTENSION_RANGE_END => {
-                Ok(Self::Extension(code))
+                ExtensionCode::try_from(code).map(Self::Extension)
             }
             _ => Err(()),
         }
@@ -258,14 +258,37 @@ impl Header {
             Self::DynamicMap(_) => Self::DYNAMIC_MAP_CODE,
             Self::Date => Self::DATE_CODE,
             Self::DateTime => Self::DATETIME_CODE,
-            Self::Extension(code) => *code,
+            Self::Extension(code) => code.code(),
         }
+    }
+}
+
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum ExtensionCode {
+    Code255 = 255,
+}
+
+impl TryFrom<u8> for ExtensionCode {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            255 => Ok(Self::Code255),
+            _ => Err(()),
+        }
+    }
+}
+
+impl ExtensionCode {
+    pub const fn code(&self) -> u8 {
+        *self as u8
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Header;
+    use super::{ExtensionCode, Header};
     use std::{collections::BTreeMap, io::BufReader};
 
     #[test]
@@ -417,8 +440,12 @@ mod tests {
             Ok(Header::DateTime)
         );
         assert_eq!(
-            Header::deserialize(&mut Header::Extension(255).serialize().as_slice()),
-            Ok(Header::Extension(255))
+            Header::deserialize(
+                &mut Header::Extension(ExtensionCode::Code255)
+                    .serialize()
+                    .as_slice()
+            ),
+            Ok(Header::Extension(ExtensionCode::Code255))
         );
     }
 }
