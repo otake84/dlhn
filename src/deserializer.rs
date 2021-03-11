@@ -940,6 +940,19 @@ mod tests {
     }
 
     #[test]
+    fn deserialize_extension() {
+        let body = Body::Extension(vec![0, 1, 2, 3]);
+        assert_eq!(
+            super::deserialize(
+                serialize(&Header::Extension(255), &body)
+                    .unwrap()
+                    .as_slice()
+            ),
+            Ok((Header::Extension(255), body))
+        );
+    }
+
+    #[test]
     fn deserialize_with_separated_header_boolean() {
         assert_eq!(
             super::deserialize_with_separated_header([0u8].as_ref(), Header::Boolean),
