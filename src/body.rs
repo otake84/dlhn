@@ -3,11 +3,7 @@ use bigdecimal::BigDecimal;
 use integer_encoding::{VarInt, VarIntReader};
 use num_bigint::{BigInt, BigUint};
 use num_traits::Zero;
-use std::{
-    collections::BTreeMap,
-    io::{BufReader, Read},
-    mem::MaybeUninit,
-};
+use std::{collections::BTreeMap, io::Read, mem::MaybeUninit};
 use time::{Date, NumericalDuration, OffsetDateTime};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -173,26 +169,23 @@ impl Body {
         }
     }
 
-    pub(crate) fn deserialize<R: Read>(
-        header: &Header,
-        buf_reader: &mut BufReader<R>,
-    ) -> Result<Body, ()> {
+    pub(crate) fn deserialize<R: Read>(header: &Header, reader: &mut R) -> Result<Body, ()> {
         match header {
             Header::Optional(inner_header) => {
                 let mut buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
-                buf_reader.read_exact(&mut buf).or(Err(()))?;
+                reader.read_exact(&mut buf).or(Err(()))?;
                 match buf[0] {
                     0 => Ok(Self::Optional(Box::new(None))),
                     1 => Ok(Self::Optional(Box::new(Some(Self::deserialize(
                         inner_header,
-                        buf_reader,
+                        reader,
                     )?)))),
                     _ => Err(()),
                 }
             }
             Header::Boolean => {
                 let mut body_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
-                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                reader.read_exact(&mut body_buf).or(Err(()))?;
                 match body_buf[0] {
                     0 => Ok(Self::Boolean(false)),
                     1 => Ok(Self::Boolean(true)),
@@ -201,151 +194,132 @@ impl Body {
             }
             Header::UInt8 => {
                 let mut body_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
-                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::UInt8(u8::from_le_bytes(body_buf)))
             }
             Header::UInt16 => {
                 let mut body_buf: [u8; 2] = unsafe { MaybeUninit::uninit().assume_init() };
-                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::UInt16(u16::from_le_bytes(body_buf)))
             }
             Header::UInt32 => {
                 let mut body_buf: [u8; 4] = unsafe { MaybeUninit::uninit().assume_init() };
-                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::UInt32(u32::from_le_bytes(body_buf)))
             }
             Header::UInt64 => {
                 let mut body_buf: [u8; 8] = unsafe { MaybeUninit::uninit().assume_init() };
-                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::UInt64(u64::from_le_bytes(body_buf)))
             }
-            Header::VarUInt16 => buf_reader
-                .read_varint::<u16>()
-                .map(Self::VarUInt16)
-                .or(Err(())),
-            Header::VarUInt32 => buf_reader
-                .read_varint::<u32>()
-                .map(Self::VarUInt32)
-                .or(Err(())),
-            Header::VarUInt64 => buf_reader
-                .read_varint::<u64>()
-                .map(Self::VarUInt64)
-                .or(Err(())),
+            Header::VarUInt16 => reader.read_varint::<u16>().map(Self::VarUInt16).or(Err(())),
+            Header::VarUInt32 => reader.read_varint::<u32>().map(Self::VarUInt32).or(Err(())),
+            Header::VarUInt64 => reader.read_varint::<u64>().map(Self::VarUInt64).or(Err(())),
             Header::Int8 => {
                 let mut body_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
-                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Int8(i8::from_le_bytes(body_buf)))
             }
             Header::Int16 => {
                 let mut body_buf: [u8; 2] = unsafe { MaybeUninit::uninit().assume_init() };
-                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Int16(i16::from_le_bytes(body_buf)))
             }
             Header::Int32 => {
                 let mut body_buf: [u8; 4] = unsafe { MaybeUninit::uninit().assume_init() };
-                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Int32(i32::from_le_bytes(body_buf)))
             }
             Header::Int64 => {
                 let mut body_buf: [u8; 8] = unsafe { MaybeUninit::uninit().assume_init() };
-                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Int64(i64::from_le_bytes(body_buf)))
             }
-            Header::VarInt16 => buf_reader
-                .read_varint::<i16>()
-                .map(Self::VarInt16)
-                .or(Err(())),
-            Header::VarInt32 => buf_reader
-                .read_varint::<i32>()
-                .map(Self::VarInt32)
-                .or(Err(())),
-            Header::VarInt64 => buf_reader
-                .read_varint::<i64>()
-                .map(Self::VarInt64)
-                .or(Err(())),
+            Header::VarInt16 => reader.read_varint::<i16>().map(Self::VarInt16).or(Err(())),
+            Header::VarInt32 => reader.read_varint::<i32>().map(Self::VarInt32).or(Err(())),
+            Header::VarInt64 => reader.read_varint::<i64>().map(Self::VarInt64).or(Err(())),
             Header::Float32 => {
                 let mut body_buf: [u8; 4] = unsafe { MaybeUninit::uninit().assume_init() };
-                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Float32(f32::from_le_bytes(body_buf)))
             }
             Header::Float64 => {
                 let mut body_buf: [u8; 8] = unsafe { MaybeUninit::uninit().assume_init() };
-                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Float64(f64::from_le_bytes(body_buf)))
             }
             Header::BigUInt => {
-                let mut body_buf = new_dynamic_buf(buf_reader.read_varint::<usize>().or(Err(()))?);
-                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                let mut body_buf = new_dynamic_buf(reader.read_varint::<usize>().or(Err(()))?);
+                reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::BigUInt(BigUint::from_bytes_le(body_buf.as_slice())))
             }
             Header::BigInt => {
-                let mut body_buf = new_dynamic_buf(buf_reader.read_varint::<usize>().or(Err(()))?);
-                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                let mut body_buf = new_dynamic_buf(reader.read_varint::<usize>().or(Err(()))?);
+                reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::BigInt(BigInt::from_signed_bytes_le(
                     body_buf.as_slice(),
                 )))
             }
             Header::BigDecimal => {
-                let size = buf_reader.read_varint::<usize>().or(Err(()))?;
+                let size = reader.read_varint::<usize>().or(Err(()))?;
                 if size == 0 {
                     Ok(Self::BigDecimal(BigDecimal::from(0)))
                 } else {
                     let mut body_buf = new_dynamic_buf(size);
-                    buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                    reader.read_exact(&mut body_buf).or(Err(()))?;
                     Ok(Self::BigDecimal(BigDecimal::new(
                         BigInt::from_signed_bytes_le(body_buf.as_slice()),
-                        buf_reader.read_varint::<i64>().or(Err(()))?,
+                        reader.read_varint::<i64>().or(Err(()))?,
                     )))
                 }
             }
-            Header::String => deserialize_string(buf_reader).map(Self::String),
+            Header::String => deserialize_string(reader).map(Self::String),
             Header::Binary => {
-                let mut body_buf = new_dynamic_buf(buf_reader.read_varint::<usize>().or(Err(()))?);
-                buf_reader.read_exact(&mut body_buf).or(Err(()))?;
+                let mut body_buf = new_dynamic_buf(reader.read_varint::<usize>().or(Err(()))?);
+                reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Binary(body_buf))
             }
             Header::Array(inner_header) => {
-                let size = buf_reader.read_varint::<usize>().or(Err(()))?;
+                let size = reader.read_varint::<usize>().or(Err(()))?;
                 let mut body = Vec::with_capacity(size);
                 for _ in 0..size {
-                    body.push(Self::deserialize(inner_header, buf_reader)?);
+                    body.push(Self::deserialize(inner_header, reader)?);
                 }
                 Ok(Self::Array(body))
             }
             Header::Map(inner_header) => {
                 let mut body = BTreeMap::new();
                 for (key, h) in inner_header.iter() {
-                    body.insert(key.clone(), Self::deserialize(h, buf_reader)?);
+                    body.insert(key.clone(), Self::deserialize(h, reader)?);
                 }
                 Ok(Self::Map(body))
             }
             Header::DynamicMap(inner_header) => {
-                let size = buf_reader.read_varint::<usize>().or(Err(()))?;
+                let size = reader.read_varint::<usize>().or(Err(()))?;
                 let mut body = BTreeMap::new();
                 for _ in 0..size {
-                    let key = deserialize_string(buf_reader)?;
-                    let value = Self::deserialize(inner_header, buf_reader)?;
+                    let key = deserialize_string(reader)?;
+                    let value = Self::deserialize(inner_header, reader)?;
                     body.insert(key, value);
                 }
                 Ok(Self::DynamicMap(body))
             }
             Header::Date => {
-                let year = buf_reader.read_varint::<i32>().or(Err(()))? + Self::DATE_YEAR_OFFSET;
-                let ordinal =
-                    buf_reader.read_varint::<u16>().or(Err(()))? + Self::DATE_ORDINAL_OFFSET;
+                let year = reader.read_varint::<i32>().or(Err(()))? + Self::DATE_YEAR_OFFSET;
+                let ordinal = reader.read_varint::<u16>().or(Err(()))? + Self::DATE_ORDINAL_OFFSET;
                 let date = Date::try_from_yo(year, ordinal).or(Err(()))?;
 
                 Ok(Self::Date(date))
             }
             Header::DateTime => {
                 let mut kind_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
-                buf_reader.read_exact(&mut kind_buf).or(Err(()))?;
+                reader.read_exact(&mut kind_buf).or(Err(()))?;
 
                 match u8::from_le_bytes(kind_buf) {
                     Self::DATETIME_32_SIZE => {
                         let mut second_buf: [u8; Body::DATETIME_32_SIZE as usize] =
                             unsafe { MaybeUninit::uninit().assume_init() };
-                        buf_reader.read_exact(&mut second_buf).or(Err(()))?;
+                        reader.read_exact(&mut second_buf).or(Err(()))?;
 
                         Ok(Self::DateTime(
                             OffsetDateTime::unix_epoch() + u32::from_le_bytes(second_buf).seconds(),
@@ -354,7 +328,7 @@ impl Body {
                     Self::DATETIME_64_SIZE => {
                         let mut nanosecond_and_second_buf: [u8; Body::DATETIME_64_SIZE as usize] =
                             unsafe { MaybeUninit::uninit().assume_init() };
-                        buf_reader
+                        reader
                             .read_exact(&mut nanosecond_and_second_buf)
                             .or(Err(()))?;
 
@@ -369,12 +343,12 @@ impl Body {
                     Self::DATETIME_96_SIZE => {
                         let mut nanosecond_buf: [u8; 4] =
                             unsafe { MaybeUninit::uninit().assume_init() };
-                        buf_reader.read_exact(&mut nanosecond_buf).or(Err(()))?;
+                        reader.read_exact(&mut nanosecond_buf).or(Err(()))?;
                         let nanosecond = u32::from_le_bytes(nanosecond_buf);
 
                         let mut unix_timestamp_buf: [u8; 8] =
                             unsafe { MaybeUninit::uninit().assume_init() };
-                        buf_reader.read_exact(&mut unix_timestamp_buf).or(Err(()))?;
+                        reader.read_exact(&mut unix_timestamp_buf).or(Err(()))?;
                         let unix_timestamp = i64::from_le_bytes(unix_timestamp_buf);
 
                         Ok(Self::DateTime(

@@ -1,19 +1,17 @@
 use crate::{body::Body, header::Header};
-use std::io::{BufReader, Read};
+use std::io::Read;
 
-pub fn deserialize<R: Read>(read: R) -> Result<(Header, Body), ()> {
-    let mut buf_reader = BufReader::new(read);
-    let header = Header::deserialize(&mut buf_reader)?;
-    let body = Body::deserialize(&header, &mut buf_reader)?;
+pub fn deserialize<R: Read>(mut reader: R) -> Result<(Header, Body), ()> {
+    let header = Header::deserialize(&mut reader)?;
+    let body = Body::deserialize(&header, &mut reader)?;
     Ok((header, body))
 }
 
 pub fn deserialize_with_separated_header<R: Read>(
-    read: R,
+    mut reader: R,
     header: Header,
 ) -> Result<(Header, Body), ()> {
-    let mut buf_reader = BufReader::new(read);
-    let body = Body::deserialize(&header, &mut buf_reader)?;
+    let body = Body::deserialize(&header, &mut reader)?;
     Ok((header, body))
 }
 
