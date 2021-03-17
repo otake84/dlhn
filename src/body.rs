@@ -39,6 +39,7 @@ pub enum Body {
     Extension8(u8),
     Extension16([u8; 2]),
     Extension32([u8; 4]),
+    Extension64([u8; 8]),
     Extension(Vec<u8>),
 }
 
@@ -173,6 +174,7 @@ impl Body {
             Self::Extension8(v) => Vec::from(v.to_le_bytes()),
             Self::Extension16(v) => Vec::from(v.as_ref()),
             Self::Extension32(v) => Vec::from(v.as_ref()),
+            Self::Extension64(v) => Vec::from(v.as_ref()),
             Self::Extension(v) => {
                 let mut buf = v.len().encode_var_vec();
                 buf.extend(v.as_slice());
@@ -385,6 +387,11 @@ impl Body {
                 let mut body_buf: [u8; 4] = unsafe { MaybeUninit::uninit().assume_init() };
                 reader.read_exact(&mut body_buf).or(Err(()))?;
                 Ok(Self::Extension32(body_buf))
+            }
+            Header::Extension64(_) => {
+                let mut body_buf: [u8; 8] = unsafe { MaybeUninit::uninit().assume_init() };
+                reader.read_exact(&mut body_buf).or(Err(()))?;
+                Ok(Self::Extension64(body_buf))
             }
             Header::Extension(_) => {
                 let mut body_buf = new_dynamic_buf(reader.read_varint::<usize>().or(Err(()))?);
@@ -853,6 +860,14 @@ mod tests {
         assert_eq!(
             Body::Extension32([255, 0, 255, 0]).serialize(),
             [255, 0, 255, 0]
+        );
+    }
+
+    #[test]
+    fn serialize_extension64() {
+        assert_eq!(
+            Body::Extension64([255, 0, 255, 0, 255, 0, 255, 0]).serialize(),
+            [255, 0, 255, 0, 255, 0, 255, 0]
         );
     }
 
@@ -1980,6 +1995,15 @@ mod tests {
         let body = Body::Extension32([123, 0, 123, 0]);
         assert_eq!(
             super::Body::deserialize(&Header::Extension32(255), &mut body.serialize().as_slice()),
+            Ok(body)
+        );
+    }
+
+    #[test]
+    fn deserialize_extension64() {
+        let body = Body::Extension64([123, 0, 123, 0, 123, 0, 123, 0]);
+        assert_eq!(
+            super::Body::deserialize(&Header::Extension64(255), &mut body.serialize().as_slice()),
             Ok(body)
         );
     }

@@ -52,6 +52,7 @@ pub(crate) fn validate(header: &Header, body: &Body) -> bool {
         (Header::Extension8(_), Body::Extension8(_)) => true,
         (Header::Extension16(_), Body::Extension16(_)) => true,
         (Header::Extension32(_), Body::Extension32(_)) => true,
+        (Header::Extension64(_), Body::Extension64(_)) => true,
         (Header::Extension(_), Body::Extension(_)) => true,
         _ => false,
     }
@@ -279,6 +280,13 @@ mod tests {
         assert!(super::validate(
             &header,
             &Body::Extension32([123, 0, 123, 0])
+        ));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::Extension64(255);
+        assert!(super::validate(
+            &header,
+            &Body::Extension64([123, 0, 123, 0, 123, 0, 123, 0])
         ));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
