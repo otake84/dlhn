@@ -49,6 +49,7 @@ pub(crate) fn validate(header: &Header, body: &Body) -> bool {
             .all(|(_key, value)| validate(inner_header, value)),
         (Header::Date, Body::Date(_)) => true,
         (Header::DateTime, Body::DateTime(_)) => true,
+        (Header::Extension8(_), Body::Extension8(_)) => true,
         (Header::Extension(_), Body::Extension(_)) => true,
         _ => false,
     }
@@ -262,6 +263,10 @@ mod tests {
             &header,
             &Body::DateTime(OffsetDateTime::unix_epoch())
         ));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::Extension8(255);
+        assert!(super::validate(&header, &Body::Extension8(123)));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::Extension(ExtensionCode::Code255);

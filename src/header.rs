@@ -32,6 +32,7 @@ pub enum Header {
     DynamicMap(Box<Header>),
     Date,
     DateTime,
+    Extension8(u64),
     Extension(ExtensionCode),
 }
 
@@ -64,6 +65,7 @@ impl Header {
     const DYNAMIC_MAP_CODE: u8 = 25;
     const DATE_CODE: u8 = 26;
     const DATETIME_CODE: u8 = 27;
+    const EXTENSION8_CODE: u8 = 28;
 
     const EXTENSION_RANGE_START: u8 = 255;
     const EXTENSION_RANGE_END: u8 = 255;
@@ -166,6 +168,11 @@ impl Header {
             Self::DateTime => {
                 vec![Self::DateTime.code()]
             }
+            Self::Extension8(code) => {
+                let mut buf = vec![Self::EXTENSION8_CODE];
+                buf.append(&mut code.encode_var_vec());
+                buf
+            }
             Self::Extension(code) => {
                 vec![code.code()]
             }
@@ -221,6 +228,7 @@ impl Header {
             }
             Self::DATE_CODE => Ok(Self::Date),
             Self::DATETIME_CODE => Ok(Self::DateTime),
+            Self::EXTENSION8_CODE => Ok(Self::Extension8(reader.read_varint().or(Err(()))?)),
             code @ Self::EXTENSION_RANGE_START..=Self::EXTENSION_RANGE_END => {
                 ExtensionCode::try_from(code).map(Self::Extension)
             }
@@ -258,6 +266,7 @@ impl Header {
             Self::DynamicMap(_) => Self::DYNAMIC_MAP_CODE,
             Self::Date => Self::DATE_CODE,
             Self::DateTime => Self::DATETIME_CODE,
+            Self::Extension8(_) => Self::EXTENSION8_CODE,
             Self::Extension(code) => code.code(),
         }
     }
@@ -438,6 +447,12 @@ mod tests {
         assert_eq!(
             Header::deserialize(&mut BufReader::new(Header::DateTime.serialize().as_slice())),
             Ok(Header::DateTime)
+        );
+        assert_eq!(
+            Header::deserialize(&mut BufReader::new(
+                Header::Extension8(255).serialize().as_slice()
+            )),
+            Ok(Header::Extension8(255))
         );
         assert_eq!(
             Header::deserialize(

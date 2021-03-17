@@ -36,6 +36,7 @@ pub enum Body {
     DynamicMap(BTreeMap<String, Body>),
     Date(Date),
     DateTime(OffsetDateTime),
+    Extension8(u8),
     Extension(Vec<u8>),
 }
 
@@ -167,6 +168,7 @@ impl Body {
                     buf
                 }
             }
+            Self::Extension8(v) => Vec::from(v.to_le_bytes()),
             Self::Extension(v) => {
                 let mut buf = v.len().encode_var_vec();
                 buf.extend(v.as_slice());
@@ -364,6 +366,11 @@ impl Body {
                     }
                     _ => Err(()),
                 }
+            }
+            Header::Extension8(_) => {
+                let mut body_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
+                reader.read_exact(&mut body_buf).or(Err(()))?;
+                Ok(Self::Extension8(u8::from_le_bytes(body_buf)))
             }
             Header::Extension(_) => {
                 let mut body_buf = new_dynamic_buf(reader.read_varint::<usize>().or(Err(()))?);
@@ -815,6 +822,11 @@ mod tests {
                 255
             ]
         );
+    }
+
+    #[test]
+    fn serialize_extension8() {
+        assert_eq!(Body::Extension8(255).serialize(), [255]);
     }
 
     #[test]
@@ -1914,6 +1926,15 @@ mod tests {
                 &Header::DateTime,
                 &mut BufReader::new(body.serialize().as_slice())
             ),
+            Ok(body)
+        );
+    }
+
+    #[test]
+    fn deserialize_extension8() {
+        let body = Body::Extension8(123);
+        assert_eq!(
+            super::Body::deserialize(&Header::Extension8(255), &mut body.serialize().as_slice()),
             Ok(body)
         );
     }
