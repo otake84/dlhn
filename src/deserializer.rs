@@ -957,6 +957,19 @@ mod tests {
     }
 
     #[test]
+    fn deserialize_extension16() {
+        let body = Body::Extension16([123, 0]);
+        assert_eq!(
+            super::deserialize(
+                serialize(&Header::Extension16(255), &body)
+                    .unwrap()
+                    .as_slice()
+            ),
+            Ok((Header::Extension16(255), body))
+        );
+    }
+
+    #[test]
     fn deserialize_extension() {
         let body = Body::Extension(vec![0, 1, 2, 3]);
         assert_eq!(
