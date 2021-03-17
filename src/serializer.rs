@@ -59,11 +59,11 @@ pub(crate) fn validate(header: &Header, body: &Body) -> bool {
 }
 
 pub fn serialize(header: &Header, body: &Body) -> Result<Vec<u8>, ()> {
-    if !validate(header, body) {
-        return Err(());
+    if validate(header, body) {
+        Ok(serialize_without_validate(header, body))
+    } else {
+        Err(())
     }
-
-    Ok(serialize_without_validate(header, body))
 }
 
 #[inline]
