@@ -73,6 +73,7 @@ pub fn serialize_without_validate(header: &Header, body: &Body) -> Vec<u8> {
     buf
 }
 
+#[inline]
 pub fn serialize_body(body: &Body) -> Vec<u8> {
     body.serialize()
 }
