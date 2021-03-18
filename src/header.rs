@@ -1,4 +1,4 @@
-use crate::{deserialize_string, serialize_string};
+use crate::{deserialize_string, new_dynamic_buf, serialize_string};
 use integer_encoding::{VarInt, VarIntReader};
 use std::{collections::BTreeMap, convert::TryFrom, io::Read, mem::MaybeUninit};
 
@@ -155,8 +155,7 @@ impl Header {
                 buf
             }
             Self::Map(inner) => {
-                let mut buf = vec![Self::MAP_CODE];
-                buf.append(&mut inner.len().encode_var_vec());
+                let mut buf = Self::new_dynamic_buf_with_number(Self::MAP_CODE, inner.len() as u64);
                 inner.iter().for_each(|(k, v)| {
                     buf.append(&mut serialize_string(k));
                     buf.append(&mut v.serialize());
@@ -175,24 +174,16 @@ impl Header {
                 vec![Self::DateTime.code()]
             }
             Self::Extension8(code) => {
-                let mut buf = vec![Self::EXTENSION8_CODE];
-                buf.append(&mut code.encode_var_vec());
-                buf
+                Self::new_dynamic_buf_with_number(Self::EXTENSION8_CODE, *code)
             }
             Self::Extension16(code) => {
-                let mut buf = vec![Self::EXTENSION16_CODE];
-                buf.append(&mut code.encode_var_vec());
-                buf
+                Self::new_dynamic_buf_with_number(Self::EXTENSION16_CODE, *code)
             }
             Self::Extension32(code) => {
-                let mut buf = vec![Self::EXTENSION32_CODE];
-                buf.append(&mut code.encode_var_vec());
-                buf
+                Self::new_dynamic_buf_with_number(Self::EXTENSION32_CODE, *code)
             }
             Self::Extension64(code) => {
-                let mut buf = vec![Self::EXTENSION64_CODE];
-                buf.append(&mut code.encode_var_vec());
-                buf
+                Self::new_dynamic_buf_with_number(Self::EXTENSION64_CODE, *code)
             }
             Self::Extension(code) => {
                 vec![code.code()]
@@ -296,6 +287,14 @@ impl Header {
             Self::Extension64(_) => Self::EXTENSION64_CODE,
             Self::Extension(code) => code.code(),
         }
+    }
+
+    #[inline(always)]
+    fn new_dynamic_buf_with_number(header_code: u8, number: u64) -> Vec<u8> {
+        let mut buf = new_dynamic_buf(number.required_space() + 1);
+        buf[0] = header_code;
+        number.encode_var(&mut buf[1..]);
+        buf
     }
 }
 

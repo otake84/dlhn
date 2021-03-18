@@ -106,6 +106,26 @@ fn serialize_datetime96() -> Result<Vec<u8>, ()> {
     serialize(&Header::DateTime, &body)
 }
 
+fn serialize_extension8() -> Result<Vec<u8>, ()> {
+    let body = Body::Extension8(123);
+    serialize(&Header::Extension8(255), &body)
+}
+
+fn serialize_extension16() -> Result<Vec<u8>, ()> {
+    let body = Body::Extension16([123, 0]);
+    serialize(&Header::Extension16(255), &body)
+}
+
+fn serialize_extension32() -> Result<Vec<u8>, ()> {
+    let body = Body::Extension32([123, 0, 123, 0]);
+    serialize(&Header::Extension32(255), &body)
+}
+
+fn serialize_extension64() -> Result<Vec<u8>, ()> {
+    let body = Body::Extension64([123, 0, 123, 0, 123, 0, 123, 0]);
+    serialize(&Header::Extension64(255), &body)
+}
+
 main!(
     serialize_optional,
     serialize_uint8,
@@ -122,4 +142,8 @@ main!(
     serialize_dynamic_map,
     serialize_date,
     serialize_datetime96,
+    serialize_extension8,
+    serialize_extension16,
+    serialize_extension32,
+    serialize_extension64,
 );

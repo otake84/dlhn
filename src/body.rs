@@ -140,8 +140,11 @@ impl Body {
                 buf
             }
             Self::Date(v) => {
-                let mut buf = (v.year() - Self::DATE_YEAR_OFFSET).encode_var_vec();
-                buf.append(&mut (v.ordinal() - Self::DATE_ORDINAL_OFFSET).encode_var_vec());
+                let year = v.year() - Self::DATE_YEAR_OFFSET;
+                let ordinal = v.ordinal() - Self::DATE_ORDINAL_OFFSET;
+                let mut buf = new_dynamic_buf(year.required_space() + ordinal.required_space());
+                year.encode_var(&mut buf);
+                ordinal.encode_var(&mut buf[year.required_space()..]);
                 buf
             }
             Self::DateTime(v) => {
