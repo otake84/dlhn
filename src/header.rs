@@ -1,4 +1,4 @@
-use crate::{deserialize_string, serialize_string};
+use crate::{deserialize_string, new_dynamic_buf, serialize_string};
 use integer_encoding::{VarInt, VarIntReader};
 use std::{collections::BTreeMap, io::Read, mem::MaybeUninit};
 
@@ -32,6 +32,11 @@ pub enum Header {
     DynamicMap(Box<Header>),
     Date,
     DateTime,
+    Extension8(u64),
+    Extension16(u64),
+    Extension32(u64),
+    Extension64(u64),
+    Extension(u64),
 }
 
 impl Header {
@@ -63,6 +68,11 @@ impl Header {
     const DYNAMIC_MAP_CODE: u8 = 25;
     const DATE_CODE: u8 = 26;
     const DATETIME_CODE: u8 = 27;
+    const EXTENSION8_CODE: u8 = 28;
+    const EXTENSION16_CODE: u8 = 29;
+    const EXTENSION32_CODE: u8 = 30;
+    const EXTENSION64_CODE: u8 = 31;
+    const EXTENSION_CODE: u8 = 32;
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
@@ -143,8 +153,7 @@ impl Header {
                 buf
             }
             Self::Map(inner) => {
-                let mut buf = vec![Self::MAP_CODE];
-                buf.append(&mut inner.len().encode_var_vec());
+                let mut buf = Self::new_dynamic_buf_with_number(Self::MAP_CODE, inner.len() as u64);
                 inner.iter().for_each(|(k, v)| {
                     buf.append(&mut serialize_string(k));
                     buf.append(&mut v.serialize());
@@ -162,6 +171,19 @@ impl Header {
             Self::DateTime => {
                 vec![Self::DateTime.code()]
             }
+            Self::Extension8(code) => {
+                Self::new_dynamic_buf_with_number(Self::EXTENSION8_CODE, *code)
+            }
+            Self::Extension16(code) => {
+                Self::new_dynamic_buf_with_number(Self::EXTENSION16_CODE, *code)
+            }
+            Self::Extension32(code) => {
+                Self::new_dynamic_buf_with_number(Self::EXTENSION32_CODE, *code)
+            }
+            Self::Extension64(code) => {
+                Self::new_dynamic_buf_with_number(Self::EXTENSION64_CODE, *code)
+            }
+            Self::Extension(code) => Self::new_dynamic_buf_with_number(Self::EXTENSION_CODE, *code),
         }
     }
 
@@ -214,6 +236,11 @@ impl Header {
             }
             Self::DATE_CODE => Ok(Self::Date),
             Self::DATETIME_CODE => Ok(Self::DateTime),
+            Self::EXTENSION8_CODE => Ok(Self::Extension8(reader.read_varint().or(Err(()))?)),
+            Self::EXTENSION16_CODE => Ok(Self::Extension16(reader.read_varint().or(Err(()))?)),
+            Self::EXTENSION32_CODE => Ok(Self::Extension32(reader.read_varint().or(Err(()))?)),
+            Self::EXTENSION64_CODE => Ok(Self::Extension64(reader.read_varint().or(Err(()))?)),
+            Self::EXTENSION_CODE => Ok(Self::Extension(reader.read_varint().or(Err(()))?)),
             _ => Err(()),
         }
     }
@@ -248,7 +275,20 @@ impl Header {
             Self::DynamicMap(_) => Self::DYNAMIC_MAP_CODE,
             Self::Date => Self::DATE_CODE,
             Self::DateTime => Self::DATETIME_CODE,
+            Self::Extension8(_) => Self::EXTENSION8_CODE,
+            Self::Extension16(_) => Self::EXTENSION16_CODE,
+            Self::Extension32(_) => Self::EXTENSION32_CODE,
+            Self::Extension64(_) => Self::EXTENSION64_CODE,
+            Self::Extension(_) => Self::EXTENSION_CODE,
         }
+    }
+
+    #[inline(always)]
+    fn new_dynamic_buf_with_number(header_code: u8, number: u64) -> Vec<u8> {
+        let mut buf = new_dynamic_buf(number.required_space() + 1);
+        buf[0] = header_code;
+        number.encode_var(&mut buf[1..]);
+        buf
     }
 }
 
@@ -404,6 +444,22 @@ mod tests {
         assert_eq!(
             Header::deserialize(&mut BufReader::new(Header::DateTime.serialize().as_slice())),
             Ok(Header::DateTime)
+        );
+        assert_eq!(
+            Header::deserialize(&mut Header::Extension8(255).serialize().as_slice()),
+            Ok(Header::Extension8(255))
+        );
+        assert_eq!(
+            Header::deserialize(&mut Header::Extension16(255).serialize().as_slice()),
+            Ok(Header::Extension16(255))
+        );
+        assert_eq!(
+            Header::deserialize(&mut Header::Extension32(255).serialize().as_slice()),
+            Ok(Header::Extension32(255))
+        );
+        assert_eq!(
+            Header::deserialize(&mut Header::Extension(255).serialize().as_slice()),
+            Ok(Header::Extension(255))
         );
     }
 }

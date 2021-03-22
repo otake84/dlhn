@@ -940,6 +940,71 @@ mod tests {
     }
 
     #[test]
+    fn deserialize_extension8() {
+        let body = Body::Extension8(123);
+        assert_eq!(
+            super::deserialize(
+                serialize(&Header::Extension8(255), &body)
+                    .unwrap()
+                    .as_slice()
+            ),
+            Ok((Header::Extension8(255), body))
+        );
+    }
+
+    #[test]
+    fn deserialize_extension16() {
+        let body = Body::Extension16([123, 0]);
+        assert_eq!(
+            super::deserialize(
+                serialize(&Header::Extension16(255), &body)
+                    .unwrap()
+                    .as_slice()
+            ),
+            Ok((Header::Extension16(255), body))
+        );
+    }
+
+    #[test]
+    fn deserialize_extension32() {
+        let body = Body::Extension32([123, 0, 123, 0]);
+        assert_eq!(
+            super::deserialize(
+                serialize(&Header::Extension32(255), &body)
+                    .unwrap()
+                    .as_slice()
+            ),
+            Ok((Header::Extension32(255), body))
+        );
+    }
+
+    #[test]
+    fn deserialize_extension64() {
+        let body = Body::Extension64([123, 0, 123, 0, 123, 0, 123, 0]);
+        assert_eq!(
+            super::deserialize(
+                serialize(&Header::Extension64(255), &body)
+                    .unwrap()
+                    .as_slice()
+            ),
+            Ok((Header::Extension64(255), body))
+        );
+    }
+
+    #[test]
+    fn deserialize_extension() {
+        let body = Body::Extension(vec![0, 1, 2, 3]);
+        assert_eq!(
+            super::deserialize(
+                serialize(&Header::Extension(255), &body)
+                    .unwrap()
+                    .as_slice()
+            ),
+            Ok((Header::Extension(255), body))
+        );
+    }
+
+    #[test]
     fn deserialize_with_separated_header_boolean() {
         assert_eq!(
             super::deserialize_with_separated_header([0u8].as_ref(), Header::Boolean),
