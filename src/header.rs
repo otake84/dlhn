@@ -1,6 +1,6 @@
 use crate::{deserialize_string, new_dynamic_buf, serialize_string};
 use integer_encoding::{VarInt, VarIntReader};
-use std::{collections::BTreeMap, convert::TryFrom, io::Read, mem::MaybeUninit};
+use std::{collections::BTreeMap, io::Read, mem::MaybeUninit};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Header {
@@ -36,7 +36,7 @@ pub enum Header {
     Extension16(u64),
     Extension32(u64),
     Extension64(u64),
-    Extension(ExtensionCode),
+    Extension(u64),
 }
 
 impl Header {
@@ -72,9 +72,7 @@ impl Header {
     const EXTENSION16_CODE: u8 = 29;
     const EXTENSION32_CODE: u8 = 30;
     const EXTENSION64_CODE: u8 = 31;
-
-    const EXTENSION_RANGE_START: u8 = 255;
-    const EXTENSION_RANGE_END: u8 = 255;
+    const EXTENSION_CODE: u8 = 32;
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
@@ -185,9 +183,7 @@ impl Header {
             Self::Extension64(code) => {
                 Self::new_dynamic_buf_with_number(Self::EXTENSION64_CODE, *code)
             }
-            Self::Extension(code) => {
-                vec![code.code()]
-            }
+            Self::Extension(code) => Self::new_dynamic_buf_with_number(Self::EXTENSION_CODE, *code),
         }
     }
 
@@ -244,9 +240,7 @@ impl Header {
             Self::EXTENSION16_CODE => Ok(Self::Extension16(reader.read_varint().or(Err(()))?)),
             Self::EXTENSION32_CODE => Ok(Self::Extension32(reader.read_varint().or(Err(()))?)),
             Self::EXTENSION64_CODE => Ok(Self::Extension64(reader.read_varint().or(Err(()))?)),
-            code @ Self::EXTENSION_RANGE_START..=Self::EXTENSION_RANGE_END => {
-                ExtensionCode::try_from(code).map(Self::Extension)
-            }
+            Self::EXTENSION_CODE => Ok(Self::Extension(reader.read_varint().or(Err(()))?)),
             _ => Err(()),
         }
     }
@@ -285,7 +279,7 @@ impl Header {
             Self::Extension16(_) => Self::EXTENSION16_CODE,
             Self::Extension32(_) => Self::EXTENSION32_CODE,
             Self::Extension64(_) => Self::EXTENSION64_CODE,
-            Self::Extension(code) => code.code(),
+            Self::Extension(_) => Self::EXTENSION_CODE,
         }
     }
 
@@ -298,32 +292,9 @@ impl Header {
     }
 }
 
-#[repr(u8)]
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum ExtensionCode {
-    Code255 = 255,
-}
-
-impl TryFrom<u8> for ExtensionCode {
-    type Error = ();
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            255 => Ok(Self::Code255),
-            _ => Err(()),
-        }
-    }
-}
-
-impl ExtensionCode {
-    pub const fn code(&self) -> u8 {
-        *self as u8
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{ExtensionCode, Header};
+    use super::Header;
     use std::{collections::BTreeMap, io::BufReader};
 
     #[test]
@@ -487,12 +458,8 @@ mod tests {
             Ok(Header::Extension32(255))
         );
         assert_eq!(
-            Header::deserialize(
-                &mut Header::Extension(ExtensionCode::Code255)
-                    .serialize()
-                    .as_slice()
-            ),
-            Ok(Header::Extension(ExtensionCode::Code255))
+            Header::deserialize(&mut Header::Extension(255).serialize().as_slice()),
+            Ok(Header::Extension(255))
         );
     }
 }

@@ -408,7 +408,7 @@ impl Body {
 #[cfg(test)]
 mod tests {
     use super::Body;
-    use crate::header::{ExtensionCode, Header};
+    use crate::header::Header;
     use bigdecimal::BigDecimal;
     use core::panic;
     use integer_encoding::VarInt;
@@ -2015,10 +2015,7 @@ mod tests {
     fn deserialize_extension() {
         let body = Body::Extension(vec![0, 1, 2, 3]);
         assert_eq!(
-            super::Body::deserialize(
-                &Header::Extension(ExtensionCode::Code255),
-                &mut body.serialize().as_slice()
-            ),
+            super::Body::deserialize(&Header::Extension(255), &mut body.serialize().as_slice()),
             Ok(body)
         );
     }

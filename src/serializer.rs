@@ -80,10 +80,7 @@ pub fn serialize_body(body: &Body) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        body::Body,
-        header::{ExtensionCode, Header},
-    };
+    use crate::{body::Body, header::Header};
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
     use std::collections::BTreeMap;
@@ -291,7 +288,7 @@ mod tests {
         ));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
-        let header = Header::Extension(ExtensionCode::Code255);
+        let header = Header::Extension(255);
         assert!(super::validate(&header, &Body::Extension(Vec::new())));
         assert!(!super::validate(&header, &Body::Boolean(true)));
     }

@@ -17,11 +17,7 @@ pub fn deserialize_with_separated_header<R: Read>(
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        body::Body,
-        header::{ExtensionCode, Header},
-        serializer::serialize,
-    };
+    use crate::{body::Body, header::Header, serializer::serialize};
     use bigdecimal::BigDecimal;
     use core::panic;
     use integer_encoding::VarInt;
@@ -1000,11 +996,11 @@ mod tests {
         let body = Body::Extension(vec![0, 1, 2, 3]);
         assert_eq!(
             super::deserialize(
-                serialize(&Header::Extension(ExtensionCode::Code255), &body)
+                serialize(&Header::Extension(255), &body)
                     .unwrap()
                     .as_slice()
             ),
-            Ok((Header::Extension(ExtensionCode::Code255), body))
+            Ok((Header::Extension(255), body))
         );
     }
 
