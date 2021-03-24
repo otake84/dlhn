@@ -49,7 +49,9 @@ pub(crate) fn validate(header: &Header, body: &Body) -> bool {
             .all(|(_key, value)| validate(inner_header, value)),
         (Header::Date, Body::Date(_)) => true,
         (Header::DateTime, Body::DateTime(_)) => true,
-        (Header::Extension8(_), Body::Extension8(_)) => true,
+        (Header::Extension8(header_code), Body::Extension8((body_code, _))) => {
+            header_code == body_code
+        }
         (Header::Extension16(_), Body::Extension16(_)) => true,
         (Header::Extension32(_), Body::Extension32(_)) => true,
         (Header::Extension64(_), Body::Extension64(_)) => true,
@@ -267,7 +269,8 @@ mod tests {
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::Extension8(255);
-        assert!(super::validate(&header, &Body::Extension8(123)));
+        assert!(super::validate(&header, &Body::Extension8((255, 123))));
+        assert!(!super::validate(&header, &Body::Extension8((0, 123))));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::Extension16(255);

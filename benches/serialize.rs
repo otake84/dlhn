@@ -107,7 +107,7 @@ fn serialize_datetime96() -> Result<Vec<u8>, ()> {
 }
 
 fn serialize_extension8() -> Result<Vec<u8>, ()> {
-    let body = Body::Extension8(123);
+    let body = Body::Extension8((255, 123));
     serialize(&Header::Extension8(255), &body)
 }
 

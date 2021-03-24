@@ -36,7 +36,7 @@ pub enum Body {
     DynamicMap(BTreeMap<String, Body>),
     Date(Date),
     DateTime(OffsetDateTime),
-    Extension8(u8),
+    Extension8((u64, u8)),
     Extension16([u8; 2]),
     Extension32([u8; 4]),
     Extension64([u8; 8]),
@@ -174,7 +174,11 @@ impl Body {
                     buf
                 }
             }
-            Self::Extension8(v) => Vec::from(v.to_le_bytes()),
+            Self::Extension8((code, v)) => {
+                let mut buf = code.encode_var_vec();
+                buf.extend(v.to_le_bytes().as_ref());
+                buf
+            }
             Self::Extension16(v) => Vec::from(v.as_ref()),
             Self::Extension32(v) => Vec::from(v.as_ref()),
             Self::Extension64(v) => Vec::from(v.as_ref()),
@@ -376,10 +380,16 @@ impl Body {
                     _ => Err(()),
                 }
             }
-            Header::Extension8(_) => {
-                let mut body_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
-                reader.read_exact(&mut body_buf).or(Err(()))?;
-                Ok(Self::Extension8(u8::from_le_bytes(body_buf)))
+            Header::Extension8(header_code) => {
+                let code = reader.read_varint().or(Err(()))?;
+
+                if *header_code == code {
+                    let mut body_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
+                    reader.read_exact(&mut body_buf).or(Err(()))?;
+                    Ok(Self::Extension8((code, u8::from_le_bytes(body_buf))))
+                } else {
+                    Err(())
+                }
             }
             Header::Extension16(_) => {
                 let mut body_buf: [u8; 2] = unsafe { MaybeUninit::uninit().assume_init() };
@@ -850,7 +860,7 @@ mod tests {
 
     #[test]
     fn serialize_extension8() {
-        assert_eq!(Body::Extension8(255).serialize(), [255]);
+        assert_eq!(Body::Extension8((0, 255)).serialize(), [0, 255]);
     }
 
     #[test]
@@ -1977,7 +1987,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension8() {
-        let body = Body::Extension8(123);
+        let body = Body::Extension8((255, 123));
         assert_eq!(
             super::Body::deserialize(&Header::Extension8(255), &mut body.serialize().as_slice()),
             Ok(body)

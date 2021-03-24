@@ -941,7 +941,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension8() {
-        let body = Body::Extension8(123);
+        let body = Body::Extension8((255, 123));
         assert_eq!(
             super::deserialize(
                 serialize(&Header::Extension8(255), &body)
