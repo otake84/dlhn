@@ -37,7 +37,7 @@ pub enum Body {
     Date(Date),
     DateTime(OffsetDateTime),
     Extension8((u64, u8)),
-    Extension16([u8; 2]),
+    Extension16((u64, [u8; 2])),
     Extension32([u8; 4]),
     Extension64([u8; 8]),
     Extension(Vec<u8>),
@@ -179,7 +179,11 @@ impl Body {
                 buf.extend(v.to_le_bytes().as_ref());
                 buf
             }
-            Self::Extension16(v) => Vec::from(v.as_ref()),
+            Self::Extension16((code, v)) => {
+                let mut buf = code.encode_var_vec();
+                buf.extend(v.as_ref());
+                buf
+            }
             Self::Extension32(v) => Vec::from(v.as_ref()),
             Self::Extension64(v) => Vec::from(v.as_ref()),
             Self::Extension(v) => {
@@ -391,10 +395,16 @@ impl Body {
                     Err(())
                 }
             }
-            Header::Extension16(_) => {
-                let mut body_buf: [u8; 2] = unsafe { MaybeUninit::uninit().assume_init() };
-                reader.read_exact(&mut body_buf).or(Err(()))?;
-                Ok(Self::Extension16(body_buf))
+            Header::Extension16(header_code) => {
+                let code = reader.read_varint().or(Err(()))?;
+
+                if *header_code == code {
+                    let mut body_buf: [u8; 2] = unsafe { MaybeUninit::uninit().assume_init() };
+                    reader.read_exact(&mut body_buf).or(Err(()))?;
+                    Ok(Self::Extension16((code, body_buf)))
+                } else {
+                    Err(())
+                }
             }
             Header::Extension32(_) => {
                 let mut body_buf: [u8; 4] = unsafe { MaybeUninit::uninit().assume_init() };
@@ -865,7 +875,7 @@ mod tests {
 
     #[test]
     fn serialize_extension16() {
-        assert_eq!(Body::Extension16([255, 0]).serialize(), [255, 0]);
+        assert_eq!(Body::Extension16((0, [255, 0])).serialize(), [0, 255, 0]);
     }
 
     #[test]
@@ -1996,7 +2006,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension16() {
-        let body = Body::Extension16([123, 0]);
+        let body = Body::Extension16((255, [123, 0]));
         assert_eq!(
             super::Body::deserialize(&Header::Extension16(255), &mut body.serialize().as_slice()),
             Ok(body)
