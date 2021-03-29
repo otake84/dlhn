@@ -58,7 +58,9 @@ pub(crate) fn validate(header: &Header, body: &Body) -> bool {
         (Header::Extension32(header_code), Body::Extension32((body_code, _))) => {
             header_code == body_code
         }
-        (Header::Extension64(_), Body::Extension64(_)) => true,
+        (Header::Extension64(header_code), Body::Extension64((body_code, _))) => {
+            header_code == body_code
+        }
         (Header::Extension(_), Body::Extension(_)) => true,
         _ => false,
     }
@@ -299,7 +301,11 @@ mod tests {
         let header = Header::Extension64(255);
         assert!(super::validate(
             &header,
-            &Body::Extension64([123, 0, 123, 0, 123, 0, 123, 0])
+            &Body::Extension64((255, [123, 0, 123, 0, 123, 0, 123, 0]))
+        ));
+        assert!(!super::validate(
+            &header,
+            &Body::Extension64((0, [123, 0, 123, 0, 123, 0, 123, 0]))
         ));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 

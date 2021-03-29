@@ -980,7 +980,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension64() {
-        let body = Body::Extension64([123, 0, 123, 0, 123, 0, 123, 0]);
+        let body = Body::Extension64((255, [123, 0, 123, 0, 123, 0, 123, 0]));
         assert_eq!(
             super::deserialize(
                 serialize(&Header::Extension64(255), &body)

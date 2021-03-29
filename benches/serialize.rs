@@ -122,7 +122,7 @@ fn serialize_extension32() -> Result<Vec<u8>, ()> {
 }
 
 fn serialize_extension64() -> Result<Vec<u8>, ()> {
-    let body = Body::Extension64([123, 0, 123, 0, 123, 0, 123, 0]);
+    let body = Body::Extension64((255, [123, 0, 123, 0, 123, 0, 123, 0]));
     serialize(&Header::Extension64(255), &body)
 }
 
