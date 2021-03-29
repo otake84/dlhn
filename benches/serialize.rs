@@ -117,7 +117,7 @@ fn serialize_extension16() -> Result<Vec<u8>, ()> {
 }
 
 fn serialize_extension32() -> Result<Vec<u8>, ()> {
-    let body = Body::Extension32([123, 0, 123, 0]);
+    let body = Body::Extension32((255, [123, 0, 123, 0]));
     serialize(&Header::Extension32(255), &body)
 }
 
