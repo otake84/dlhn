@@ -49,11 +49,21 @@ pub(crate) fn validate(header: &Header, body: &Body) -> bool {
             .all(|(_key, value)| validate(inner_header, value)),
         (Header::Date, Body::Date(_)) => true,
         (Header::DateTime, Body::DateTime(_)) => true,
-        (Header::Extension8(_), Body::Extension8(_)) => true,
-        (Header::Extension16(_), Body::Extension16(_)) => true,
-        (Header::Extension32(_), Body::Extension32(_)) => true,
-        (Header::Extension64(_), Body::Extension64(_)) => true,
-        (Header::Extension(_), Body::Extension(_)) => true,
+        (Header::Extension8(header_code), Body::Extension8((body_code, _))) => {
+            header_code == body_code
+        }
+        (Header::Extension16(header_code), Body::Extension16((body_code, _))) => {
+            header_code == body_code
+        }
+        (Header::Extension32(header_code), Body::Extension32((body_code, _))) => {
+            header_code == body_code
+        }
+        (Header::Extension64(header_code), Body::Extension64((body_code, _))) => {
+            header_code == body_code
+        }
+        (Header::Extension(header_code), Body::Extension((body_code, _))) => {
+            header_code == body_code
+        }
         _ => false,
     }
 }
@@ -267,29 +277,45 @@ mod tests {
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::Extension8(255);
-        assert!(super::validate(&header, &Body::Extension8(123)));
+        assert!(super::validate(&header, &Body::Extension8((255, 123))));
+        assert!(!super::validate(&header, &Body::Extension8((0, 123))));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::Extension16(255);
-        assert!(super::validate(&header, &Body::Extension16([123, 0])));
+        assert!(super::validate(
+            &header,
+            &Body::Extension16((255, [123, 0]))
+        ));
+        assert!(!super::validate(&header, &Body::Extension16((0, [123, 0]))));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::Extension32(255);
         assert!(super::validate(
             &header,
-            &Body::Extension32([123, 0, 123, 0])
+            &Body::Extension32((255, [123, 0, 123, 0]))
+        ));
+        assert!(!super::validate(
+            &header,
+            &Body::Extension32((0, [123, 0, 123, 0]))
         ));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::Extension64(255);
         assert!(super::validate(
             &header,
-            &Body::Extension64([123, 0, 123, 0, 123, 0, 123, 0])
+            &Body::Extension64((255, [123, 0, 123, 0, 123, 0, 123, 0]))
+        ));
+        assert!(!super::validate(
+            &header,
+            &Body::Extension64((0, [123, 0, 123, 0, 123, 0, 123, 0]))
         ));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
         let header = Header::Extension(255);
-        assert!(super::validate(&header, &Body::Extension(Vec::new())));
+        assert!(super::validate(
+            &header,
+            &Body::Extension((255, Vec::new()))
+        ));
         assert!(!super::validate(&header, &Body::Boolean(true)));
     }
 

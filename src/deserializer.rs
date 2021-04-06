@@ -941,7 +941,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension8() {
-        let body = Body::Extension8(123);
+        let body = Body::Extension8((255, 123));
         assert_eq!(
             super::deserialize(
                 serialize(&Header::Extension8(255), &body)
@@ -954,7 +954,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension16() {
-        let body = Body::Extension16([123, 0]);
+        let body = Body::Extension16((255, [123, 0]));
         assert_eq!(
             super::deserialize(
                 serialize(&Header::Extension16(255), &body)
@@ -967,7 +967,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension32() {
-        let body = Body::Extension32([123, 0, 123, 0]);
+        let body = Body::Extension32((255, [123, 0, 123, 0]));
         assert_eq!(
             super::deserialize(
                 serialize(&Header::Extension32(255), &body)
@@ -980,7 +980,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension64() {
-        let body = Body::Extension64([123, 0, 123, 0, 123, 0, 123, 0]);
+        let body = Body::Extension64((255, [123, 0, 123, 0, 123, 0, 123, 0]));
         assert_eq!(
             super::deserialize(
                 serialize(&Header::Extension64(255), &body)
@@ -993,7 +993,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension() {
-        let body = Body::Extension(vec![0, 1, 2, 3]);
+        let body = Body::Extension((255, vec![0, 1, 2, 3]));
         assert_eq!(
             super::deserialize(
                 serialize(&Header::Extension(255), &body)

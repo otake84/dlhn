@@ -36,11 +36,11 @@ pub enum Body {
     DynamicMap(BTreeMap<String, Body>),
     Date(Date),
     DateTime(OffsetDateTime),
-    Extension8(u8),
-    Extension16([u8; 2]),
-    Extension32([u8; 4]),
-    Extension64([u8; 8]),
-    Extension(Vec<u8>),
+    Extension8((u64, u8)),
+    Extension16((u64, [u8; 2])),
+    Extension32((u64, [u8; 4])),
+    Extension64((u64, [u8; 8])),
+    Extension((u64, Vec<u8>)),
 }
 
 impl Body {
@@ -174,12 +174,29 @@ impl Body {
                     buf
                 }
             }
-            Self::Extension8(v) => Vec::from(v.to_le_bytes()),
-            Self::Extension16(v) => Vec::from(v.as_ref()),
-            Self::Extension32(v) => Vec::from(v.as_ref()),
-            Self::Extension64(v) => Vec::from(v.as_ref()),
-            Self::Extension(v) => {
-                let mut buf = v.len().encode_var_vec();
+            Self::Extension8((code, v)) => {
+                let mut buf = code.encode_var_vec();
+                buf.extend(v.to_le_bytes().as_ref());
+                buf
+            }
+            Self::Extension16((code, v)) => {
+                let mut buf = code.encode_var_vec();
+                buf.extend(v.as_ref());
+                buf
+            }
+            Self::Extension32((code, v)) => {
+                let mut buf = code.encode_var_vec();
+                buf.extend(v.as_ref());
+                buf
+            }
+            Self::Extension64((code, v)) => {
+                let mut buf = code.encode_var_vec();
+                buf.extend(v.as_ref());
+                buf
+            }
+            Self::Extension((code, v)) => {
+                let mut buf = code.encode_var_vec();
+                buf.append(&mut v.len().encode_var_vec());
                 buf.extend(v.as_slice());
                 buf
             }
@@ -376,30 +393,60 @@ impl Body {
                     _ => Err(()),
                 }
             }
-            Header::Extension8(_) => {
-                let mut body_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
-                reader.read_exact(&mut body_buf).or(Err(()))?;
-                Ok(Self::Extension8(u8::from_le_bytes(body_buf)))
+            Header::Extension8(header_code) => {
+                let code = reader.read_varint().or(Err(()))?;
+
+                if *header_code == code {
+                    let mut body_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
+                    reader.read_exact(&mut body_buf).or(Err(()))?;
+                    Ok(Self::Extension8((code, u8::from_le_bytes(body_buf))))
+                } else {
+                    Err(())
+                }
             }
-            Header::Extension16(_) => {
-                let mut body_buf: [u8; 2] = unsafe { MaybeUninit::uninit().assume_init() };
-                reader.read_exact(&mut body_buf).or(Err(()))?;
-                Ok(Self::Extension16(body_buf))
+            Header::Extension16(header_code) => {
+                let code = reader.read_varint().or(Err(()))?;
+
+                if *header_code == code {
+                    let mut body_buf: [u8; 2] = unsafe { MaybeUninit::uninit().assume_init() };
+                    reader.read_exact(&mut body_buf).or(Err(()))?;
+                    Ok(Self::Extension16((code, body_buf)))
+                } else {
+                    Err(())
+                }
             }
-            Header::Extension32(_) => {
-                let mut body_buf: [u8; 4] = unsafe { MaybeUninit::uninit().assume_init() };
-                reader.read_exact(&mut body_buf).or(Err(()))?;
-                Ok(Self::Extension32(body_buf))
+            Header::Extension32(header_code) => {
+                let code = reader.read_varint().or(Err(()))?;
+
+                if *header_code == code {
+                    let mut body_buf: [u8; 4] = unsafe { MaybeUninit::uninit().assume_init() };
+                    reader.read_exact(&mut body_buf).or(Err(()))?;
+                    Ok(Self::Extension32((code, body_buf)))
+                } else {
+                    Err(())
+                }
             }
-            Header::Extension64(_) => {
-                let mut body_buf: [u8; 8] = unsafe { MaybeUninit::uninit().assume_init() };
-                reader.read_exact(&mut body_buf).or(Err(()))?;
-                Ok(Self::Extension64(body_buf))
+            Header::Extension64(header_code) => {
+                let code = reader.read_varint().or(Err(()))?;
+
+                if *header_code == code {
+                    let mut body_buf: [u8; 8] = unsafe { MaybeUninit::uninit().assume_init() };
+                    reader.read_exact(&mut body_buf).or(Err(()))?;
+                    Ok(Self::Extension64((code, body_buf)))
+                } else {
+                    Err(())
+                }
             }
-            Header::Extension(_) => {
-                let mut body_buf = new_dynamic_buf(reader.read_varint::<usize>().or(Err(()))?);
-                reader.read_exact(&mut body_buf).or(Err(()))?;
-                Ok(Self::Extension(body_buf))
+            Header::Extension(hader_code) => {
+                let code = reader.read_varint().or(Err(()))?;
+
+                if *hader_code == code {
+                    let mut body_buf = new_dynamic_buf(reader.read_varint::<usize>().or(Err(()))?);
+                    reader.read_exact(&mut body_buf).or(Err(()))?;
+                    Ok(Self::Extension((code, body_buf)))
+                } else {
+                    Err(())
+                }
             }
         }
     }
@@ -850,33 +897,39 @@ mod tests {
 
     #[test]
     fn serialize_extension8() {
-        assert_eq!(Body::Extension8(255).serialize(), [255]);
+        assert_eq!(Body::Extension8((255, 255)).serialize(), [255, 1, 255]);
     }
 
     #[test]
     fn serialize_extension16() {
-        assert_eq!(Body::Extension16([255, 0]).serialize(), [255, 0]);
+        assert_eq!(
+            Body::Extension16((255, [255, 0])).serialize(),
+            [255, 1, 255, 0]
+        );
     }
 
     #[test]
     fn serialize_extension32() {
         assert_eq!(
-            Body::Extension32([255, 0, 255, 0]).serialize(),
-            [255, 0, 255, 0]
+            Body::Extension32((255, [255, 0, 255, 0])).serialize(),
+            [255, 1, 255, 0, 255, 0]
         );
     }
 
     #[test]
     fn serialize_extension64() {
         assert_eq!(
-            Body::Extension64([255, 0, 255, 0, 255, 0, 255, 0]).serialize(),
-            [255, 0, 255, 0, 255, 0, 255, 0]
+            Body::Extension64((255, [255, 0, 255, 0, 255, 0, 255, 0])).serialize(),
+            [255, 1, 255, 0, 255, 0, 255, 0, 255, 0]
         );
     }
 
     #[test]
     fn serialize_extension() {
-        assert_eq!(Body::Extension(vec![0, 1, 2]).serialize(), [3, 0, 1, 2]);
+        assert_eq!(
+            Body::Extension((255, vec![0, 1, 2])).serialize(),
+            [255, 1, 3, 0, 1, 2]
+        );
     }
 
     #[test]
@@ -1977,7 +2030,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension8() {
-        let body = Body::Extension8(123);
+        let body = Body::Extension8((255, 123));
         assert_eq!(
             super::Body::deserialize(&Header::Extension8(255), &mut body.serialize().as_slice()),
             Ok(body)
@@ -1986,7 +2039,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension16() {
-        let body = Body::Extension16([123, 0]);
+        let body = Body::Extension16((255, [123, 0]));
         assert_eq!(
             super::Body::deserialize(&Header::Extension16(255), &mut body.serialize().as_slice()),
             Ok(body)
@@ -1995,7 +2048,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension32() {
-        let body = Body::Extension32([123, 0, 123, 0]);
+        let body = Body::Extension32((255, [123, 0, 123, 0]));
         assert_eq!(
             super::Body::deserialize(&Header::Extension32(255), &mut body.serialize().as_slice()),
             Ok(body)
@@ -2004,7 +2057,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension64() {
-        let body = Body::Extension64([123, 0, 123, 0, 123, 0, 123, 0]);
+        let body = Body::Extension64((255, [123, 0, 123, 0, 123, 0, 123, 0]));
         assert_eq!(
             super::Body::deserialize(&Header::Extension64(255), &mut body.serialize().as_slice()),
             Ok(body)
@@ -2013,7 +2066,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension() {
-        let body = Body::Extension(vec![0, 1, 2, 3]);
+        let body = Body::Extension((255, vec![0, 1, 2, 3]));
         assert_eq!(
             super::Body::deserialize(&Header::Extension(255), &mut body.serialize().as_slice()),
             Ok(body)
