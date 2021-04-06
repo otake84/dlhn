@@ -1,5 +1,5 @@
 use crate::{body::Body, header::Header};
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Read, Seek};
 
 #[derive(Debug)]
 pub struct StreamDeserializer<T> {
@@ -28,7 +28,7 @@ impl<T: Read> StreamDeserializer<T> {
 
 impl<T: Seek> StreamDeserializer<T> {
     pub fn position(&mut self) -> Result<u64, ()> {
-        self.reader.seek(SeekFrom::Current(0)).or(Err(()))
+        self.reader.stream_position().or(Err(()))
     }
 }
 
