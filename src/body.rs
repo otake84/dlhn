@@ -8,7 +8,7 @@ use time::{Date, NumericalDuration, OffsetDateTime};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Body {
-    Optional(Box<Option<Body>>),
+    Optional(Option<Box<Body>>),
     Boolean(bool),
     UInt8(u8),
     UInt16(u16),
@@ -54,7 +54,7 @@ impl Body {
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
             Self::Optional(v) => {
-                if let Some(v) = &**v {
+                if let Some(v) = v {
                     vec![[1u8].as_ref(), v.serialize().as_slice()].concat()
                 } else {
                     vec![0]
@@ -192,8 +192,8 @@ impl Body {
                 let mut buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
                 reader.read_exact(&mut buf).or(Err(()))?;
                 match buf[0] {
-                    0 => Ok(Self::Optional(Box::new(None))),
-                    1 => Ok(Self::Optional(Box::new(Some(Self::deserialize(
+                    0 => Ok(Self::Optional(None)),
+                    1 => Ok(Self::Optional(Some(Box::new(Self::deserialize(
                         inner_header,
                         reader,
                     )?)))),
@@ -881,7 +881,7 @@ mod tests {
 
     #[test]
     fn deserialize_optional() {
-        let body = Body::Optional(Box::new(None));
+        let body = Body::Optional(None);
         assert_eq!(
             super::Body::deserialize(
                 &Header::Optional(Box::new(Header::Boolean)),
@@ -890,7 +890,7 @@ mod tests {
             Ok(body)
         );
 
-        let body = Body::Optional(Box::new(Some(Body::Boolean(true))));
+        let body = Body::Optional(Some(Box::new(Body::Boolean(true))));
         assert_eq!(
             super::Body::deserialize(
                 &Header::Optional(Box::new(Header::Boolean)),
@@ -899,7 +899,7 @@ mod tests {
             Ok(body)
         );
 
-        let body = Body::Optional(Box::new(Some(Body::String(String::from("test")))));
+        let body = Body::Optional(Some(Box::new(Body::String(String::from("test")))));
         assert_eq!(
             super::Body::deserialize(
                 &Header::Optional(Box::new(Header::String)),

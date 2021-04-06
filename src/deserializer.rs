@@ -29,7 +29,7 @@ mod tests {
     fn deserialize_optional() {
         let (header, body) = (
             Header::Optional(Box::new(Header::Boolean)),
-            Body::Optional(Box::new(Some(Body::Boolean(true)))),
+            Body::Optional(Some(Box::new(Body::Boolean(true)))),
         );
         assert_eq!(
             super::deserialize(serialize(&header, &body).unwrap().as_slice()),
@@ -38,7 +38,7 @@ mod tests {
 
         let (header, body) = (
             Header::Optional(Box::new(Header::Boolean)),
-            Body::Optional(Box::new(None)),
+            Body::Optional(None),
         );
         assert_eq!(
             super::deserialize(serialize(&header, &body).unwrap().as_slice()),
@@ -47,7 +47,7 @@ mod tests {
 
         let (header, body) = (
             Header::Optional(Box::new(Header::String)),
-            Body::Optional(Box::new(Some(Body::String(String::from("test"))))),
+            Body::Optional(Some(Box::new(Body::String(String::from("test"))))),
         );
         assert_eq!(
             super::deserialize(serialize(&header, &body).unwrap().as_slice()),

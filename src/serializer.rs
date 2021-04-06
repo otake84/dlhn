@@ -3,7 +3,7 @@ use crate::{body::Body, header::Header};
 pub(crate) fn validate(header: &Header, body: &Body) -> bool {
     match (header, body) {
         (Header::Optional(inner_header), Body::Optional(inner_body)) => {
-            if let Some(v) = &**inner_body {
+            if let Some(v) = inner_body {
                 validate(inner_header, v)
             } else {
                 true
@@ -89,14 +89,14 @@ mod tests {
     #[test]
     fn validate() {
         let header = Header::Optional(Box::new(Header::Boolean));
-        assert!(super::validate(&header, &Body::Optional(Box::new(None))));
+        assert!(super::validate(&header, &Body::Optional(None)));
         assert!(super::validate(
             &header,
-            &Body::Optional(Box::new(Some(Body::Boolean(true))))
+            &Body::Optional(Some(Box::new(Body::Boolean(true))))
         ));
         assert!(!super::validate(
             &header,
-            &Body::Optional(Box::new(Some(Body::UInt8(0))))
+            &Body::Optional(Some(Box::new(Body::UInt8(0))))
         ));
 
         let header = Header::Boolean;

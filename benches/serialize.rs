@@ -8,7 +8,7 @@ use time::{Date, NumericalDuration, OffsetDateTime};
 fn serialize_optional() -> Result<Vec<u8>, ()> {
     serialize(
         &Header::Optional(Box::new(Header::Boolean)),
-        &Body::Optional(Box::new(Some(Body::Boolean(true)))),
+        &Body::Optional(Some(Box::new(Body::Boolean(true)))),
     )
 }
 
