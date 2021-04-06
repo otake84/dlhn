@@ -40,7 +40,7 @@ pub enum Body {
     Extension16((u64, [u8; 2])),
     Extension32((u64, [u8; 4])),
     Extension64((u64, [u8; 8])),
-    Extension(Vec<u8>),
+    Extension((u64, Vec<u8>)),
 }
 
 impl Body {
@@ -194,8 +194,9 @@ impl Body {
                 buf.extend(v.as_ref());
                 buf
             }
-            Self::Extension(v) => {
-                let mut buf = v.len().encode_var_vec();
+            Self::Extension((code, v)) => {
+                let mut buf = code.encode_var_vec();
+                buf.append(&mut v.len().encode_var_vec());
                 buf.extend(v.as_slice());
                 buf
             }
@@ -436,10 +437,16 @@ impl Body {
                     Err(())
                 }
             }
-            Header::Extension(_) => {
-                let mut body_buf = new_dynamic_buf(reader.read_varint::<usize>().or(Err(()))?);
-                reader.read_exact(&mut body_buf).or(Err(()))?;
-                Ok(Self::Extension(body_buf))
+            Header::Extension(hader_code) => {
+                let code = reader.read_varint().or(Err(()))?;
+
+                if *hader_code == code {
+                    let mut body_buf = new_dynamic_buf(reader.read_varint::<usize>().or(Err(()))?);
+                    reader.read_exact(&mut body_buf).or(Err(()))?;
+                    Ok(Self::Extension((code, body_buf)))
+                } else {
+                    Err(())
+                }
             }
         }
     }
@@ -919,7 +926,10 @@ mod tests {
 
     #[test]
     fn serialize_extension() {
-        assert_eq!(Body::Extension(vec![0, 1, 2]).serialize(), [3, 0, 1, 2]);
+        assert_eq!(
+            Body::Extension((255, vec![0, 1, 2])).serialize(),
+            [255, 1, 3, 0, 1, 2]
+        );
     }
 
     #[test]
@@ -2056,7 +2066,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension() {
-        let body = Body::Extension(vec![0, 1, 2, 3]);
+        let body = Body::Extension((255, vec![0, 1, 2, 3]));
         assert_eq!(
             super::Body::deserialize(&Header::Extension(255), &mut body.serialize().as_slice()),
             Ok(body)

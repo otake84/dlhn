@@ -993,7 +993,7 @@ mod tests {
 
     #[test]
     fn deserialize_extension() {
-        let body = Body::Extension(vec![0, 1, 2, 3]);
+        let body = Body::Extension((255, vec![0, 1, 2, 3]));
         assert_eq!(
             super::deserialize(
                 serialize(&Header::Extension(255), &body)
