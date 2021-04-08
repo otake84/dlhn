@@ -1,8 +1,9 @@
 use std::{fmt::{self, Display}, io::Write};
-use dullahan::body::Body;
+use dullahan::{body::Body, serializer::serialize_body};
 use serde::{de, ser};
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
+    Write,
     Syntax,
 }
 
@@ -22,6 +23,7 @@ impl Display for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Error::Syntax => formatter.write_str("syntax error"),
+            Error::Write => formatter.write_str("write error"),
         }
     }
 }
@@ -30,6 +32,14 @@ impl std::error::Error for Error {}
 
 pub struct Serializer<'a, W> {
     output: &'a mut W,
+}
+
+impl<'a, W> Serializer<'a, W> {
+    pub fn new(output: &'a mut W) -> Self {
+        Self {
+            output,
+        }
+    }
 }
 
 impl<'a, W: Write + 'a> ser::Serializer for &'a mut Serializer<'a, W> {
@@ -52,7 +62,7 @@ impl<'a, W: Write + 'a> ser::Serializer for &'a mut Serializer<'a, W> {
     type SerializeStructVariant = Self;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        self.output.write_all(serialize_body(&Body::Boolean(v)).as_slice()).or(Err(Error::Write))
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
@@ -328,5 +338,33 @@ impl<'a, W> ser::SerializeStructVariant for &'a mut Serializer<'a, W> {
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
         todo!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde::Serialize;
+    use dullahan::{body::Body, serializer::serialize_body};
+    use crate::Serializer;
+
+    #[test]
+    fn serialize_bool() {
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+
+            let body = true;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, serialize_body(&Body::Boolean(true)));
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+
+            let body = false;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, serialize_body(&Body::Boolean(false)));
+        }
     }
 }
