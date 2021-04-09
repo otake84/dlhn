@@ -66,7 +66,7 @@ impl<'a, W: Write + 'a> ser::Serializer for &'a mut Serializer<'a, W> {
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        self.output.write_all(serialize_body(&Body::Int8(v)).as_slice()).or(Err(Error::Write))
     }
 
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
@@ -365,6 +365,25 @@ mod tests {
             let body = false;
             body.serialize(&mut serializer).unwrap();
             assert_eq!(buf, serialize_body(&Body::Boolean(false)));
+        }
+    }
+
+    #[test]
+    fn serialize_i8() {
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = i8::MIN;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, serialize_body(&Body::Int8(i8::MIN)));
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = i8::MAX;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, serialize_body(&Body::Int8(i8::MAX)));
         }
     }
 }
