@@ -106,7 +106,7 @@ impl<'a, W: Write + 'a> ser::Serializer for &'a mut Serializer<'a, W> {
     }
 
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        self.output.write_all(serialize_body(&Body::String(v.to_string())).as_slice()).or(Err(Error::Write))
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
@@ -556,5 +556,14 @@ mod tests {
             body.serialize(&mut serializer).unwrap();
             assert_eq!(buf, serialize_body(&Body::Float64(f64::INFINITY)));
         }
+    }
+
+    #[test]
+    fn serialize_char() {
+        let mut buf = Vec::new();
+        let mut serializer = Serializer::new(&mut buf);
+        let body = 'a';
+        body.serialize(&mut serializer).unwrap();
+        assert_eq!(buf, serialize_body(&Body::String(String::from('a'))));
     }
 }
