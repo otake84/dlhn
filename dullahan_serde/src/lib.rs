@@ -98,7 +98,7 @@ impl<'a, W: Write + 'a> ser::Serializer for &'a mut Serializer<'a, W> {
     }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        self.output.write_all(serialize_body(&Body::Float32(v)).as_slice()).or(Err(Error::Write))
     }
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
@@ -517,6 +517,25 @@ mod tests {
             let body = u64::MAX;
             body.serialize(&mut serializer).unwrap();
             assert_eq!(buf, serialize_body(&Body::VarUInt64(u64::MAX)));
+        }
+    }
+
+    #[test]
+    fn serialize_f32() {
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = 1.2f32;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, serialize_body(&Body::Float32(1.2)));
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = f32::INFINITY;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, serialize_body(&Body::Float32(f32::INFINITY)));
         }
     }
 }
