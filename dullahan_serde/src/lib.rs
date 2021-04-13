@@ -1,10 +1,13 @@
 use std::{fmt::{self, Display}, io::Write};
 use dullahan::{body::Body, serializer::serialize_body};
 use serde::{de, ser};
+use integer_encoding::VarInt;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
     Write,
     Syntax,
+    UnknownSeqSize,
 }
 
 impl ser::Error for Error {
@@ -24,6 +27,7 @@ impl Display for Error {
         match self {
             Error::Syntax => formatter.write_str("syntax error"),
             Error::Write => formatter.write_str("write error"),
+            Error::UnknownSeqSize => formatter.write_str("unknown seq size"),
         }
     }
 }
@@ -168,7 +172,12 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
-        todo!()
+        if let Some(len) = len {
+            self.output.write_all(len.encode_var_vec().as_slice()).or(Err(Error::Write))?;
+            Ok(self)
+        } else {
+            Err(Error::UnknownSeqSize)
+        }
     }
 
     fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
@@ -224,11 +233,11 @@ impl<'a, W: Write> ser::SerializeSeq for &'a mut Serializer<W> {
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: serde::Serialize {
-        todo!()
+        value.serialize(&mut **self)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        Ok(())
     }
 }
 
@@ -603,5 +612,32 @@ mod tests {
         let body = Some(123u8);
         body.serialize(&mut serializer).unwrap();
         assert_eq!(buf, serialize_body(&Body::Optional(Some(Box::new(Body::UInt8(123))))));
+    }
+
+    #[test]
+    fn serialize_seq() {
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body: Vec<u8> = Vec::new();
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, serialize_body(&Body::Array(Vec::new())));
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = vec![123u8];
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, serialize_body(&Body::Array(vec![Body::UInt8(123)])));
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = [1u8].repeat(128);
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, serialize_body(&Body::Array([1u8].repeat(128).into_iter().map(Body::UInt8).collect())));
+        }
     }
 }

@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 dullahan = { version = "0.1", path = "../dullahan" }
 serde = "1.0.125"
+integer-encoding = "3.0.1"
