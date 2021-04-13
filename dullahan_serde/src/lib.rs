@@ -124,7 +124,8 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok, Self::Error>
     where
         T: serde::Serialize {
-        todo!()
+            self.output.write_all(&[1u8]).or(Err(Error::Write))?;
+            value.serialize(self)
     }
 
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
@@ -593,5 +594,14 @@ mod tests {
         let body: Option<bool> = None;
         body.serialize(&mut serializer).unwrap();
         assert_eq!(buf, serialize_body(&Body::Optional(None)));
+    }
+
+    #[test]
+    fn serialize_some() {
+        let mut buf = Vec::new();
+        let mut serializer = Serializer::new(&mut buf);
+        let body = Some(123u8);
+        body.serialize(&mut serializer).unwrap();
+        assert_eq!(buf, serialize_body(&Body::Optional(Some(Box::new(Body::UInt8(123))))));
     }
 }
