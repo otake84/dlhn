@@ -34,6 +34,12 @@ pub(crate) fn validate(header: &Header, body: &Body) -> bool {
         (Header::Array(inner_header), Body::Array(inner_body)) => {
             inner_body.iter().all(|v| validate(inner_header, v))
         }
+        (Header::Tuple(inner_headers), Body::Tuple(inner_bodies)) => {
+            inner_headers.len() == inner_bodies.len()
+                && inner_headers.iter().zip(inner_bodies).all(|(header, body)| {
+                    validate(header, body)
+                })
+        }
         (Header::Map(inner_header), Body::Map(inner_body)) => {
             inner_header.len() == inner_body.len()
                 && inner_body.iter().all(|(k, v)| {
@@ -219,6 +225,11 @@ mod tests {
             &header,
             &Body::Array(vec![Body::UInt8(0), Body::Boolean(true)])
         ));
+
+        let header = Header::Tuple(vec![Header::Boolean, Header::UInt8]);
+        assert!(super::validate(&header, &Body::Tuple(vec![Body::Boolean(true), Body::UInt8(0)])));
+        assert!(!super::validate(&header, &Body::Tuple(Vec::new())));
+        assert!(!super::validate(&header, &Body::Tuple(vec![Body::Boolean(true)])));
 
         let header = Header::Map({
             let mut map = BTreeMap::new();

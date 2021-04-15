@@ -32,6 +32,7 @@ pub enum Body {
     String(String),
     Binary(Vec<u8>),
     Array(Vec<Body>),
+    Tuple(Vec<Body>),
     Map(BTreeMap<String, Body>),
     DynamicMap(BTreeMap<String, Body>),
     Date(Date),
@@ -123,6 +124,11 @@ impl Body {
             }
             Self::Array(v) => {
                 let mut buf = v.len().encode_var_vec();
+                v.iter().for_each(|v| buf.append(&mut v.serialize()));
+                buf
+            }
+            Self::Tuple(v) => {
+                let mut buf = Vec::new();
                 v.iter().for_each(|v| buf.append(&mut v.serialize()));
                 buf
             }
@@ -320,6 +326,13 @@ impl Body {
                     body.push(Self::deserialize(inner_header, reader)?);
                 }
                 Ok(Self::Array(body))
+            }
+            Header::Tuple(inner_headers) => {
+                let mut body = Vec::with_capacity(inner_headers.len());
+                for header in inner_headers {
+                    body.push(Self::deserialize(header, reader)?);
+                }
+                Ok(Self::Tuple(body))
             }
             Header::Map(inner_header) => {
                 let mut body = BTreeMap::new();
@@ -1823,6 +1836,25 @@ mod tests {
 
         let body = ["aaaa", "bbbb"];
         assert_eq!(super::Body::deserialize(&Header::Array(Box::new(Header::String)), &mut BufReader::new([body.len().encode_var_vec(), body.iter().flat_map(|v| [v.len().encode_var_vec(), v.as_bytes().to_vec()].concat()).collect()].concat().as_slice())), Ok(Body::Array(vec![Body::String(String::from("aaaa")), Body::String(String::from("bbbb"))])));
+    }
+
+    #[test]
+    fn deserialize_tuple() {
+        {
+            let body = Body::Tuple(Vec::new());
+            assert_eq!(
+                Body::deserialize(&Header::Tuple(Vec::new()), &mut body.serialize().as_slice()),
+                Ok(body)
+            );
+        }
+
+        {
+            let body = Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123)]);
+            assert_eq!(
+                Body::deserialize(&Header::Tuple(vec![Header::Boolean, Header::UInt8]), &mut body.serialize().as_slice()),
+                Ok(body)
+            );
+        }
     }
 
     #[test]
