@@ -180,8 +180,8 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
         }
     }
 
-    fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
-        todo!()
+    fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, Self::Error> {
+        Ok(self)
     }
 
     fn serialize_tuple_struct(
@@ -249,11 +249,11 @@ impl<'a, W: Write> ser::SerializeTuple for &'a mut Serializer<W> {
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: serde::Serialize {
-        todo!()
+        value.serialize(&mut **self)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        Ok(())
     }
 }
 
@@ -639,5 +639,14 @@ mod tests {
             body.serialize(&mut serializer).unwrap();
             assert_eq!(buf, serialize_body(&Body::Array([1u8].repeat(128).into_iter().map(Body::UInt8).collect())));
         }
+    }
+
+    #[test]
+    fn serialize_tuple() {
+        let mut buf = Vec::new();
+        let mut serializer = Serializer::new(&mut buf);
+        let body = (true, 123u8, "test");
+        body.serialize(&mut serializer).unwrap();
+        assert_eq!(buf, serialize_body(&Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123), Body::String("test".to_string())])));
     }
 }
