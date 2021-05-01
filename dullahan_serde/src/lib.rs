@@ -1,4 +1,4 @@
-use std::{fmt::{self, Display}, io::Write};
+use std::{collections::BTreeMap, fmt::{self, Display}, io::Write};
 use dullahan::{body::Body, serializer::serialize_body};
 use serde::{de, ser};
 use integer_encoding::VarInt;
@@ -48,21 +48,13 @@ impl<W: Write> Serializer<W> {
 
 impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     type Ok = ();
-
     type Error = Error;
-
     type SerializeSeq = Self;
-
     type SerializeTuple = Self;
-
     type SerializeTupleStruct = Self;
-
     type SerializeTupleVariant = Self;
-
     type SerializeMap = Self;
-
-    type SerializeStruct = Self;
-
+    type SerializeStruct = MapSerializer<'a, W>;
     type SerializeStructVariant = Self;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
@@ -208,10 +200,13 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
 
     fn serialize_struct(
         self,
-        name: &'static str,
-        len: usize,
+        _name: &'static str,
+        _len: usize,
     ) -> Result<Self::SerializeStruct, Self::Error> {
-        todo!()
+        Ok(MapSerializer {
+            output: &mut self.output,
+            buf: BTreeMap::new(),
+        })
     }
 
     fn serialize_struct_variant(
@@ -311,26 +306,6 @@ impl<'a, W: Write> ser::SerializeMap for &'a mut Serializer<W> {
     }
 }
 
-impl<'a, W: Write> ser::SerializeStruct for &'a mut Serializer<W> {
-    type Ok = ();
-
-    type Error = Error;
-
-    fn serialize_field<T: ?Sized>(
-        &mut self,
-        key: &'static str,
-        value: &T,
-    ) -> Result<(), Self::Error>
-    where
-        T: serde::Serialize {
-        todo!()
-    }
-
-    fn end(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
-    }
-}
-
 impl<'a, W: Write> ser::SerializeStructVariant for &'a mut Serializer<W> {
     type Ok = ();
 
@@ -351,8 +326,39 @@ impl<'a, W: Write> ser::SerializeStructVariant for &'a mut Serializer<W> {
     }
 }
 
+pub struct MapSerializer<'a, W: Write> {
+    output: &'a mut W,
+    buf: BTreeMap<String, Vec<u8>>,
+}
+
+impl<'a, W: Write> ser::SerializeStruct for MapSerializer<'a, W> {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<T: ?Sized>(
+        &mut self,
+        key: &'static str,
+        value: &T,
+    ) -> Result<(), Self::Error>
+    where
+        T: serde::Serialize {
+        let mut buf = Vec::new();
+        value.serialize(&mut Serializer::new(&mut buf))?;
+        self.buf.insert(key.to_string(), buf);
+        Ok(())
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        for value in self.buf.values() {
+            self.output.write_all(value).or(Err(Error::Write))?;
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
     use serde::Serialize;
     use dullahan::{body::Body, serializer::serialize_body};
     use crate::Serializer;
@@ -660,5 +666,32 @@ mod tests {
         let body = Test(true, 123u8, "test".to_string());
         body.serialize(&mut serializer).unwrap();
         assert_eq!(buf, serialize_body(&Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123), Body::String("test".to_string())])));
+    }
+
+    #[test]
+    fn serialize_struct() {
+        #[derive(Serialize)]
+        struct Test {
+            c: String,
+            a: bool,
+            b: u8,
+        }
+
+        let mut buf = Vec::new();
+        let mut serializer = Serializer::new(&mut buf);
+        let body = Test {
+            c: "test".to_string(),
+            a: true,
+            b: 123,
+        };
+        body.serialize(&mut serializer).unwrap();
+
+        assert_eq!(buf, serialize_body(&Body::Map({
+            let mut map = BTreeMap::new();
+            map.insert("a".to_string(), Body::Boolean(true));
+            map.insert("b".to_string(), Body::UInt8(123));
+            map.insert("c".to_string(), Body::String("test".to_string()));
+            map
+        })));
     }
 }
