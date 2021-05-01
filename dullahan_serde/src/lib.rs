@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, fmt::{self, Display}, io::Write};
 use dullahan::{body::Body, serializer::serialize_body};
-use serde::{de, ser};
+use serde::{Serialize, de, ser::{self, Impossible}};
 use integer_encoding::VarInt;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -53,8 +53,8 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     type SerializeTuple = Self;
     type SerializeTupleStruct = Self;
     type SerializeTupleVariant = Self;
-    type SerializeMap = Self;
-    type SerializeStruct = MapSerializer<'a, W>;
+    type SerializeMap = MapSerializer<'a, W>;
+    type SerializeStruct = StructSerializer<'a, W>;
     type SerializeStructVariant = Self;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
@@ -195,7 +195,10 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
-        todo!()
+        Ok(MapSerializer {
+            output: &mut self.output,
+            buf: BTreeMap::new(),
+        })
     }
 
     fn serialize_struct(
@@ -203,7 +206,7 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
         _name: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStruct, Self::Error> {
-        Ok(MapSerializer {
+        Ok(StructSerializer {
             output: &mut self.output,
             buf: BTreeMap::new(),
         })
@@ -326,12 +329,12 @@ impl<'a, W: Write> ser::SerializeStructVariant for &'a mut Serializer<W> {
     }
 }
 
-pub struct MapSerializer<'a, W: Write> {
+pub struct StructSerializer<'a, W: Write> {
     output: &'a mut W,
     buf: BTreeMap<String, Vec<u8>>,
 }
 
-impl<'a, W: Write> ser::SerializeStruct for MapSerializer<'a, W> {
+impl<'a, W: Write> ser::SerializeStruct for StructSerializer<'a, W> {
     type Ok = ();
     type Error = Error;
 
@@ -353,6 +356,219 @@ impl<'a, W: Write> ser::SerializeStruct for MapSerializer<'a, W> {
             self.output.write_all(value).or(Err(Error::Write))?;
         }
         Ok(())
+    }
+}
+
+pub struct MapSerializer<'a, W: Write> {
+    output: &'a mut W,
+    buf: BTreeMap<String, Vec<u8>>,
+}
+
+impl<'a, W: Write> ser::SerializeMap for MapSerializer<'a, W> {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
+    where
+        T: serde::Serialize {
+        todo!()
+    }
+
+    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    where
+        T: serde::Serialize {
+        todo!()
+    }
+
+    fn serialize_entry<K: ?Sized, V: ?Sized>(&mut self, key: &K, value: &V) -> Result<(), Self::Error>
+    where
+        K: Serialize,
+        V: Serialize, {
+            let mut key_buf = Vec::new();
+            key.serialize(MapKeySerializer {
+                output: &mut key_buf,
+            })?;
+            let mut value_buf = Vec::new();
+            value.serialize(&mut Serializer::new(&mut value_buf))?;
+            self.buf.insert(String::from_utf8(key_buf).or(Err(Error::Write))?, value_buf);
+            Ok(())
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        for value in self.buf.values() {
+            self.output.write_all(value).or(Err(Error::Write))?;
+        }
+        Ok(())
+    }
+}
+
+pub struct MapKeySerializer<'a, W: Write> {
+    output: &'a mut W,
+}
+
+impl<'a, W: Write> ser::Serializer for MapKeySerializer<'a, W> {
+    type Ok = ();
+    type Error = Error;
+    type SerializeSeq = Impossible<(), Error>;
+    type SerializeTuple = Impossible<(), Error>;
+    type SerializeTupleStruct = Impossible<(), Error>;
+    type SerializeTupleVariant = Impossible<(), Error>;
+    type SerializeMap = Impossible<(), Error>;
+    type SerializeStruct = Impossible<(), Error>;
+    type SerializeStructVariant = Impossible<(), Error>;
+
+    fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
+        self.output.write_all(v.as_bytes()).or(Err(Error::Write))?;
+        Ok(())
+    }
+
+    fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok, Self::Error>
+    where
+        T: Serialize {
+        todo!()
+    }
+
+    fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_unit_struct(self, name: &'static str) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_unit_variant(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+    ) -> Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_newtype_struct<T: ?Sized>(
+        self,
+        name: &'static str,
+        value: &T,
+    ) -> Result<Self::Ok, Self::Error>
+    where
+        T: Serialize {
+        todo!()
+    }
+
+    fn serialize_newtype_variant<T: ?Sized>(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+        value: &T,
+    ) -> Result<Self::Ok, Self::Error>
+    where
+        T: Serialize {
+        todo!()
+    }
+
+    fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_tuple_struct(
+        self,
+        name: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeTupleStruct, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeTupleVariant, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_struct(
+        self,
+        name: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeStruct, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_struct_variant(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeStructVariant, Self::Error> {
+        todo!()
     }
 }
 
@@ -691,6 +907,28 @@ mod tests {
             map.insert("a".to_string(), Body::Boolean(true));
             map.insert("b".to_string(), Body::UInt8(123));
             map.insert("c".to_string(), Body::String("test".to_string()));
+            map
+        })));
+    }
+
+    #[test]
+    fn serialize_map() {
+        let mut buf = Vec::new();
+        let mut serializer = Serializer::new(&mut buf);
+        let body = {
+            let mut map = BTreeMap::new();
+            map.insert("a".to_string(), 0u8);
+            map.insert("b".to_string(), 123u8);
+            map.insert("c".to_string(), 255u8);
+            map
+        };
+        body.serialize(&mut serializer).unwrap();
+
+        assert_eq!(buf, serialize_body(&Body::Map({
+            let mut map = BTreeMap::new();
+            map.insert("a".to_string(), Body::UInt8(0));
+            map.insert("b".to_string(), Body::UInt8(123));
+            map.insert("c".to_string(), Body::UInt8(255));
             map
         })));
     }
