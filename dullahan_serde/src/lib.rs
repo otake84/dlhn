@@ -110,7 +110,9 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        self.output.write_all(v.len().encode_var_vec().as_slice()).or(Err(Error::Write))?;
+        self.output.write_all(v).or(Err(Error::Write))?;
+        Ok(())
     }
 
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
@@ -577,6 +579,7 @@ mod tests {
     use std::collections::BTreeMap;
     use serde::Serialize;
     use dullahan::{body::Body, serializer::serialize_body};
+    use serde_bytes::Bytes;
     use crate::Serializer;
 
     #[test]
@@ -931,5 +934,14 @@ mod tests {
             map.insert("c".to_string(), Body::UInt8(255));
             map
         })));
+    }
+
+    #[test]
+    fn serialize_bytes() {
+        let mut buf = Vec::new();
+        let mut serializer = Serializer::new(&mut buf);
+        let body = Bytes::new(&[0u8, 1, 2, 3, 255]);
+        body.serialize(&mut serializer).unwrap();
+        assert_eq!(buf, serialize_body(&Body::Binary(vec![0, 1, 2, 3, 255])));
     }
 }
