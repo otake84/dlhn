@@ -88,7 +88,9 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        let mut body_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
+        self.reader.read_exact(&mut body_buf).or(Err(Error::Read))?;
+        visitor.visit_u8(u8::from_le_bytes(body_buf))
     }
 
     fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -266,6 +268,16 @@ mod tests {
     #[test]
     fn deserialize_i8() {
         IntoIter::new([i8::MIN, 0, i8::MAX]).for_each(|v| {
+            let buf = serialize(v);
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            assert_eq!(v, Deserialize::deserialize(&mut deserializer).unwrap());
+        });
+    }
+
+    #[test]
+    fn deserialize_u8() {
+        IntoIter::new([u8::MIN, u8::MAX]).for_each(|v| {
             let buf = serialize(v);
             let mut reader = buf.as_slice();
             let mut deserializer = Deserializer::new(&mut reader);
