@@ -62,8 +62,10 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
-    }
+            let mut body_buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
+            self.reader.read_exact(&mut body_buf).or(Err(Error::Read))?;
+            visitor.visit_i8(i8::from_le_bytes(body_buf))
+        }
 
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
@@ -247,24 +249,28 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
 
 #[cfg(test)]
 mod tests {
+    use std::array::IntoIter;
     use serde::{Deserialize, Serialize};
     use crate::{de::Deserializer, ser::Serializer};
 
     #[test]
     fn deserialize_bool() {
-        {
-            let buf = serialize(true);
+        IntoIter::new([true, false]).for_each(|v| {
+            let buf = serialize(v);
             let mut reader = buf.as_slice();
             let mut deserializer = Deserializer::new(&mut reader);
-            assert_eq!(true, Deserialize::deserialize(&mut deserializer).unwrap());
-        }
+            assert_eq!(v, Deserialize::deserialize(&mut deserializer).unwrap());
+        });
+    }
 
-        {
-            let buf = serialize(false);
+    #[test]
+    fn deserialize_i8() {
+        IntoIter::new([i8::MIN, 0, i8::MAX]).for_each(|v| {
+            let buf = serialize(v);
             let mut reader = buf.as_slice();
             let mut deserializer = Deserializer::new(&mut reader);
-            assert_eq!(false, Deserialize::deserialize(&mut deserializer).unwrap());
-        }
+            assert_eq!(v, Deserialize::deserialize(&mut deserializer).unwrap());
+        });
     }
 
     fn serialize<T: Serialize>(v: T) -> Vec<u8> {
