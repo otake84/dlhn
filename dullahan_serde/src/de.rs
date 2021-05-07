@@ -219,10 +219,11 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
         todo!()
     }
 
-    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_seq<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        let count = self.reader.read_varint::<usize>().or(Err(Error::Read))?;
+        visitor.visit_seq(SeqDeserializer::new(&mut self, count))
     }
 
     fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
@@ -280,6 +281,34 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     where
         V: de::Visitor<'de> {
         todo!()
+    }
+}
+struct SeqDeserializer<'a, 'de: 'a, R: Read> {
+    deserializer: &'a mut Deserializer<'de, R>,
+    count: usize,
+}
+
+impl<'a, 'de: 'a, R: Read> SeqDeserializer<'a, 'de, R> {
+    fn new(deserializer: &'a mut Deserializer<'de, R>, count: usize) -> Self {
+        Self {
+            deserializer,
+            count,
+        }
+    }
+}
+
+impl<'a, 'de: 'a, R: Read> de::SeqAccess<'de> for SeqDeserializer<'a, 'de, R> {
+    type Error = Error;
+
+    fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
+    where
+        T: de::DeserializeSeed<'de> {
+        if self.count > 0 {
+            self.count -= 1;
+            seed.deserialize(&mut *self.deserializer).map(Some)
+        } else {
+            Ok(None)
+        }
     }
 }
 
@@ -393,6 +422,33 @@ mod tests {
             let mut deserializer = Deserializer::new(&mut reader);
             let result = <Option<u8>>::deserialize(&mut deserializer).unwrap();
             assert_eq!(Some(255), result);
+        }
+    }
+
+    #[test]
+    fn deserialize_seq() {
+        {
+            let buf = serialize(vec![true, false, true]);
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = Vec::<bool>::deserialize(&mut deserializer).unwrap();
+            assert_eq!(vec![true, false, true], result);
+        }
+
+        {
+            let buf = serialize(vec![0u8, 1, 2, 3, 255]);
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = Vec::<u8>::deserialize(&mut deserializer).unwrap();
+            assert_eq!(vec![0, 1, 2, 3, 255], result);
+        }
+
+        {
+            let buf = serialize(vec!['a', 'b', 'c']);
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = Vec::<char>::deserialize(&mut deserializer).unwrap();
+            assert_eq!(vec!['a', 'b', 'c'], result);
         }
     }
 

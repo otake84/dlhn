@@ -874,6 +874,14 @@ mod tests {
             body.serialize(&mut serializer).unwrap();
             assert_eq!(buf, serialize_body(&Body::Array([1u8].repeat(128).into_iter().map(Body::UInt8).collect())));
         }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = vec![true, false, true];
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, serialize_body(&Body::Array(vec![Body::Boolean(true), Body::Boolean(false), Body::Boolean(true)])));
+        }
     }
 
     #[test]
