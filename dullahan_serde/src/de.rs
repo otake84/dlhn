@@ -226,10 +226,10 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
         visitor.visit_seq(SeqDeserializer::new(&mut self, count))
     }
 
-    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_tuple<V>(mut self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        visitor.visit_seq(SeqDeserializer::new(&mut self, len))
     }
 
     fn deserialize_tuple_struct<V>(
@@ -428,6 +428,14 @@ mod tests {
     #[test]
     fn deserialize_seq() {
         {
+            let buf = serialize(Vec::<bool>::new());
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = Vec::<bool>::deserialize(&mut deserializer).unwrap();
+            assert_eq!(Vec::<bool>::new(), result);
+        }
+
+        {
             let buf = serialize(vec![true, false, true]);
             let mut reader = buf.as_slice();
             let mut deserializer = Deserializer::new(&mut reader);
@@ -450,6 +458,15 @@ mod tests {
             let result = Vec::<char>::deserialize(&mut deserializer).unwrap();
             assert_eq!(vec!['a', 'b', 'c'], result);
         }
+    }
+
+    #[test]
+    fn deserialize_tuple() {
+        let buf = serialize((true, 123u8, 'a'));
+        let mut reader = buf.as_slice();
+        let mut deserializer = Deserializer::new(&mut reader);
+        let result = <(bool, u8, char)>::deserialize(&mut deserializer).unwrap();
+        assert_eq!((true, 123, 'a'), result);
     }
 
     fn serialize<T: Serialize>(v: T) -> Vec<u8> {
