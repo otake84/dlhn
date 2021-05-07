@@ -176,7 +176,9 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        let mut body_buf = self.new_dynamic_buf()?;
+        self.reader.read_exact(&mut body_buf).or(Err(Error::Read))?;
+        visitor.visit_byte_buf(body_buf)
     }
 
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -279,6 +281,7 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
 mod tests {
     use std::array::IntoIter;
     use serde::{Deserialize, Serialize};
+    use serde_bytes::ByteBuf;
     use crate::{de::Deserializer, ser::Serializer};
 
     #[test]
@@ -357,6 +360,15 @@ mod tests {
         let mut deserializer = Deserializer::new(&mut reader);
         let result = String::deserialize(&mut deserializer).unwrap();
         assert_eq!("test".to_string(), result);
+    }
+
+    #[test]
+    fn deserialize_byte_buf() {
+        let buf = serialize(ByteBuf::from(vec![0u8, 1, 2, 3, 255]));
+        let mut reader = buf.as_slice();
+        let mut deserializer = Deserializer::new(&mut reader);
+        let result = ByteBuf::deserialize(&mut deserializer).unwrap();
+        assert_eq!([0u8, 1, 2, 3, 255], result.as_slice());
     }
 
     fn serialize<T: Serialize>(v: T) -> Vec<u8> {
