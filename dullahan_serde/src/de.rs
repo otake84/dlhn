@@ -7,6 +7,8 @@ pub enum Error {
     Read,
     Syntax,
     UnknownSeqSize,
+    CharSize,
+    CharCode,
     Message(String),
 }
 
@@ -19,9 +21,11 @@ impl de::Error for Error {
 impl Display for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::Read => formatter.write_str("read error"),
-            Error::Syntax => formatter.write_str("syntax error"),
-            Error::UnknownSeqSize => formatter.write_str("unknown seq size"),
+            Error::Read => formatter.write_str("Read error"),
+            Error::Syntax => formatter.write_str("Syntax error"),
+            Error::UnknownSeqSize => formatter.write_str("Unknown seq size"),
+            Error::CharSize => formatter.write_str("The size of the char is more than 32bit"),
+            Error::CharCode => formatter.write_str("Incorrect character encoding"),
             Error::Message(msg) => formatter.write_str(msg),
         }
     }
@@ -143,7 +147,10 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+            let mut body_buf = self.new_dynamic_buf()?;
+            self.reader.read_exact(&mut body_buf).or(Err(Error::Read))?;
+            let s = String::from_utf8(body_buf).or(Err(Error::CharCode))?;
+            visitor.visit_char(s.chars().into_iter().next().ok_or(Error::CharSize)?)
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -322,6 +329,25 @@ mod tests {
             let mut deserializer = Deserializer::new(&mut reader);
             assert_eq!(v, Deserialize::deserialize(&mut deserializer).unwrap());
         });
+    }
+
+    #[test]
+    fn deserialize_char() {
+        {
+            let buf = serialize('a');
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = char::deserialize(&mut deserializer).unwrap();
+            assert_eq!('a', result)
+        }
+
+        {
+            let buf = serialize('あ');
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = char::deserialize(&mut deserializer).unwrap();
+            assert_eq!('あ', result)
+        }
     }
 
     #[test]

@@ -795,11 +795,21 @@ mod tests {
 
     #[test]
     fn serialize_char() {
-        let mut buf = Vec::new();
-        let mut serializer = Serializer::new(&mut buf);
-        let body = 'a';
-        body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, serialize_body(&Body::String(String::from('a'))));
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = 'a';
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, serialize_body(&Body::String(String::from('a'))));
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = 'あ';
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, serialize_body(&Body::String(String::from('あ'))));
+        }
     }
 
     #[test]
