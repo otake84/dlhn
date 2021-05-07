@@ -184,7 +184,13 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        let mut buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
+        self.reader.read_exact(&mut buf).or(Err(Error::Read))?;
+        match buf[0] {
+            0 => visitor.visit_none(),
+            1 => visitor.visit_some(self),
+            _ => Err(Error::Read),
+        }
     }
 
     fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -369,6 +375,25 @@ mod tests {
         let mut deserializer = Deserializer::new(&mut reader);
         let result = ByteBuf::deserialize(&mut deserializer).unwrap();
         assert_eq!([0u8, 1, 2, 3, 255], result.as_slice());
+    }
+
+    #[test]
+    fn deserialize_option() {
+        {
+            let buf = serialize(Option::<u8>::None);
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = <Option<u8>>::deserialize(&mut deserializer).unwrap();
+            assert_eq!(None, result);
+        }
+
+        {
+            let buf = serialize(Some(255u8));
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = <Option<u8>>::deserialize(&mut deserializer).unwrap();
+            assert_eq!(Some(255), result);
+        }
     }
 
     fn serialize<T: Serialize>(v: T) -> Vec<u8> {
