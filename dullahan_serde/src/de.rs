@@ -1,4 +1,5 @@
 use std::{fmt::{self, Display}, io::Read, mem::MaybeUninit};
+use integer_encoding::VarIntReader;
 use serde::de;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -6,11 +7,12 @@ pub enum Error {
     Read,
     Syntax,
     UnknownSeqSize,
+    Message(String),
 }
 
 impl de::Error for Error {
     fn custom<T: Display>(msg: T) -> Self {
-        Error::Syntax
+        Error::Message(msg.to_string())
     }
 }
 
@@ -20,6 +22,7 @@ impl Display for Error {
             Error::Read => formatter.write_str("read error"),
             Error::Syntax => formatter.write_str("syntax error"),
             Error::UnknownSeqSize => formatter.write_str("unknown seq size"),
+            Error::Message(msg) => formatter.write_str(msg),
         }
     }
 }
@@ -35,6 +38,16 @@ impl<'de, R: Read> Deserializer<'de, R> {
         Deserializer {
             reader,
         }
+    }
+
+    #[inline]
+    fn new_dynamic_buf(&mut self) -> Result<Vec<u8>, Error> {
+        let len = self.reader.read_varint::<usize>().or(Err(Error::Read))?;
+        let mut buf = Vec::<u8>::with_capacity(len);
+        unsafe {
+            buf.set_len(len);
+        }
+        Ok(buf)
     }
 }
 
@@ -142,7 +155,9 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+            let mut body_buf = self.new_dynamic_buf()?;
+            self.reader.read_exact(&mut body_buf).or(Err(Error::Read))?;
+            visitor.visit_string(String::from_utf8(body_buf).or(Err(Error::Read))?)
     }
 
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -307,6 +322,15 @@ mod tests {
             let mut deserializer = Deserializer::new(&mut reader);
             assert_eq!(v, Deserialize::deserialize(&mut deserializer).unwrap());
         });
+    }
+
+    #[test]
+    fn deserialize_string() {
+        let buf = serialize("test".to_string());
+        let mut reader = buf.as_slice();
+        let mut deserializer = Deserializer::new(&mut reader);
+        let result = String::deserialize(&mut deserializer).unwrap();
+        assert_eq!("test".to_string(), result);
     }
 
     fn serialize<T: Serialize>(v: T) -> Vec<u8> {
