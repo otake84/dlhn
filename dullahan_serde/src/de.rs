@@ -119,7 +119,7 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        visitor.visit_u32(self.reader.read_varint::<u32>().or(Err(Error::Read))?)
     }
 
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -386,6 +386,16 @@ mod tests {
             let mut reader = buf.as_slice();
             let mut deserializer = Deserializer::new(&mut reader);
             assert_eq!(v, u16::deserialize(&mut deserializer).unwrap());
+        });
+    }
+
+    #[test]
+    fn deserialize_u32() {
+        IntoIter::new([u32::MIN, u32::MAX]).for_each(|v| {
+            let buf = serialize(v);
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            assert_eq!(v, u32::deserialize(&mut deserializer).unwrap());
         });
     }
 
