@@ -233,14 +233,14 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     }
 
     fn deserialize_tuple_struct<V>(
-        self,
-        name: &'static str,
+        mut self,
+        _name: &'static str,
         len: usize,
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        visitor.visit_seq(SeqDeserializer::new(&mut self, len))
     }
 
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -527,6 +527,18 @@ mod tests {
         let mut deserializer = Deserializer::new(&mut reader);
         let result = <(bool, u8, char)>::deserialize(&mut deserializer).unwrap();
         assert_eq!((true, 123, 'a'), result);
+    }
+
+    #[test]
+    fn deserialize_tuple_struct() {
+        #[derive(Serialize, Deserialize, PartialEq, Debug)]
+        struct Test(bool, u8, char);
+
+        let buf = serialize(Test(true, 123, 'a'));
+        let mut reader = buf.as_slice();
+        let mut deserializer = Deserializer::new(&mut reader);
+        let result = Test::deserialize(&mut deserializer).unwrap();
+        assert_eq!(Test(true, 123, 'a'), result);
     }
 
     fn serialize<T: Serialize>(v: T) -> Vec<u8> {
