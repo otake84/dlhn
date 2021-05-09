@@ -243,10 +243,11 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
         visitor.visit_seq(SeqDeserializer::new(&mut self, len))
     }
 
-    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_map<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        let count = self.reader.read_varint::<usize>().or(Err(Error::Read))?;
+        visitor.visit_map(MapDeserializer::new(&mut self, count))
     }
 
     fn deserialize_struct<V>(
@@ -283,6 +284,7 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
         todo!()
     }
 }
+
 struct SeqDeserializer<'a, 'de: 'a, R: Read> {
     deserializer: &'a mut Deserializer<'de, R>,
     count: usize,
@@ -312,9 +314,44 @@ impl<'a, 'de: 'a, R: Read> de::SeqAccess<'de> for SeqDeserializer<'a, 'de, R> {
     }
 }
 
+struct MapDeserializer<'a, 'de: 'a, R: Read> {
+    deserializer: &'a mut Deserializer<'de, R>,
+    count: usize,
+}
+
+impl<'a, 'de: 'a, R: Read> MapDeserializer<'a, 'de, R> {
+    fn new(deserializer: &'a mut Deserializer<'de, R>, count: usize) -> Self {
+        Self {
+            deserializer,
+            count,
+        }
+    }
+}
+
+impl<'a, 'de: 'a, R: Read> de::MapAccess<'de> for MapDeserializer<'a, 'de, R> {
+    type Error = Error;
+
+    fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
+    where
+        K: de::DeserializeSeed<'de> {
+            if self.count > 0 {
+                self.count -= 1;
+                seed.deserialize(&mut *self.deserializer).map(Some)
+            } else {
+                Ok(None)
+            }
+    }
+
+    fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::DeserializeSeed<'de> {
+            seed.deserialize(&mut *self.deserializer)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use std::array::IntoIter;
+    use std::{array::IntoIter, collections::{BTreeMap, HashMap}};
     use serde::{Deserialize, Serialize};
     use serde_bytes::ByteBuf;
     use crate::{de::Deserializer, ser::Serializer};
@@ -539,6 +576,78 @@ mod tests {
         let mut deserializer = Deserializer::new(&mut reader);
         let result = Test::deserialize(&mut deserializer).unwrap();
         assert_eq!(Test(true, 123, 'a'), result);
+    }
+
+    #[test]
+    fn deserialize_map() {
+        {
+            let buf = serialize({
+                let mut map = BTreeMap::new();
+                map.insert("a".to_string(), true);
+                map.insert("b".to_string(), false);
+                map.insert("c".to_string(), true);
+                map.insert("1".to_string(), false);
+                map
+            });
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = BTreeMap::<String, bool>::deserialize(&mut deserializer).unwrap();
+
+            assert_eq!({
+                let mut map = BTreeMap::new();
+                map.insert("a".to_string(), true);
+                map.insert("b".to_string(), false);
+                map.insert("c".to_string(), true);
+                map.insert("1".to_string(), false);
+                map
+            }, result);
+        }
+
+        {
+            let buf = serialize({
+                let mut map = BTreeMap::new();
+                map.insert("a".to_string(), true);
+                map.insert("b".to_string(), false);
+                map.insert("c".to_string(), true);
+                map.insert("1".to_string(), false);
+                map
+            });
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = HashMap::<String, bool>::deserialize(&mut deserializer).unwrap();
+
+            assert_eq!({
+                let mut map = HashMap::new();
+                map.insert("a".to_string(), true);
+                map.insert("b".to_string(), false);
+                map.insert("c".to_string(), true);
+                map.insert("1".to_string(), false);
+                map
+            }, result);
+        }
+
+        {
+            let buf = serialize({
+                let mut map = HashMap::new();
+                map.insert("a".to_string(), true);
+                map.insert("b".to_string(), false);
+                map.insert("c".to_string(), true);
+                map.insert("1".to_string(), false);
+                map
+            });
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = BTreeMap::<String, bool>::deserialize(&mut deserializer).unwrap();
+
+            assert_eq!({
+                let mut map = BTreeMap::new();
+                map.insert("a".to_string(), true);
+                map.insert("b".to_string(), false);
+                map.insert("c".to_string(), true);
+                map.insert("1".to_string(), false);
+                map
+            }, result);
+        }
     }
 
     fn serialize<T: Serialize>(v: T) -> Vec<u8> {
