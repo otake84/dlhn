@@ -1,4 +1,4 @@
-use std::{fmt::{self, Display}, io::Read, mem::MaybeUninit};
+use std::{collections::VecDeque, fmt::{self, Display}, io::Read, mem::MaybeUninit};
 use integer_encoding::VarIntReader;
 use serde::de;
 
@@ -251,14 +251,16 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     }
 
     fn deserialize_struct<V>(
-        self,
-        name: &'static str,
+        mut self,
+        _name: &'static str,
         fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        let mut keys = fields.iter().map(|v| v.to_string()).collect::<VecDeque<String>>();
+        keys.make_contiguous().sort();
+        visitor.visit_map(StructDeserializer::new(&mut self, keys))
     }
 
     fn deserialize_enum<V>(
@@ -346,6 +348,253 @@ impl<'a, 'de: 'a, R: Read> de::MapAccess<'de> for MapDeserializer<'a, 'de, R> {
     where
         V: de::DeserializeSeed<'de> {
             seed.deserialize(&mut *self.deserializer)
+    }
+}
+
+struct StructDeserializer<'a, 'de: 'a, R: Read> {
+    deserializer: &'a mut Deserializer<'de, R>,
+    keys: VecDeque<String>,
+}
+
+impl<'a, 'de: 'a, R: Read> StructDeserializer<'a, 'de, R> {
+    fn new(deserializer: &'a mut Deserializer<'de, R>, keys: VecDeque<String>) -> Self {
+        Self {
+            deserializer,
+            keys,
+        }
+    }
+}
+
+impl<'a, 'de: 'a, R: Read> de::MapAccess<'de> for StructDeserializer<'a, 'de, R> {
+    type Error = Error;
+
+    fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
+    where
+        K: de::DeserializeSeed<'de> {
+            if let Some(key) = self.keys.pop_front() {
+                seed.deserialize(StructKey::new(key)).map(Some)
+            } else {
+                Ok(None)
+            }
+    }
+
+    fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::DeserializeSeed<'de> {
+            seed.deserialize(&mut *self.deserializer)
+    }
+}
+
+struct StructKey {
+    key: String,
+}
+
+impl StructKey {
+    pub fn new(key: String) -> Self {
+        Self {
+            key,
+        }
+    }
+}
+
+impl<'de> de::Deserializer<'de> for StructKey {
+    type Error = Error;
+
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_unit_struct<V>(
+        self,
+        name: &'static str,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_newtype_struct<V>(
+        self,
+        name: &'static str,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_tuple_struct<V>(
+        self,
+        name: &'static str,
+        len: usize,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_struct<V>(
+        self,
+        name: &'static str,
+        fields: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_enum<V>(
+        self,
+        name: &'static str,
+        variants: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
+    }
+
+    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        visitor.visit_string(self.key)
+    }
+
+    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        todo!()
     }
 }
 
@@ -648,6 +897,31 @@ mod tests {
                 map
             }, result);
         }
+    }
+
+    #[test]
+    fn deserialize_struct() {
+        #[derive(Debug, PartialEq, Serialize, Deserialize)]
+        struct Test {
+            c: String,
+            a: bool,
+            b: u8,
+        }
+
+        let buf = serialize(Test {
+            c: "test".to_string(),
+            a: true,
+            b: 123,
+        });
+        let mut reader = buf.as_slice();
+        let mut deserializer = Deserializer::new(&mut reader);
+        let result = Test::deserialize(&mut deserializer).unwrap();
+
+        assert_eq!(Test {
+            c: "test".to_string(),
+            a: true,
+            b: 123,
+        }, result);
     }
 
     fn serialize<T: Serialize>(v: T) -> Vec<u8> {
