@@ -397,8 +397,11 @@ impl<'a, W: Write> ser::SerializeMap for MapSerializer<'a, W> {
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        for value in self.buf.values() {
-            self.output.write_all(value).or(Err(Error::Write))?;
+        self.output.write_all(self.buf.len().encode_var_vec().as_slice()).or(Err(Error::Write))?;
+
+        for (k, v) in self.buf.into_iter() {
+            self.output.write_all(serialize_body(&Body::String(k)).as_slice()).or(Err(Error::Write))?;
+            self.output.write_all(v.as_slice()).or(Err(Error::Write))?;
         }
         Ok(())
     }
@@ -945,7 +948,7 @@ mod tests {
         };
         body.serialize(&mut serializer).unwrap();
 
-        assert_eq!(buf, serialize_body(&Body::Map({
+        assert_eq!(buf, serialize_body(&Body::DynamicMap({
             let mut map = BTreeMap::new();
             map.insert("a".to_string(), Body::UInt8(0));
             map.insert("b".to_string(), Body::UInt8(123));
