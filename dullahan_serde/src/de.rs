@@ -211,12 +211,12 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
 
     fn deserialize_newtype_struct<V>(
         self,
-        name: &'static str,
+        _name: &'static str,
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        visitor.visit_newtype_struct(self)
     }
 
     fn deserialize_seq<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
@@ -768,6 +768,59 @@ mod tests {
             let mut deserializer = Deserializer::new(&mut reader);
             let result = <Option<u8>>::deserialize(&mut deserializer).unwrap();
             assert_eq!(Some(255), result);
+        }
+    }
+
+    #[test]
+    fn deserialize_newtype_struct() {
+        {
+            #[derive(Debug, PartialEq, Serialize, Deserialize)]
+            struct Inner {
+                c: String,
+                a: bool,
+                b: u8,
+            }
+            #[derive(Debug, PartialEq, Serialize, Deserialize)]
+            struct Test(Inner);
+            let buf = serialize(Test(Inner {
+                c: "test".to_string(),
+                a: true,
+                b: 123,
+            }));
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = Test::deserialize(&mut deserializer).unwrap();
+
+            assert_eq!(Test(Inner {
+                c: "test".to_string(),
+                a: true,
+                b: 123,
+            }), result);
+        }
+
+        {
+            #[derive(Debug, PartialEq, Serialize, Deserialize)]
+            struct Inner(u8);
+            #[derive(Debug, PartialEq, Serialize, Deserialize)]
+            struct Test {
+                c: String,
+                a: Inner,
+                b: bool,
+            }
+            let buf = serialize(Test {
+                c: "test".to_string(),
+                a: Inner(123),
+                b: true,
+            });
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = Test::deserialize(&mut deserializer).unwrap();
+
+            assert_eq!(Test {
+                c: "test".to_string(),
+                a: Inner(123),
+                b: true,
+            }, result);
         }
     }
 
