@@ -145,12 +145,12 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
 
     fn serialize_newtype_struct<T: ?Sized>(
         self,
-        name: &'static str,
+        _name: &'static str,
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
         T: serde::Serialize {
-        todo!()
+        value.serialize(self)
     }
 
     fn serialize_newtype_variant<T: ?Sized>(
@@ -850,6 +850,63 @@ mod tests {
         let body = Some(123u8);
         body.serialize(&mut serializer).unwrap();
         assert_eq!(buf, serialize_body(&Body::Optional(Some(Box::new(Body::UInt8(123))))));
+    }
+
+    #[test]
+    fn serialize_newtype_struct() {
+        {
+            #[derive(Debug, PartialEq, Serialize)]
+            struct Inner {
+                c: String,
+                a: bool,
+                b: u8,
+            }
+            #[derive(Debug, PartialEq, Serialize)]
+            struct Test(Inner);
+
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            Test(Inner {
+                c: "test".to_string(),
+                a: true,
+                b: 123,
+            }).serialize(&mut serializer).unwrap();
+
+            assert_eq!(buf, serialize_body(&Body::Map({
+                let mut map = BTreeMap::new();
+                map.insert("c".to_string(), Body::String("test".to_string()));
+                map.insert("a".to_string(), Body::Boolean(true));
+                map.insert("b".to_string(), Body::UInt8(123));
+                map
+            })));
+        }
+
+        {
+            #[derive(Debug, PartialEq, Serialize)]
+            struct Inner(u8);
+            #[derive(Debug, PartialEq, Serialize)]
+            struct Test {
+                c: String,
+                a: Inner,
+                b: bool,
+            }
+
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            Test {
+                c: "test".to_string(),
+                a: Inner(123),
+                b: true,
+            }.serialize(&mut serializer).unwrap();
+
+            assert_eq!(buf, serialize_body(&Body::Map({
+                let mut map = BTreeMap::new();
+                map.insert("c".to_string(), Body::String("test".to_string()));
+                map.insert("a".to_string(), Body::Tuple(vec![Body::UInt8(123)]));
+                map.insert("b".to_string(), Body::Boolean(true));
+                map
+            })));
+        }
     }
 
     #[test]
