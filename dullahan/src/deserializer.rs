@@ -859,6 +859,17 @@ mod tests {
     }
 
     #[test]
+    fn deserialize_tuple() {
+        let body = Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123)]);
+        assert_eq!(
+            super::deserialize(
+                serialize(&Header::Tuple(vec![Header::Boolean, Header::UInt8]), &body).unwrap().as_slice()
+            ),
+            Ok((Header::Tuple(vec![Header::Boolean, Header::UInt8]), body))
+        );
+    }
+
+    #[test]
     fn deserialize_map() {
         let header = Header::Map({
             let mut map = BTreeMap::new();

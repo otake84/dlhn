@@ -28,6 +28,7 @@ pub enum Header {
     String,
     Binary,
     Array(Box<Header>),
+    Tuple(Vec<Header>),
     Map(BTreeMap<String, Header>),
     DynamicMap(Box<Header>),
     Date,
@@ -64,15 +65,16 @@ impl Header {
     const STRING_CODE: u8 = 21;
     const BINARY_CODE: u8 = 22;
     const ARRAY_CODE: u8 = 23;
-    const MAP_CODE: u8 = 24;
-    const DYNAMIC_MAP_CODE: u8 = 25;
-    const DATE_CODE: u8 = 26;
-    const DATETIME_CODE: u8 = 27;
-    const EXTENSION8_CODE: u8 = 28;
-    const EXTENSION16_CODE: u8 = 29;
-    const EXTENSION32_CODE: u8 = 30;
-    const EXTENSION64_CODE: u8 = 31;
-    const EXTENSION_CODE: u8 = 32;
+    const TUPLE_CODE: u8 = 24;
+    const MAP_CODE: u8 = 25;
+    const DYNAMIC_MAP_CODE: u8 = 26;
+    const DATE_CODE: u8 = 27;
+    const DATETIME_CODE: u8 = 28;
+    const EXTENSION8_CODE: u8 = 29;
+    const EXTENSION16_CODE: u8 = 30;
+    const EXTENSION32_CODE: u8 = 31;
+    const EXTENSION64_CODE: u8 = 32;
+    const EXTENSION_CODE: u8 = 33;
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
@@ -152,6 +154,13 @@ impl Header {
                 buf.append(&mut inner.serialize());
                 buf
             }
+            Self::Tuple(inner) => {
+                let mut buf = Self::new_dynamic_buf_with_number(self.code(), inner.len() as u64);
+                inner.iter().for_each(|header| {
+                    buf.append(&mut header.serialize());
+                });
+                buf
+            }
             Self::Map(inner) => {
                 let mut buf = Self::new_dynamic_buf_with_number(Self::MAP_CODE, inner.len() as u64);
                 inner.iter().for_each(|(k, v)| {
@@ -222,6 +231,14 @@ impl Header {
                 let inner = Self::deserialize(reader)?;
                 Ok(Self::Array(Box::new(inner)))
             }
+            Self::TUPLE_CODE => {
+                let size = reader.read_varint::<usize>().or(Err(()))?;
+                let mut vec = Vec::with_capacity(size);
+                for _ in 0..size {
+                    vec.push(Self::deserialize(reader)?);
+                }
+                Ok(Self::Tuple(vec))
+            }
             Self::MAP_CODE => {
                 let size = reader.read_varint::<usize>().or(Err(()))?;
                 let mut map = BTreeMap::new();
@@ -271,6 +288,7 @@ impl Header {
             Self::String => Self::STRING_CODE,
             Self::Binary => Self::BINARY_CODE,
             Self::Array(_) => Self::ARRAY_CODE,
+            Self::Tuple(_) => Self::TUPLE_CODE,
             Self::Map(_) => Self::MAP_CODE,
             Self::DynamicMap(_) => Self::DYNAMIC_MAP_CODE,
             Self::Date => Self::DATE_CODE,
@@ -410,6 +428,10 @@ mod tests {
                     .as_slice()
             )),
             Ok(Header::Array(Box::new(Header::Boolean)))
+        );
+        assert_eq!(
+            Header::deserialize(&mut Header::Tuple(vec![Header::Boolean, Header::UInt8]).serialize().as_slice()),
+            Ok(Header::Tuple(vec![Header::Boolean, Header::UInt8]))
         );
         assert_eq!(
             Header::deserialize(&mut BufReader::new(
