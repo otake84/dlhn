@@ -868,7 +868,7 @@ mod tests {
 
         let mut buf = Vec::new();
         let mut serializer = Serializer::new(&mut buf);
-        let body = Test{};
+        let body = Test;
         body.serialize(&mut serializer).unwrap();
         assert_eq!(buf, serialize_body(&Body::Unit));
     }
