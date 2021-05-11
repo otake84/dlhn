@@ -106,7 +106,7 @@ mod tests {
         );
         assert_eq!(stream_serializer.flush(), Ok(()));
         assert_eq!(stream_serializer.writer().len(), 3);
-        assert_eq!(stream_serializer.writer(), &[1, 1, 0]);
+        assert_eq!(stream_serializer.writer(), &[2, 1, 0]);
     }
 
     #[test]

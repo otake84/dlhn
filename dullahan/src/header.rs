@@ -4,6 +4,7 @@ use std::{collections::BTreeMap, io::Read, mem::MaybeUninit};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Header {
+    Unit,
     Optional(Box<Header>),
     Boolean,
     UInt8,
@@ -41,43 +42,47 @@ pub enum Header {
 }
 
 impl Header {
-    const OPTIONAL_CODE: u8 = 0;
-    const BOOLEAN_CODE: u8 = 1;
-    const UINT8_CODE: u8 = 2;
-    const UINT16_CODE: u8 = 3;
-    const UINT32_CODE: u8 = 4;
-    const UINT64_CODE: u8 = 5;
-    const VAR_UINT16_CODE: u8 = 6;
-    const VAR_UINT32_CODE: u8 = 7;
-    const VAR_UINT64_CODE: u8 = 8;
-    const INT8_CODE: u8 = 9;
-    const INT16_CODE: u8 = 10;
-    const INT32_CODE: u8 = 11;
-    const INT64_CODE: u8 = 12;
-    const VAR_INT16_CODE: u8 = 13;
-    const VAR_INT32_CODE: u8 = 14;
-    const VAR_INT64_CODE: u8 = 15;
-    const FLOAT32_CODE: u8 = 16;
-    const FLOAT64_CODE: u8 = 17;
-    const BIG_UINT_CODE: u8 = 18;
-    const BIG_INT_CODE: u8 = 19;
-    const BIG_DECIMAL_CODE: u8 = 20;
-    const STRING_CODE: u8 = 21;
-    const BINARY_CODE: u8 = 22;
-    const ARRAY_CODE: u8 = 23;
-    const TUPLE_CODE: u8 = 24;
-    const MAP_CODE: u8 = 25;
-    const DYNAMIC_MAP_CODE: u8 = 26;
-    const DATE_CODE: u8 = 27;
-    const DATETIME_CODE: u8 = 28;
-    const EXTENSION8_CODE: u8 = 29;
-    const EXTENSION16_CODE: u8 = 30;
-    const EXTENSION32_CODE: u8 = 31;
-    const EXTENSION64_CODE: u8 = 32;
-    const EXTENSION_CODE: u8 = 33;
+    const UNIT_CODE: u8 = 0;
+    const OPTIONAL_CODE: u8 = 1;
+    const BOOLEAN_CODE: u8 = 2;
+    const UINT8_CODE: u8 = 3;
+    const UINT16_CODE: u8 = 4;
+    const UINT32_CODE: u8 = 5;
+    const UINT64_CODE: u8 = 6;
+    const VAR_UINT16_CODE: u8 = 7;
+    const VAR_UINT32_CODE: u8 = 8;
+    const VAR_UINT64_CODE: u8 = 9;
+    const INT8_CODE: u8 = 10;
+    const INT16_CODE: u8 = 11;
+    const INT32_CODE: u8 = 12;
+    const INT64_CODE: u8 = 13;
+    const VAR_INT16_CODE: u8 = 14;
+    const VAR_INT32_CODE: u8 = 15;
+    const VAR_INT64_CODE: u8 = 16;
+    const FLOAT32_CODE: u8 = 17;
+    const FLOAT64_CODE: u8 = 18;
+    const BIG_UINT_CODE: u8 = 19;
+    const BIG_INT_CODE: u8 = 20;
+    const BIG_DECIMAL_CODE: u8 = 21;
+    const STRING_CODE: u8 = 22;
+    const BINARY_CODE: u8 = 23;
+    const ARRAY_CODE: u8 = 24;
+    const TUPLE_CODE: u8 = 25;
+    const MAP_CODE: u8 = 26;
+    const DYNAMIC_MAP_CODE: u8 = 27;
+    const DATE_CODE: u8 = 28;
+    const DATETIME_CODE: u8 = 29;
+    const EXTENSION8_CODE: u8 = 30;
+    const EXTENSION16_CODE: u8 = 31;
+    const EXTENSION32_CODE: u8 = 32;
+    const EXTENSION64_CODE: u8 = 33;
+    const EXTENSION_CODE: u8 = 34;
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
+            Self::Unit => {
+                vec![Self::Unit.code()]
+            }
             Self::Optional(inner) => {
                 let mut buf = vec![Self::OPTIONAL_CODE];
                 buf.append(&mut inner.serialize());
@@ -201,6 +206,7 @@ impl Header {
         reader.read_exact(&mut buf).or(Err(()))?;
 
         match *buf.first().ok_or(())? {
+            Self::UNIT_CODE =>  Ok(Self::Unit),
             Self::OPTIONAL_CODE => {
                 let inner = Self::deserialize(reader)?;
                 Ok(Self::Optional(Box::new(inner)))
@@ -264,6 +270,7 @@ impl Header {
 
     pub(crate) const fn code(&self) -> u8 {
         match self {
+            Self::Unit => Self::UNIT_CODE,
             Self::Optional(_) => Self::OPTIONAL_CODE,
             Self::Boolean => Self::BOOLEAN_CODE,
             Self::UInt8 => Self::UINT8_CODE,
@@ -317,6 +324,10 @@ mod tests {
 
     #[test]
     fn deserialize() {
+        assert_eq!(
+            Header::deserialize(&mut Header::Unit.serialize().as_slice()),
+            Ok(Header::Unit)
+        );
         assert_eq!(
             Header::deserialize(&mut BufReader::new(
                 Header::Optional(Box::new(Header::Boolean))
