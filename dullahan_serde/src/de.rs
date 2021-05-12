@@ -196,17 +196,17 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        visitor.visit_unit()
     }
 
     fn deserialize_unit_struct<V>(
         self,
-        name: &'static str,
+        _name: &'static str,
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        visitor.visit_unit()
     }
 
     fn deserialize_newtype_struct<V>(
@@ -769,6 +769,27 @@ mod tests {
             let result = <Option<u8>>::deserialize(&mut deserializer).unwrap();
             assert_eq!(Some(255), result);
         }
+    }
+
+    #[test]
+    fn deserialize_unit() {
+        let buf = serialize(());
+        let mut reader = buf.as_slice();
+        let mut deserializer = Deserializer::new(&mut reader);
+        let result = <()>::deserialize(&mut deserializer).unwrap();
+        assert_eq!((), result);
+    }
+
+    #[test]
+    fn deserialize_unit_struct() {
+        #[derive(Debug, PartialEq, Serialize, Deserialize)]
+        struct Test;
+
+        let buf = serialize(Test);
+        let mut reader = buf.as_slice();
+        let mut deserializer = Deserializer::new(&mut reader);
+        let result = Test::deserialize(&mut deserializer).unwrap();
+        assert_eq!(Test, result);
     }
 
     #[test]

@@ -26,6 +26,14 @@ mod tests {
     use time::{Date, OffsetDateTime};
 
     #[test]
+    fn deserialize_unit() {
+        assert_eq!(
+            super::deserialize([Header::Unit.serialize(), vec![]].concat().as_slice()),
+            Ok((Header::Unit, Body::Unit))
+        );
+    }
+
+    #[test]
     fn deserialize_optional() {
         let (header, body) = (
             Header::Optional(Box::new(Header::Boolean)),

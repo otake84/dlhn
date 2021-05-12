@@ -127,11 +127,11 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        Ok(())
     }
 
-    fn serialize_unit_struct(self, name: &'static str) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok, Self::Error> {
+        Ok(())
     }
 
     fn serialize_unit_variant(
@@ -850,6 +850,27 @@ mod tests {
         let body = Some(123u8);
         body.serialize(&mut serializer).unwrap();
         assert_eq!(buf, serialize_body(&Body::Optional(Some(Box::new(Body::UInt8(123))))));
+    }
+
+    #[test]
+    fn serialize_unit() {
+        let mut buf = Vec::new();
+        let mut serializer = Serializer::new(&mut buf);
+        let body = ();
+        body.serialize(&mut serializer).unwrap();
+        assert_eq!(buf, serialize_body(&Body::Unit));
+    }
+
+    #[test]
+    fn serialize_unit_struct() {
+        #[derive(Debug, PartialEq, Serialize)]
+        struct Test;
+
+        let mut buf = Vec::new();
+        let mut serializer = Serializer::new(&mut buf);
+        let body = Test;
+        body.serialize(&mut serializer).unwrap();
+        assert_eq!(buf, serialize_body(&Body::Unit));
     }
 
     #[test]

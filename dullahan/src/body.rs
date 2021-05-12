@@ -8,6 +8,7 @@ use time::{Date, NumericalDuration, OffsetDateTime};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Body {
+    Unit,
     Optional(Option<Box<Body>>),
     Boolean(bool),
     UInt8(u8),
@@ -54,6 +55,7 @@ impl Body {
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
+            Self::Unit => Vec::new(),
             Self::Optional(v) => {
                 if let Some(v) = v {
                     vec![[1u8].as_ref(), v.serialize().as_slice()].concat()
@@ -211,6 +213,7 @@ impl Body {
 
     pub(crate) fn deserialize<R: Read>(header: &Header, reader: &mut R) -> Result<Body, ()> {
         match header {
+            Header::Unit => Ok(Self::Unit),
             Header::Optional(inner_header) => {
                 let mut buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
                 reader.read_exact(&mut buf).or(Err(()))?;
@@ -475,6 +478,11 @@ mod tests {
     use num_bigint::{BigInt, BigUint};
     use std::{collections::BTreeMap, io::BufReader};
     use time::{Date, NumericalDuration, OffsetDateTime};
+
+    #[test]
+    fn serialize_unit() {
+        assert_eq!(Body::Unit.serialize(), []);
+    }
 
     #[test]
     fn serialize_uint8() {
@@ -942,6 +950,14 @@ mod tests {
         assert_eq!(
             Body::Extension((255, vec![0, 1, 2])).serialize(),
             [255, 1, 3, 0, 1, 2]
+        );
+    }
+
+    #[test]
+    fn deserialize_unit() {
+        assert_eq!(
+            Body::deserialize(&Header::Unit, &mut [].as_ref()),
+            Ok(Body::Unit)
         );
     }
 
