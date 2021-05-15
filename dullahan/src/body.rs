@@ -36,6 +36,7 @@ pub enum Body {
     Tuple(Vec<Body>),
     Map(BTreeMap<String, Body>),
     DynamicMap(BTreeMap<String, Body>),
+    Enum(Box<Body>),
     Date(Date),
     DateTime(OffsetDateTime),
     Extension8((u64, u8)),
@@ -147,6 +148,7 @@ impl Body {
                 });
                 buf
             }
+            Self::Enum(v) => v.serialize(),
             Self::Date(v) => {
                 let year = v.year() - Self::DATE_YEAR_OFFSET;
                 let ordinal = v.ordinal() - Self::DATE_ORDINAL_OFFSET;
@@ -353,6 +355,10 @@ impl Body {
                     body.insert(key, value);
                 }
                 Ok(Self::DynamicMap(body))
+            }
+            Header::Enum(inner_header) => {
+                let body = Self::deserialize(inner_header, reader)?;
+                Ok(Self::Enum(Box::new(body)))
             }
             Header::Date => {
                 let year = reader.read_varint::<i32>().or(Err(()))? + Self::DATE_YEAR_OFFSET;
@@ -1933,6 +1939,17 @@ mod tests {
                 &mut BufReader::new(Body::DynamicMap(body.clone()).serialize().as_slice())
             ),
             Ok(Body::DynamicMap(body))
+        );
+    }
+
+    #[test]
+    fn deserialize_enum() {
+        assert_eq!(
+            Body::deserialize(
+                &Header::Enum(Box::new(Header::Boolean)),
+                &mut Body::Enum(Box::new(Body::Boolean(true))).serialize().as_slice()
+            ),
+            Ok(Body::Enum(Box::new(Body::Boolean(true))))
         );
     }
 

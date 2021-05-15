@@ -32,6 +32,7 @@ pub enum Header {
     Tuple(Vec<Header>),
     Map(BTreeMap<String, Header>),
     DynamicMap(Box<Header>),
+    Enum(Box<Header>),
     Date,
     DateTime,
     Extension8(u64),
@@ -70,13 +71,14 @@ impl Header {
     const TUPLE_CODE: u8 = 25;
     const MAP_CODE: u8 = 26;
     const DYNAMIC_MAP_CODE: u8 = 27;
-    const DATE_CODE: u8 = 28;
-    const DATETIME_CODE: u8 = 29;
-    const EXTENSION8_CODE: u8 = 30;
-    const EXTENSION16_CODE: u8 = 31;
-    const EXTENSION32_CODE: u8 = 32;
-    const EXTENSION64_CODE: u8 = 33;
-    const EXTENSION_CODE: u8 = 34;
+    const ENUM_CODE: u8 = 28;
+    const DATE_CODE: u8 = 29;
+    const DATETIME_CODE: u8 = 30;
+    const EXTENSION8_CODE: u8 = 31;
+    const EXTENSION16_CODE: u8 = 32;
+    const EXTENSION32_CODE: u8 = 33;
+    const EXTENSION64_CODE: u8 = 34;
+    const EXTENSION_CODE: u8 = 35;
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
@@ -179,6 +181,11 @@ impl Header {
                 buf.append(&mut inner.serialize());
                 buf
             }
+            Self::Enum(inner) => {
+                let mut buf = vec![Self::ENUM_CODE];
+                buf.append(&mut inner.serialize());
+                buf
+            }
             Self::Date => {
                 vec![Self::Date.code()]
             }
@@ -257,6 +264,10 @@ impl Header {
                 let inner = Self::deserialize(reader)?;
                 Ok(Self::DynamicMap(Box::new(inner)))
             }
+            Self::ENUM_CODE => {
+                let inner = Self::deserialize(reader)?;
+                Ok(Self::Enum(Box::new(inner)))
+            }
             Self::DATE_CODE => Ok(Self::Date),
             Self::DATETIME_CODE => Ok(Self::DateTime),
             Self::EXTENSION8_CODE => Ok(Self::Extension8(reader.read_varint().or(Err(()))?)),
@@ -298,6 +309,7 @@ impl Header {
             Self::Tuple(_) => Self::TUPLE_CODE,
             Self::Map(_) => Self::MAP_CODE,
             Self::DynamicMap(_) => Self::DYNAMIC_MAP_CODE,
+            Self::Enum(_) => Self::ENUM_CODE,
             Self::Date => Self::DATE_CODE,
             Self::DateTime => Self::DATETIME_CODE,
             Self::Extension8(_) => Self::EXTENSION8_CODE,
@@ -469,6 +481,10 @@ mod tests {
             Ok(Header::DynamicMap(Box::new(Header::Optional(Box::new(
                 Header::String
             )))))
+        );
+        assert_eq!(
+            Header::deserialize(&mut Header::Enum(Box::new(Header::Boolean)).serialize().as_slice()),
+            Ok(Header::Enum(Box::new(Header::Boolean)))
         );
         assert_eq!(
             Header::deserialize(&mut BufReader::new(Header::Date.serialize().as_slice())),

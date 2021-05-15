@@ -933,6 +933,16 @@ mod tests {
     }
 
     #[test]
+    fn deserialize_enum() {
+        let header = Header::Enum(Box::new(Header::Boolean));
+        let body = Body::Enum(Box::new(Body::Boolean(true)));
+        assert_eq!(
+            super::deserialize(serialize(&header, &body).unwrap().as_slice()),
+            Ok((header, body))
+        );
+    }
+
+    #[test]
     fn deserialize_date() {
         let body = Date::try_from_yo(2000, 1).unwrap();
         assert_eq!(

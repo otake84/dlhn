@@ -54,6 +54,7 @@ pub(crate) fn validate(header: &Header, body: &Body) -> bool {
         (Header::DynamicMap(inner_header), Body::DynamicMap(inner_body)) => inner_body
             .iter()
             .all(|(_key, value)| validate(inner_header, value)),
+        (Header::Enum(inner_header), Body::Enum(inner_body)) => validate(inner_header, inner_body),
         (Header::Date, Body::Date(_)) => true,
         (Header::DateTime, Body::DateTime(_)) => true,
         (Header::Extension8(header_code), Body::Extension8((body_code, _))) => {
@@ -275,6 +276,13 @@ mod tests {
                 body.insert(String::from("test"), Body::Boolean(true));
                 body
             })
+        ));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::Enum(Box::new(Header::Boolean));
+        assert!(super::validate(
+            &header,
+            &Body::Enum(Box::new(Body::Boolean(true)))
         ));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
