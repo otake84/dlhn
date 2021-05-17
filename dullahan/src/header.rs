@@ -184,7 +184,8 @@ impl Header {
                 buf
             }
             Self::Enum(inner) => {
-                let mut buf = Self::new_dynamic_buf_with_number(Self::ENUM_CODE, inner.len() as u64);
+                let mut buf =
+                    Self::new_dynamic_buf_with_number(Self::ENUM_CODE, inner.len() as u64);
                 inner.iter().for_each(|(k, v)| {
                     buf.append(&mut serialize_string(k));
                     buf.append(&mut v.serialize());
@@ -223,7 +224,7 @@ impl Header {
         reader.read_exact(&mut buf).or(Err(()))?;
 
         match *buf.first().ok_or(())? {
-            Self::UNIT_CODE =>  Ok(Self::Unit),
+            Self::UNIT_CODE => Ok(Self::Unit),
             Self::OPTIONAL_CODE => {
                 let inner = Self::deserialize(reader)?;
                 Ok(Self::Optional(Box::new(inner)))
@@ -472,7 +473,11 @@ mod tests {
             Ok(Header::Array(Box::new(Header::Boolean)))
         );
         assert_eq!(
-            Header::deserialize(&mut Header::Tuple(vec![Header::Boolean, Header::UInt8]).serialize().as_slice()),
+            Header::deserialize(
+                &mut Header::Tuple(vec![Header::Boolean, Header::UInt8])
+                    .serialize()
+                    .as_slice()
+            ),
             Ok(Header::Tuple(vec![Header::Boolean, Header::UInt8]))
         );
         assert_eq!(
@@ -502,12 +507,16 @@ mod tests {
             )))))
         );
         assert_eq!(
-            Header::deserialize(&mut Header::Enum({
-                let mut map = BTreeMap::new();
-                map.insert("a".to_string(), Header::Boolean);
-                map.insert("b".to_string(), Header::UInt32);
-                map
-            }).serialize().as_slice()),
+            Header::deserialize(
+                &mut Header::Enum({
+                    let mut map = BTreeMap::new();
+                    map.insert("a".to_string(), Header::Boolean);
+                    map.insert("b".to_string(), Header::UInt32);
+                    map
+                })
+                .serialize()
+                .as_slice()
+            ),
             Ok(Header::Enum({
                 let mut map = BTreeMap::new();
                 map.insert("a".to_string(), Header::Boolean);
@@ -516,7 +525,11 @@ mod tests {
             }))
         );
         assert_eq!(
-            Header::deserialize(&mut Header::UnitEnum(Box::new(Header::Boolean)).serialize().as_slice()),
+            Header::deserialize(
+                &mut Header::UnitEnum(Box::new(Header::Boolean))
+                    .serialize()
+                    .as_slice()
+            ),
             Ok(Header::UnitEnum(Box::new(Header::Boolean)))
         );
         assert_eq!(

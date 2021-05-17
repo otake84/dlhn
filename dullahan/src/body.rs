@@ -365,7 +365,10 @@ impl Body {
             Header::Enum(inner_header) => {
                 let index = reader.read_varint::<u64>().or(Err(()))?;
                 let header = inner_header.values().nth(index as usize).ok_or(())?;
-                Ok(Self::Enum(index, Box::new(Self::deserialize(header, reader)?)))
+                Ok(Self::Enum(
+                    index,
+                    Box::new(Self::deserialize(header, reader)?),
+                ))
             }
             Header::UnitEnum(inner_header) => {
                 let body = Self::deserialize(inner_header, reader)?;
@@ -493,7 +496,10 @@ mod tests {
     use core::panic;
     use integer_encoding::VarInt;
     use num_bigint::{BigInt, BigUint};
-    use std::{collections::{BTreeMap, BTreeSet}, io::BufReader};
+    use std::{
+        collections::{BTreeMap, BTreeSet},
+        io::BufReader,
+    };
     use time::{Date, NumericalDuration, OffsetDateTime};
 
     #[test]
@@ -838,7 +844,11 @@ mod tests {
             set
         };
         assert_eq!(
-            Body::Enum(keys.iter().position(|&k| k == "b").unwrap() as u64, Box::new(Body::VarUInt32(123))).serialize(),
+            Body::Enum(
+                keys.iter().position(|&k| k == "b").unwrap() as u64,
+                Box::new(Body::VarUInt32(123))
+            )
+            .serialize(),
             [1, 123]
         );
     }
@@ -1899,7 +1909,10 @@ mod tests {
         {
             let body = Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123)]);
             assert_eq!(
-                Body::deserialize(&Header::Tuple(vec![Header::Boolean, Header::UInt8]), &mut body.serialize().as_slice()),
+                Body::deserialize(
+                    &Header::Tuple(vec![Header::Boolean, Header::UInt8]),
+                    &mut body.serialize().as_slice()
+                ),
                 Ok(body)
             );
         }
@@ -1980,7 +1993,12 @@ mod tests {
         assert_eq!(
             Body::deserialize(
                 &Header::Enum(header.clone()),
-                &mut Body::Enum(header.keys().position(|k| k == "c").unwrap() as u64, Box::new(Body::UInt64(123))).serialize().as_slice()
+                &mut Body::Enum(
+                    header.keys().position(|k| k == "c").unwrap() as u64,
+                    Box::new(Body::UInt64(123))
+                )
+                .serialize()
+                .as_slice()
             ),
             Ok(Body::Enum(2, Box::new(Body::UInt64(123))))
         );
@@ -1991,7 +2009,9 @@ mod tests {
         assert_eq!(
             Body::deserialize(
                 &Header::UnitEnum(Box::new(Header::Boolean)),
-                &mut Body::UnitEnum(Box::new(Body::Boolean(true))).serialize().as_slice()
+                &mut Body::UnitEnum(Box::new(Body::Boolean(true)))
+                    .serialize()
+                    .as_slice()
             ),
             Ok(Body::UnitEnum(Box::new(Body::Boolean(true))))
         );

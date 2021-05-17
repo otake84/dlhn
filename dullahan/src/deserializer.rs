@@ -871,7 +871,9 @@ mod tests {
         let body = Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123)]);
         assert_eq!(
             super::deserialize(
-                serialize(&Header::Tuple(vec![Header::Boolean, Header::UInt8]), &body).unwrap().as_slice()
+                serialize(&Header::Tuple(vec![Header::Boolean, Header::UInt8]), &body)
+                    .unwrap()
+                    .as_slice()
             ),
             Ok((Header::Tuple(vec![Header::Boolean, Header::UInt8]), body))
         );
@@ -941,9 +943,16 @@ mod tests {
             map.insert("b".to_string(), Header::UInt32);
             map
         };
-        let body = Body::Enum(header.keys().position(|k| k == "b").unwrap() as u64, Box::new(Body::UInt32(123)));
+        let body = Body::Enum(
+            header.keys().position(|k| k == "b").unwrap() as u64,
+            Box::new(Body::UInt32(123)),
+        );
         assert_eq!(
-            super::deserialize(serialize(&Header::Enum(header.clone()), &body).unwrap().as_slice()),
+            super::deserialize(
+                serialize(&Header::Enum(header.clone()), &body)
+                    .unwrap()
+                    .as_slice()
+            ),
             Ok((Header::Enum(header), body))
         );
     }

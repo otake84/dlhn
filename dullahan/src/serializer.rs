@@ -37,9 +37,10 @@ pub(crate) fn validate(header: &Header, body: &Body) -> bool {
         }
         (Header::Tuple(inner_headers), Body::Tuple(inner_bodies)) => {
             inner_headers.len() == inner_bodies.len()
-                && inner_headers.iter().zip(inner_bodies).all(|(header, body)| {
-                    validate(header, body)
-                })
+                && inner_headers
+                    .iter()
+                    .zip(inner_bodies)
+                    .all(|(header, body)| validate(header, body))
         }
         (Header::Map(inner_header), Body::Map(inner_body)) => {
             inner_header.len() == inner_body.len()
@@ -61,7 +62,9 @@ pub(crate) fn validate(header: &Header, body: &Body) -> bool {
                 false
             }
         }
-        (Header::UnitEnum(inner_header), Body::UnitEnum(inner_body)) => validate(inner_header, inner_body),
+        (Header::UnitEnum(inner_header), Body::UnitEnum(inner_body)) => {
+            validate(inner_header, inner_body)
+        }
         (Header::Date, Body::Date(_)) => true,
         (Header::DateTime, Body::DateTime(_)) => true,
         (Header::Extension8(header_code), Body::Extension8((body_code, _))) => {
@@ -240,9 +243,15 @@ mod tests {
         ));
 
         let header = Header::Tuple(vec![Header::Boolean, Header::UInt8]);
-        assert!(super::validate(&header, &Body::Tuple(vec![Body::Boolean(true), Body::UInt8(0)])));
+        assert!(super::validate(
+            &header,
+            &Body::Tuple(vec![Body::Boolean(true), Body::UInt8(0)])
+        ));
         assert!(!super::validate(&header, &Body::Tuple(Vec::new())));
-        assert!(!super::validate(&header, &Body::Tuple(vec![Body::Boolean(true)])));
+        assert!(!super::validate(
+            &header,
+            &Body::Tuple(vec![Body::Boolean(true)])
+        ));
 
         let header = Header::Map({
             let mut map = BTreeMap::new();
