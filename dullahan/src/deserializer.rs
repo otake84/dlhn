@@ -934,8 +934,24 @@ mod tests {
 
     #[test]
     fn deserialize_enum() {
-        let header = Header::Enum(Box::new(Header::Boolean));
-        let body = Body::Enum(Box::new(Body::Boolean(true)));
+        let header = {
+            let mut map = BTreeMap::new();
+            map.insert("a".to_string(), Header::Boolean);
+            map.insert("c".to_string(), Header::UInt64);
+            map.insert("b".to_string(), Header::UInt32);
+            map
+        };
+        let body = Body::Enum(header.keys().position(|k| k == "b").unwrap() as u64, Box::new(Body::UInt32(123)));
+        assert_eq!(
+            super::deserialize(serialize(&Header::Enum(header.clone()), &body).unwrap().as_slice()),
+            Ok((Header::Enum(header), body))
+        );
+    }
+
+    #[test]
+    fn deserialize_unit_enum() {
+        let header = Header::UnitEnum(Box::new(Header::Boolean));
+        let body = Body::UnitEnum(Box::new(Body::Boolean(true)));
         assert_eq!(
             super::deserialize(serialize(&header, &body).unwrap().as_slice()),
             Ok((header, body))

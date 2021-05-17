@@ -36,7 +36,8 @@ pub enum Body {
     Tuple(Vec<Body>),
     Map(BTreeMap<String, Body>),
     DynamicMap(BTreeMap<String, Body>),
-    Enum(Box<Body>),
+    Enum(u64, Box<Body>),
+    UnitEnum(Box<Body>),
     Date(Date),
     DateTime(OffsetDateTime),
     Extension8((u64, u8)),
@@ -148,7 +149,12 @@ impl Body {
                 });
                 buf
             }
-            Self::Enum(v) => v.serialize(),
+            Self::Enum(i, v) => {
+                let mut buf = i.encode_var_vec();
+                buf.append(&mut v.serialize());
+                buf
+            }
+            Self::UnitEnum(v) => v.serialize(),
             Self::Date(v) => {
                 let year = v.year() - Self::DATE_YEAR_OFFSET;
                 let ordinal = v.ordinal() - Self::DATE_ORDINAL_OFFSET;
@@ -357,8 +363,13 @@ impl Body {
                 Ok(Self::DynamicMap(body))
             }
             Header::Enum(inner_header) => {
+                let index = reader.read_varint::<u64>().or(Err(()))?;
+                let header = inner_header.values().nth(index as usize).ok_or(())?;
+                Ok(Self::Enum(index, Box::new(Self::deserialize(header, reader)?)))
+            }
+            Header::UnitEnum(inner_header) => {
                 let body = Self::deserialize(inner_header, reader)?;
-                Ok(Self::Enum(Box::new(body)))
+                Ok(Self::UnitEnum(Box::new(body)))
             }
             Header::Date => {
                 let year = reader.read_varint::<i32>().or(Err(()))? + Self::DATE_YEAR_OFFSET;
@@ -482,7 +493,7 @@ mod tests {
     use core::panic;
     use integer_encoding::VarInt;
     use num_bigint::{BigInt, BigUint};
-    use std::{collections::BTreeMap, io::BufReader};
+    use std::{collections::{BTreeMap, BTreeSet}, io::BufReader};
     use time::{Date, NumericalDuration, OffsetDateTime};
 
     #[test]
@@ -814,6 +825,21 @@ mod tests {
         assert_eq!(
             Body::BigDecimal(BigDecimal::new(BigInt::from(i16::MAX), 0)).serialize(),
             [2, 255, 127, 0]
+        );
+    }
+
+    #[test]
+    fn serialize_enum() {
+        let keys = {
+            let mut set = BTreeSet::new();
+            set.insert("a");
+            set.insert("b");
+            set.insert("c");
+            set
+        };
+        assert_eq!(
+            Body::Enum(keys.iter().position(|&k| k == "b").unwrap() as u64, Box::new(Body::VarUInt32(123))).serialize(),
+            [1, 123]
         );
     }
 
@@ -1944,12 +1970,30 @@ mod tests {
 
     #[test]
     fn deserialize_enum() {
+        let header = {
+            let mut map = BTreeMap::new();
+            map.insert("a".to_string(), Header::Boolean);
+            map.insert("c".to_string(), Header::UInt64);
+            map.insert("b".to_string(), Header::UInt32);
+            map
+        };
         assert_eq!(
             Body::deserialize(
-                &Header::Enum(Box::new(Header::Boolean)),
-                &mut Body::Enum(Box::new(Body::Boolean(true))).serialize().as_slice()
+                &Header::Enum(header.clone()),
+                &mut Body::Enum(header.keys().position(|k| k == "c").unwrap() as u64, Box::new(Body::UInt64(123))).serialize().as_slice()
             ),
-            Ok(Body::Enum(Box::new(Body::Boolean(true))))
+            Ok(Body::Enum(2, Box::new(Body::UInt64(123))))
+        );
+    }
+
+    #[test]
+    fn deserialize_unit_enum() {
+        assert_eq!(
+            Body::deserialize(
+                &Header::UnitEnum(Box::new(Header::Boolean)),
+                &mut Body::UnitEnum(Box::new(Body::Boolean(true))).serialize().as_slice()
+            ),
+            Ok(Body::UnitEnum(Box::new(Body::Boolean(true))))
         );
     }
 

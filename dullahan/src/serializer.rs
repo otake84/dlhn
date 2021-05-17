@@ -54,7 +54,14 @@ pub(crate) fn validate(header: &Header, body: &Body) -> bool {
         (Header::DynamicMap(inner_header), Body::DynamicMap(inner_body)) => inner_body
             .iter()
             .all(|(_key, value)| validate(inner_header, value)),
-        (Header::Enum(inner_header), Body::Enum(inner_body)) => validate(inner_header, inner_body),
+        (Header::Enum(inner_header), Body::Enum(i, v)) => {
+            if let Some((_, h)) = inner_header.iter().nth(*i as usize) {
+                validate(h, v)
+            } else {
+                false
+            }
+        }
+        (Header::UnitEnum(inner_header), Body::UnitEnum(inner_body)) => validate(inner_header, inner_body),
         (Header::Date, Body::Date(_)) => true,
         (Header::DateTime, Body::DateTime(_)) => true,
         (Header::Extension8(header_code), Body::Extension8((body_code, _))) => {
@@ -279,10 +286,30 @@ mod tests {
         ));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
-        let header = Header::Enum(Box::new(Header::Boolean));
+        let header = Header::Enum({
+            let mut map = BTreeMap::new();
+            map.insert("a".to_string(), Header::Boolean);
+            map.insert("b".to_string(), Header::UInt32);
+            map
+        });
         assert!(super::validate(
             &header,
-            &Body::Enum(Box::new(Body::Boolean(true)))
+            &Body::Enum(1, Box::new(Body::UInt32(123)))
+        ));
+        assert!(!super::validate(
+            &header,
+            &Body::Enum(0, Box::new(Body::UInt32(123)))
+        ));
+        assert!(!super::validate(
+            &header,
+            &Body::Enum(1, Box::new(Body::Boolean(true)))
+        ));
+        assert!(!super::validate(&header, &Body::Boolean(true)));
+
+        let header = Header::UnitEnum(Box::new(Header::Boolean));
+        assert!(super::validate(
+            &header,
+            &Body::UnitEnum(Box::new(Body::Boolean(true)))
         ));
         assert!(!super::validate(&header, &Body::Boolean(true)));
 
