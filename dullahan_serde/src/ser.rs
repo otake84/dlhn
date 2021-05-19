@@ -155,14 +155,15 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
 
     fn serialize_newtype_variant<T: ?Sized>(
         self,
-        name: &'static str,
+        _name: &'static str,
         variant_index: u32,
-        variant: &'static str,
+        _variant: &'static str,
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
         T: serde::Serialize {
-        todo!()
+        self.serialize_u32(variant_index)?;
+        value.serialize(self)
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
@@ -998,6 +999,23 @@ mod tests {
         let body = Test(true, 123u8, "test".to_string());
         body.serialize(&mut serializer).unwrap();
         assert_eq!(buf, serialize_body(&Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123), Body::String("test".to_string())])));
+    }
+
+    #[test]
+    fn serialize_tuple_variant() {
+        #[allow(dead_code)]
+        #[derive(Serialize)]
+        enum Test {
+            A,
+            B(String),
+            C,
+        }
+
+        let mut buf = Vec::new();
+        let mut serializer = Serializer::new(&mut buf);
+        let body = Test::B("test".to_string());
+        body.serialize(&mut serializer).unwrap();
+        assert_eq!(buf, [[1u8].as_ref(), [4u8].as_ref(), "test".as_bytes()].concat());
     }
 
     #[test]
