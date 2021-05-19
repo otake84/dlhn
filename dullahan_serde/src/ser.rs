@@ -136,11 +136,11 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
 
     fn serialize_unit_variant(
         self,
-        name: &'static str,
+        _name: &'static str,
         variant_index: u32,
-        variant: &'static str,
+        _variant: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        self.serialize_u32(variant_index)
     }
 
     fn serialize_newtype_struct<T: ?Sized>(
@@ -871,6 +871,20 @@ mod tests {
         let body = Test;
         body.serialize(&mut serializer).unwrap();
         assert_eq!(buf, serialize_body(&Body::Unit));
+    }
+
+    #[test]
+    fn serialize_unit_variant() {
+        #[derive(Debug, PartialEq, Serialize)]
+        enum Test {
+            A,
+        }
+
+        let mut buf = Vec::new();
+        let mut serializer = Serializer::new(&mut buf);
+        let body = Test::A;
+        body.serialize(&mut serializer).unwrap();
+        assert_eq!(buf, serialize_body(&Body::VarUInt32(0)));
     }
 
     #[test]
