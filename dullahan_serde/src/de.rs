@@ -631,7 +631,7 @@ impl<'de, 'a, R: Read> de::VariantAccess<'de> for VariantDeserializer<'de, 'a, R
     fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value, Self::Error>
     where
         T: de::DeserializeSeed<'de> {
-        todo!()
+        seed.deserialize(self.de)
     }
 
     fn tuple_variant<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
@@ -1056,16 +1056,28 @@ mod tests {
         #[derive(Debug, PartialEq, Serialize, Deserialize)]
         enum Test {
             A,
-            B,
+            B(String),
             C,
         }
 
-        let buf = serialize(Test::B);
-        let mut reader = buf.as_slice();
-        let mut deserializer = Deserializer::new(&mut reader);
-        let result = Test::deserialize(&mut deserializer).unwrap();
+        {
 
-        assert_eq!(Test::B, result);
+            let buf = serialize(Test::A);
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = Test::deserialize(&mut deserializer).unwrap();
+
+            assert_eq!(Test::A, result);
+        }
+
+        {
+            let buf = serialize(Test::B("test".to_string()));
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = Test::deserialize(&mut deserializer).unwrap();
+
+            assert_eq!(Test::B("test".to_string()), result);
+        }
     }
 
     fn serialize<T: Serialize>(v: T) -> Vec<u8> {
