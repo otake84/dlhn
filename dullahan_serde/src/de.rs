@@ -637,7 +637,7 @@ impl<'de, 'a, R: Read> de::VariantAccess<'de> for VariantDeserializer<'de, 'a, R
     fn tuple_variant<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        de::Deserializer::deserialize_tuple(self.de, len, visitor)
     }
 
     fn struct_variant<V>(
@@ -1057,7 +1057,7 @@ mod tests {
         enum Test {
             A,
             B(String),
-            C,
+            C(bool, u8, String),
         }
 
         {
@@ -1077,6 +1077,15 @@ mod tests {
             let result = Test::deserialize(&mut deserializer).unwrap();
 
             assert_eq!(Test::B("test".to_string()), result);
+        }
+
+        {
+            let buf = serialize(Test::C(true, 123, "test".to_string()));
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = Test::deserialize(&mut deserializer).unwrap();
+
+            assert_eq!(Test::C(true, 123, "test".to_string()), result);
         }
     }
 
