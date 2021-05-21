@@ -189,12 +189,13 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
 
     fn serialize_tuple_variant(
         self,
-        name: &'static str,
+        _name: &'static str,
         variant_index: u32,
-        variant: &'static str,
-        len: usize,
+        _variant: &'static str,
+        _len: usize,
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-        todo!()
+        self.serialize_u32(variant_index)?;
+        Ok(self)
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
@@ -282,11 +283,11 @@ impl<'a, W: Write> ser::SerializeTupleVariant for &'a mut Serializer<W> {
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: serde::Serialize {
-        todo!()
+        value.serialize(&mut **self)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        Ok(())
     }
 }
 
@@ -946,6 +947,23 @@ mod tests {
     }
 
     #[test]
+    fn serialize_newtype_variant() {
+        #[allow(dead_code)]
+        #[derive(Serialize)]
+        enum Test {
+            A,
+            B(String),
+            C,
+        }
+
+        let mut buf = Vec::new();
+        let mut serializer = Serializer::new(&mut buf);
+        let body = Test::B("test".to_string());
+        body.serialize(&mut serializer).unwrap();
+        assert_eq!(buf, [[1u8].as_ref(), [4u8].as_ref(), "test".as_bytes()].concat());
+    }
+
+    #[test]
     fn serialize_seq() {
         {
             let mut buf = Vec::new();
@@ -1007,15 +1025,15 @@ mod tests {
         #[derive(Serialize)]
         enum Test {
             A,
-            B(String),
+            B(bool, u8, String),
             C,
         }
 
         let mut buf = Vec::new();
         let mut serializer = Serializer::new(&mut buf);
-        let body = Test::B("test".to_string());
+        let body = Test::B(true, 123, "test".to_string());
         body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, [[1u8].as_ref(), [4u8].as_ref(), "test".as_bytes()].concat());
+        assert_eq!(buf, [[1u8].as_ref(), [1].as_ref(), [123].as_ref(), [4u8].as_ref(), "test".as_bytes()].concat());
     }
 
     #[test]
