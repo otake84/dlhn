@@ -647,7 +647,7 @@ impl<'de, 'a, R: Read> de::VariantAccess<'de> for VariantDeserializer<'de, 'a, R
     ) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        de::Deserializer::deserialize_struct(self.de, "", fields, visitor)
     }
 }
 
@@ -1058,6 +1058,11 @@ mod tests {
             A,
             B(String),
             C(bool, u8, String),
+            D {
+                a: bool,
+                b: u8,
+                c: String,
+            },
         }
 
         {
@@ -1086,6 +1091,23 @@ mod tests {
             let result = Test::deserialize(&mut deserializer).unwrap();
 
             assert_eq!(Test::C(true, 123, "test".to_string()), result);
+        }
+
+        {
+            let buf = serialize(Test::D {
+                a: true,
+                b: 123,
+                c: "test".to_string()
+            });
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = Test::deserialize(&mut deserializer).unwrap();
+
+            assert_eq!(Test::D {
+                a: true,
+                b: 123,
+                c: "test".to_string()
+            }, result);
         }
     }
 
