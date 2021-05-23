@@ -218,12 +218,13 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
 
     fn serialize_struct_variant(
         self,
-        name: &'static str,
+        _name: &'static str,
         variant_index: u32,
-        variant: &'static str,
-        len: usize,
+        _variant: &'static str,
+        _len: usize,
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
-        todo!()
+        self.serialize_u32(variant_index)?;
+        Ok(self)
     }
 }
 
@@ -315,21 +316,20 @@ impl<'a, W: Write> ser::SerializeMap for &'a mut Serializer<W> {
 
 impl<'a, W: Write> ser::SerializeStructVariant for &'a mut Serializer<W> {
     type Ok = ();
-
     type Error = Error;
 
     fn serialize_field<T: ?Sized>(
         &mut self,
-        key: &'static str,
+        _key: &'static str,
         value: &T,
     ) -> Result<(), Self::Error>
     where
         T: serde::Serialize {
-        todo!()
+        value.serialize(&mut **self)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        Ok(())
     }
 }
 
@@ -1061,6 +1061,32 @@ mod tests {
             map.insert("c".to_string(), Body::String("test".to_string()));
             map
         })));
+    }
+
+    #[test]
+    fn serialize_struct_variant() {
+        #[allow(dead_code)]
+        #[derive(Serialize)]
+        enum Test {
+            A,
+            B {
+                a: bool,
+                b: u8,
+                c: String,
+            },
+            C,
+        }
+
+        let mut buf = Vec::new();
+        let mut serializer = Serializer::new(&mut buf);
+        let body = Test::B {
+            a: true,
+            b: 123,
+            c: "test".to_string()
+        };
+        body.serialize(&mut serializer).unwrap();
+
+        assert_eq!(buf, [[1, 1, 123, 4].as_ref(), "test".as_bytes()].concat());
     }
 
     #[test]
