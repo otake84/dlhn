@@ -56,7 +56,7 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     type SerializeTupleStruct = Self;
     type SerializeTupleVariant = Self;
     type SerializeMap = Self;
-    type SerializeStruct = StructSerializer<'a, W>;
+    type SerializeStruct = Self;
     type SerializeStructVariant = Self;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
@@ -214,10 +214,7 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
         _name: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStruct, Self::Error> {
-        Ok(StructSerializer {
-            output: &mut self.output,
-            buf: BTreeMap::new(),
-        })
+        Ok(self)
     }
 
     fn serialize_struct_variant(
@@ -317,6 +314,25 @@ impl<'a, W: Write> ser::SerializeMap for &'a mut Serializer<W> {
     }
 }
 
+impl<'a, W: Write> ser::SerializeStruct for &'a mut Serializer<W> {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<T: ?Sized>(
+        &mut self,
+        _key: &'static str,
+        value: &T,
+    ) -> Result<(), Self::Error>
+    where
+        T: Serialize {
+        value.serialize(&mut **self)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        Ok(())
+    }
+}
+
 impl<'a, W: Write> ser::SerializeStructVariant for &'a mut Serializer<W> {
     type Ok = ();
     type Error = Error;
@@ -332,36 +348,6 @@ impl<'a, W: Write> ser::SerializeStructVariant for &'a mut Serializer<W> {
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        Ok(())
-    }
-}
-
-pub struct StructSerializer<'a, W: Write> {
-    output: &'a mut W,
-    buf: BTreeMap<String, Vec<u8>>,
-}
-
-impl<'a, W: Write> ser::SerializeStruct for StructSerializer<'a, W> {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_field<T: ?Sized>(
-        &mut self,
-        key: &'static str,
-        value: &T,
-    ) -> Result<(), Self::Error>
-    where
-        T: serde::Serialize {
-        let mut buf = Vec::new();
-        value.serialize(&mut Serializer::new(&mut buf))?;
-        self.buf.insert(key.to_string(), buf);
-        Ok(())
-    }
-
-    fn end(self) -> Result<Self::Ok, Self::Error> {
-        for value in self.buf.values() {
-            self.output.write_all(value).or(Err(Error::Write))?;
-        }
         Ok(())
     }
 }
@@ -873,13 +859,7 @@ mod tests {
                 b: 123,
             }).serialize(&mut serializer).unwrap();
 
-            assert_eq!(buf, serialize_body(&Body::Map({
-                let mut map = BTreeMap::new();
-                map.insert("c".to_string(), Body::String("test".to_string()));
-                map.insert("a".to_string(), Body::Boolean(true));
-                map.insert("b".to_string(), Body::UInt8(123));
-                map
-            })));
+            assert_eq!(buf, [[4].as_ref(), "test".as_bytes(), [1].as_ref(), [123].as_ref()].concat());
         }
 
         {
@@ -888,25 +868,19 @@ mod tests {
             #[derive(Debug, PartialEq, Serialize)]
             struct Test {
                 c: String,
-                a: Inner,
-                b: bool,
+                a: bool,
+                b: Inner,
             }
 
             let mut buf = Vec::new();
             let mut serializer = Serializer::new(&mut buf);
             Test {
                 c: "test".to_string(),
-                a: Inner(123),
-                b: true,
+                a: true,
+                b: Inner(123),
             }.serialize(&mut serializer).unwrap();
 
-            assert_eq!(buf, serialize_body(&Body::Map({
-                let mut map = BTreeMap::new();
-                map.insert("c".to_string(), Body::String("test".to_string()));
-                map.insert("a".to_string(), Body::Tuple(vec![Body::UInt8(123)]));
-                map.insert("b".to_string(), Body::Boolean(true));
-                map
-            })));
+            assert_eq!(buf, [[4].as_ref(), "test".as_bytes(), [1].as_ref(), [123].as_ref()].concat());
         }
     }
 
@@ -1018,13 +992,7 @@ mod tests {
         };
         body.serialize(&mut serializer).unwrap();
 
-        assert_eq!(buf, serialize_body(&Body::Map({
-            let mut map = BTreeMap::new();
-            map.insert("a".to_string(), Body::Boolean(true));
-            map.insert("b".to_string(), Body::UInt8(123));
-            map.insert("c".to_string(), Body::String("test".to_string()));
-            map
-        })));
+        assert_eq!(buf, [[4].as_ref(), "test".as_bytes(), [1].as_ref(), [123].as_ref()].concat());
     }
 
     #[test]
