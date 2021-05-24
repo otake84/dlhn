@@ -383,19 +383,19 @@ impl<'a, 'de: 'a, R: Read> de::MapAccess<'de> for StructDeserializer<'a, 'de, R>
     }
 }
 
-struct StructKey<'a> {
-    key: &'a str,
+struct StructKey {
+    key: &'static str,
 }
 
-impl<'a> StructKey<'a> {
-    pub fn new(key: &'a str) -> Self {
+impl StructKey {
+    fn new(key: &'static str) -> Self {
         Self {
             key,
         }
     }
 }
 
-impl<'de, 'a> de::Deserializer<'de> for StructKey<'a> {
+impl<'de> de::Deserializer<'de> for StructKey {
     type Error = Error;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
