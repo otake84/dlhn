@@ -8,6 +8,7 @@ pub enum Error {
     Write,
     Syntax,
     UnknownSeqSize,
+    UnknownMapSize,
 }
 
 impl ser::Error for Error {
@@ -28,6 +29,7 @@ impl Display for Error {
             Error::Syntax => formatter.write_str("syntax error"),
             Error::Write => formatter.write_str("write error"),
             Error::UnknownSeqSize => formatter.write_str("unknown seq size"),
+            Error::UnknownMapSize => formatter.write_str("unknown map size"),
         }
     }
 }
@@ -53,7 +55,7 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     type SerializeTuple = Self;
     type SerializeTupleStruct = Self;
     type SerializeTupleVariant = Self;
-    type SerializeMap = MapSerializer<'a, W>;
+    type SerializeMap = Self;
     type SerializeStruct = StructSerializer<'a, W>;
     type SerializeStructVariant = Self;
 
@@ -199,10 +201,12 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
-        Ok(MapSerializer {
-            output: &mut self.output,
-            buf: BTreeMap::new(),
-        })
+        if let Some(len) = len {
+            self.serialize_u64(len as u64)?;
+            Ok(self)
+        } else {
+            Err(Error::UnknownMapSize)
+        }
     }
 
     fn serialize_struct(
@@ -294,23 +298,22 @@ impl<'a, W: Write> ser::SerializeTupleVariant for &'a mut Serializer<W> {
 
 impl<'a, W: Write> ser::SerializeMap for &'a mut Serializer<W> {
     type Ok = ();
-
     type Error = Error;
 
     fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
     where
         T: serde::Serialize {
-        todo!()
+        key.serialize(MapKeySerializer::new(self))
     }
 
     fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: serde::Serialize {
-        todo!()
+            value.serialize(&mut **self)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        Ok(())
     }
 }
 
@@ -363,54 +366,16 @@ impl<'a, W: Write> ser::SerializeStruct for StructSerializer<'a, W> {
     }
 }
 
-pub struct MapSerializer<'a, W: Write> {
-    output: &'a mut W,
-    buf: BTreeMap<String, Vec<u8>>,
+struct MapKeySerializer<'a, W: Write> {
+    ser: &'a mut Serializer<W>,
 }
 
-impl<'a, W: Write> ser::SerializeMap for MapSerializer<'a, W> {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
-    where
-        T: serde::Serialize {
-        todo!()
-    }
-
-    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
-    where
-        T: serde::Serialize {
-        todo!()
-    }
-
-    fn serialize_entry<K: ?Sized, V: ?Sized>(&mut self, key: &K, value: &V) -> Result<(), Self::Error>
-    where
-        K: Serialize,
-        V: Serialize, {
-            let mut key_buf = Vec::new();
-            key.serialize(MapKeySerializer {
-                output: &mut key_buf,
-            })?;
-            let mut value_buf = Vec::new();
-            value.serialize(&mut Serializer::new(&mut value_buf))?;
-            self.buf.insert(String::from_utf8(key_buf).or(Err(Error::Write))?, value_buf);
-            Ok(())
-    }
-
-    fn end(self) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(self.buf.len().encode_var_vec().as_slice()).or(Err(Error::Write))?;
-
-        for (k, v) in self.buf.into_iter() {
-            self.output.write_all(serialize_body(&Body::String(k)).as_slice()).or(Err(Error::Write))?;
-            self.output.write_all(v.as_slice()).or(Err(Error::Write))?;
+impl<'a, W: 'a + Write> MapKeySerializer<'a, W> {
+    fn new(ser: &'a mut Serializer<W>) -> Self {
+        Self {
+            ser
         }
-        Ok(())
     }
-}
-
-pub struct MapKeySerializer<'a, W: Write> {
-    output: &'a mut W,
 }
 
 impl<'a, W: Write> ser::Serializer for MapKeySerializer<'a, W> {
@@ -473,8 +438,7 @@ impl<'a, W: Write> ser::Serializer for MapKeySerializer<'a, W> {
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(v.as_bytes()).or(Err(Error::Write))?;
-        Ok(())
+        self.ser.serialize_str(v)
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
