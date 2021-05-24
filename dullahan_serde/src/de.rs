@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, fmt::{self, Display}, io::Read, mem::MaybeUninit};
+use std::{fmt::{self, Display}, io::Read, mem::MaybeUninit, slice::Iter};
 use integer_encoding::VarIntReader;
 use serde::de;
 
@@ -251,16 +251,14 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     }
 
     fn deserialize_struct<V>(
-        mut self,
+        self,
         _name: &'static str,
         fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        let mut keys = fields.iter().map(|v| v.to_string()).collect::<VecDeque<String>>();
-        keys.make_contiguous().sort();
-        visitor.visit_map(StructDeserializer::new(&mut self, keys))
+        visitor.visit_map(StructDeserializer::new(self, fields))
     }
 
     fn deserialize_enum<V>(
@@ -353,14 +351,14 @@ impl<'a, 'de: 'a, R: Read> de::MapAccess<'de> for MapDeserializer<'a, 'de, R> {
 
 struct StructDeserializer<'a, 'de: 'a, R: Read> {
     deserializer: &'a mut Deserializer<'de, R>,
-    keys: VecDeque<String>,
+    keys: Iter<'a, &'static str>,
 }
 
 impl<'a, 'de: 'a, R: Read> StructDeserializer<'a, 'de, R> {
-    fn new(deserializer: &'a mut Deserializer<'de, R>, keys: VecDeque<String>) -> Self {
+    fn new(deserializer: &'a mut Deserializer<'de, R>, keys: &'static [&'static str]) -> Self {
         Self {
             deserializer,
-            keys,
+            keys: keys.iter(),
         }
     }
 }
@@ -371,7 +369,7 @@ impl<'a, 'de: 'a, R: Read> de::MapAccess<'de> for StructDeserializer<'a, 'de, R>
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
     where
         K: de::DeserializeSeed<'de> {
-            if let Some(key) = self.keys.pop_front() {
+            if let Some(&key) = self.keys.next() {
                 seed.deserialize(StructKey::new(key)).map(Some)
             } else {
                 Ok(None)
@@ -386,11 +384,11 @@ impl<'a, 'de: 'a, R: Read> de::MapAccess<'de> for StructDeserializer<'a, 'de, R>
 }
 
 struct StructKey {
-    key: String,
+    key: &'static str,
 }
 
 impl StructKey {
-    pub fn new(key: String) -> Self {
+    fn new(key: &'static str) -> Self {
         Self {
             key,
         }
@@ -588,7 +586,7 @@ impl<'de> de::Deserializer<'de> for StructKey {
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_string(self.key)
+        visitor.visit_str(self.key)
     }
 
     fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
