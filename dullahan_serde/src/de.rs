@@ -264,20 +264,20 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     }
 
     fn deserialize_enum<V>(
-        self,
-        name: &'static str,
-        variants: &'static [&'static str],
+        mut self,
+        _name: &'static str,
+        _variants: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        visitor.visit_enum(VariantDeserializer::new(&mut self))
     }
 
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
+        self.deserialize_u32(visitor)
     }
 
     fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -595,6 +595,59 @@ impl<'de> de::Deserializer<'de> for StructKey {
     where
         V: de::Visitor<'de> {
         todo!()
+    }
+}
+
+struct VariantDeserializer<'de, 'a, R: Read> {
+    de: &'a mut Deserializer<'de, R>,
+}
+
+impl<'de, 'a, R: Read> VariantDeserializer<'de, 'a, R> {
+    fn new(de: &'a mut Deserializer<'de, R>) -> Self {
+        VariantDeserializer {
+            de,
+        }
+    }
+}
+
+impl<'de, 'a, R: Read> de::EnumAccess<'de> for VariantDeserializer<'de, 'a, R> {
+    type Error = Error;
+    type Variant = Self;
+
+    fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
+    where
+        V: de::DeserializeSeed<'de> {
+        Ok((seed.deserialize(&mut *self.de)?, self))
+    }
+}
+
+impl<'de, 'a, R: Read> de::VariantAccess<'de> for VariantDeserializer<'de, 'a, R> {
+    type Error = Error;
+
+    fn unit_variant(self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value, Self::Error>
+    where
+        T: de::DeserializeSeed<'de> {
+        seed.deserialize(self.de)
+    }
+
+    fn tuple_variant<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        de::Deserializer::deserialize_tuple(self.de, len, visitor)
+    }
+
+    fn struct_variant<V>(
+        self,
+        fields: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de> {
+        de::Deserializer::deserialize_struct(self.de, "", fields, visitor)
     }
 }
 
@@ -996,6 +1049,66 @@ mod tests {
             a: true,
             b: 123,
         }, result);
+    }
+
+    #[test]
+    fn deserialize_enum() {
+        #[derive(Debug, PartialEq, Serialize, Deserialize)]
+        enum Test {
+            A,
+            B(String),
+            C(bool, u8, String),
+            D {
+                a: bool,
+                b: u8,
+                c: String,
+            },
+        }
+
+        {
+
+            let buf = serialize(Test::A);
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = Test::deserialize(&mut deserializer).unwrap();
+
+            assert_eq!(Test::A, result);
+        }
+
+        {
+            let buf = serialize(Test::B("test".to_string()));
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = Test::deserialize(&mut deserializer).unwrap();
+
+            assert_eq!(Test::B("test".to_string()), result);
+        }
+
+        {
+            let buf = serialize(Test::C(true, 123, "test".to_string()));
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = Test::deserialize(&mut deserializer).unwrap();
+
+            assert_eq!(Test::C(true, 123, "test".to_string()), result);
+        }
+
+        {
+            let buf = serialize(Test::D {
+                a: true,
+                b: 123,
+                c: "test".to_string()
+            });
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            let result = Test::deserialize(&mut deserializer).unwrap();
+
+            assert_eq!(Test::D {
+                a: true,
+                b: 123,
+                c: "test".to_string()
+            }, result);
+        }
     }
 
     fn serialize<T: Serialize>(v: T) -> Vec<u8> {

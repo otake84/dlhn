@@ -32,6 +32,8 @@ pub enum Header {
     Tuple(Vec<Header>),
     Map(BTreeMap<String, Header>),
     DynamicMap(Box<Header>),
+    Enum(BTreeMap<String, Header>),
+    UnitEnum(Box<Header>),
     Date,
     DateTime,
     Extension8(u64),
@@ -70,13 +72,15 @@ impl Header {
     const TUPLE_CODE: u8 = 25;
     const MAP_CODE: u8 = 26;
     const DYNAMIC_MAP_CODE: u8 = 27;
-    const DATE_CODE: u8 = 28;
-    const DATETIME_CODE: u8 = 29;
-    const EXTENSION8_CODE: u8 = 30;
-    const EXTENSION16_CODE: u8 = 31;
-    const EXTENSION32_CODE: u8 = 32;
-    const EXTENSION64_CODE: u8 = 33;
-    const EXTENSION_CODE: u8 = 34;
+    const ENUM_CODE: u8 = 28;
+    const UNIT_ENUM_CODE: u8 = 29;
+    const DATE_CODE: u8 = 30;
+    const DATETIME_CODE: u8 = 31;
+    const EXTENSION8_CODE: u8 = 32;
+    const EXTENSION16_CODE: u8 = 33;
+    const EXTENSION32_CODE: u8 = 34;
+    const EXTENSION64_CODE: u8 = 35;
+    const EXTENSION_CODE: u8 = 36;
 
     pub(crate) fn serialize(&self) -> Vec<u8> {
         match self {
@@ -179,6 +183,20 @@ impl Header {
                 buf.append(&mut inner.serialize());
                 buf
             }
+            Self::Enum(inner) => {
+                let mut buf =
+                    Self::new_dynamic_buf_with_number(Self::ENUM_CODE, inner.len() as u64);
+                inner.iter().for_each(|(k, v)| {
+                    buf.append(&mut serialize_string(k));
+                    buf.append(&mut v.serialize());
+                });
+                buf
+            }
+            Self::UnitEnum(inner) => {
+                let mut buf = vec![Self::UNIT_ENUM_CODE];
+                buf.append(&mut inner.serialize());
+                buf
+            }
             Self::Date => {
                 vec![Self::Date.code()]
             }
@@ -206,7 +224,7 @@ impl Header {
         reader.read_exact(&mut buf).or(Err(()))?;
 
         match *buf.first().ok_or(())? {
-            Self::UNIT_CODE =>  Ok(Self::Unit),
+            Self::UNIT_CODE => Ok(Self::Unit),
             Self::OPTIONAL_CODE => {
                 let inner = Self::deserialize(reader)?;
                 Ok(Self::Optional(Box::new(inner)))
@@ -257,6 +275,18 @@ impl Header {
                 let inner = Self::deserialize(reader)?;
                 Ok(Self::DynamicMap(Box::new(inner)))
             }
+            Self::ENUM_CODE => {
+                let size = reader.read_varint::<usize>().or(Err(()))?;
+                let mut map = BTreeMap::new();
+                for _ in 0..size {
+                    map.insert(deserialize_string(reader)?, Self::deserialize(reader)?);
+                }
+                Ok(Self::Enum(map))
+            }
+            Self::UNIT_ENUM_CODE => {
+                let inner = Self::deserialize(reader)?;
+                Ok(Self::UnitEnum(Box::new(inner)))
+            }
             Self::DATE_CODE => Ok(Self::Date),
             Self::DATETIME_CODE => Ok(Self::DateTime),
             Self::EXTENSION8_CODE => Ok(Self::Extension8(reader.read_varint().or(Err(()))?)),
@@ -298,6 +328,8 @@ impl Header {
             Self::Tuple(_) => Self::TUPLE_CODE,
             Self::Map(_) => Self::MAP_CODE,
             Self::DynamicMap(_) => Self::DYNAMIC_MAP_CODE,
+            Self::Enum(_) => Self::ENUM_CODE,
+            Self::UnitEnum(_) => Self::UNIT_ENUM_CODE,
             Self::Date => Self::DATE_CODE,
             Self::DateTime => Self::DATETIME_CODE,
             Self::Extension8(_) => Self::EXTENSION8_CODE,
@@ -441,7 +473,11 @@ mod tests {
             Ok(Header::Array(Box::new(Header::Boolean)))
         );
         assert_eq!(
-            Header::deserialize(&mut Header::Tuple(vec![Header::Boolean, Header::UInt8]).serialize().as_slice()),
+            Header::deserialize(
+                &mut Header::Tuple(vec![Header::Boolean, Header::UInt8])
+                    .serialize()
+                    .as_slice()
+            ),
             Ok(Header::Tuple(vec![Header::Boolean, Header::UInt8]))
         );
         assert_eq!(
@@ -469,6 +505,32 @@ mod tests {
             Ok(Header::DynamicMap(Box::new(Header::Optional(Box::new(
                 Header::String
             )))))
+        );
+        assert_eq!(
+            Header::deserialize(
+                &mut Header::Enum({
+                    let mut map = BTreeMap::new();
+                    map.insert("a".to_string(), Header::Boolean);
+                    map.insert("b".to_string(), Header::UInt32);
+                    map
+                })
+                .serialize()
+                .as_slice()
+            ),
+            Ok(Header::Enum({
+                let mut map = BTreeMap::new();
+                map.insert("a".to_string(), Header::Boolean);
+                map.insert("b".to_string(), Header::UInt32);
+                map
+            }))
+        );
+        assert_eq!(
+            Header::deserialize(
+                &mut Header::UnitEnum(Box::new(Header::Boolean))
+                    .serialize()
+                    .as_slice()
+            ),
+            Ok(Header::UnitEnum(Box::new(Header::Boolean)))
         );
         assert_eq!(
             Header::deserialize(&mut BufReader::new(Header::Date.serialize().as_slice())),
