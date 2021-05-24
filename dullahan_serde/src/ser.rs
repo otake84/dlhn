@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fmt::{self, Display}, io::Write};
+use std::{fmt::{self, Display}, io::Write};
 use dullahan::{body::Body, serializer::serialize_body};
 use serde::{Serialize, de, ser::{self, Impossible}};
 use integer_encoding::VarInt;
