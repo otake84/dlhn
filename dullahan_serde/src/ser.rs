@@ -525,37 +525,13 @@ impl<'a, W: Write> ser::Serializer for MapKeySerializer<'a, W> {
     }
 }
 
-pub mod date_format {
-    use integer_encoding::VarInt;
-    use serde::{Serializer, ser::SerializeSeq};
-    use time::Date;
-
-    const DATE_YEAR_OFFSET: i32 = 2000;
-    const DATE_ORDINAL_OFFSET: u16 = 1;
-
-    pub fn serialize<T: Serializer>(date: &Date, serializer: T) -> Result<T::Ok, T::Error> {
-        let year = date.year() - DATE_YEAR_OFFSET;
-        let ordinal = date.ordinal() - DATE_ORDINAL_OFFSET;
-
-        let mut seq = serializer.serialize_seq(None)?;
-        for e in year.encode_var_vec().iter() {
-            seq.serialize_element(e)?;
-        }
-        for e in ordinal.encode_var_vec().iter() {
-            seq.serialize_element(e)?;
-        }
-        seq.end()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
     use serde::Serialize;
     use dullahan::{body::Body, serializer::serialize_body};
     use serde_bytes::Bytes;
-    use time::Date;
-    use super::{Serializer, date_format};
+    use super::Serializer;
 
     #[test]
     fn serialize_bool() {
@@ -1070,21 +1046,5 @@ mod tests {
         let body = Bytes::new(&[0u8, 1, 2, 3, 255]);
         body.serialize(&mut serializer).unwrap();
         assert_eq!(buf, serialize_body(&Body::Binary(vec![0, 1, 2, 3, 255])));
-    }
-
-    #[test]
-    fn serialize_date() {
-        #[derive(Serialize)]
-        struct Test {
-            #[serde(with = "date_format")]
-            date: Date,
-        }
-        let mut buf = Vec::new();
-        let mut serializer = Serializer::new(&mut buf);
-        let body = Test {
-            date: Date::try_from_ymd(1970, 1, 1).unwrap(),
-        };
-        body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, serialize_body(&Body::Date(Date::try_from_ymd(1970, 1, 1).unwrap())));
     }
 }

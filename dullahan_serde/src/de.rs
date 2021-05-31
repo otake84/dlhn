@@ -18,6 +18,19 @@ impl de::Error for Error {
     }
 }
 
+impl de::Expected for Error {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::Read => formatter.write_str("Read error"),
+            Error::Syntax => formatter.write_str("Syntax error"),
+            Error::UnknownSeqSize => formatter.write_str("Unknown seq size"),
+            Error::CharSize => formatter.write_str("The size of the char is more than 32bit"),
+            Error::CharCode => formatter.write_str("Incorrect character encoding"),
+            Error::Message(msg) => formatter.write_str(msg),
+        }
+    }
+}
+
 impl Display for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
