@@ -7,7 +7,6 @@ use integer_encoding::VarInt;
 pub enum Error {
     Write,
     Syntax,
-    UnknownSeqSize,
     UnknownMapSize,
 }
 
@@ -28,7 +27,6 @@ impl Display for Error {
         match self {
             Error::Syntax => formatter.write_str("syntax error"),
             Error::Write => formatter.write_str("write error"),
-            Error::UnknownSeqSize => formatter.write_str("unknown seq size"),
             Error::UnknownMapSize => formatter.write_str("unknown map size"),
         }
     }
@@ -171,10 +169,8 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
         if let Some(len) = len {
             self.output.write_all(len.encode_var_vec().as_slice()).or(Err(Error::Write))?;
-            Ok(self)
-        } else {
-            Err(Error::UnknownSeqSize)
         }
+        Ok(self)
     }
 
     fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, Self::Error> {

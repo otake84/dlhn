@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 integer-encoding = "3.0.1"
-time = "0.2.24"
+time = "0.2.26"
 num-traits = "0.2.14"
 num-bigint = "0.3.1"
 bigdecimal = "0.2.0"
