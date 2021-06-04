@@ -8,6 +8,7 @@ pub enum Error {
     Write,
     Syntax,
     UnknownMapSize,
+    UnsupportedKeyType,
 }
 
 impl ser::Error for Error {
@@ -28,6 +29,7 @@ impl Display for Error {
             Error::Syntax => formatter.write_str("syntax error"),
             Error::Write => formatter.write_str("write error"),
             Error::UnknownMapSize => formatter.write_str("unknown map size"),
+            Error::UnsupportedKeyType => formatter.write_str("unsupported key type"),
         }
     }
 }
@@ -371,157 +373,157 @@ impl<'a, W: Write> ser::Serializer for MapKeySerializer<'a, W> {
     type SerializeStruct = Impossible<(), Error>;
     type SerializeStructVariant = Impossible<(), Error>;
 
-    fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_bool(self, _: bool) -> Result<Self::Ok, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_i8(self, _: i8) -> Result<Self::Ok, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_i16(self, _: i16) -> Result<Self::Ok, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_i32(self, _: i32) -> Result<Self::Ok, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_i64(self, _: i64) -> Result<Self::Ok, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_u8(self, _: u8) -> Result<Self::Ok, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_u16(self, _: u16) -> Result<Self::Ok, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_u32(self, _: u32) -> Result<Self::Ok, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_u64(self, _: u64) -> Result<Self::Ok, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_f32(self, _: f32) -> Result<Self::Ok, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_f64(self, _: f64) -> Result<Self::Ok, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_char(self, _: char) -> Result<Self::Ok, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
         self.ser.serialize_str(v)
     }
 
-    fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_bytes(self, _: &[u8]) -> Result<Self::Ok, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok, Self::Error>
+    fn serialize_some<T: ?Sized>(self, _: &T) -> Result<Self::Ok, Self::Error>
     where
         T: Serialize {
-        todo!()
+        Err(Error::UnsupportedKeyType)
     }
 
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_unit_struct(self, name: &'static str) -> Result<Self::Ok, Self::Error> {
-        todo!()
+    fn serialize_unit_struct(self, _: &'static str) -> Result<Self::Ok, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
     fn serialize_unit_variant(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
+        _: &'static str,
+        _: u32,
+        _: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        todo!()
+        Err(Error::UnsupportedKeyType)
     }
 
     fn serialize_newtype_struct<T: ?Sized>(
         self,
-        name: &'static str,
-        value: &T,
+        _: &'static str,
+        _: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
         T: Serialize {
-        todo!()
+        Err(Error::UnsupportedKeyType)
     }
 
     fn serialize_newtype_variant<T: ?Sized>(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
-        value: &T,
+        _: &'static str,
+        _: u32,
+        _: &'static str,
+        _: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
         T: Serialize {
-        todo!()
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
-        todo!()
+    fn serialize_seq(self, _: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
-        todo!()
+    fn serialize_tuple(self, _: usize) -> Result<Self::SerializeTuple, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
     fn serialize_tuple_struct(
         self,
-        name: &'static str,
-        len: usize,
+        _: &'static str,
+        _: usize,
     ) -> Result<Self::SerializeTupleStruct, Self::Error> {
-        todo!()
+        Err(Error::UnsupportedKeyType)
     }
 
     fn serialize_tuple_variant(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
-        len: usize,
+        _: &'static str,
+        _: u32,
+        _: &'static str,
+        _: usize,
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-        todo!()
+        Err(Error::UnsupportedKeyType)
     }
 
-    fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
-        todo!()
+    fn serialize_map(self, _: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+        Err(Error::UnsupportedKeyType)
     }
 
     fn serialize_struct(
         self,
-        name: &'static str,
-        len: usize,
+        _: &'static str,
+        _: usize,
     ) -> Result<Self::SerializeStruct, Self::Error> {
-        todo!()
+        Err(Error::UnsupportedKeyType)
     }
 
     fn serialize_struct_variant(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
-        len: usize,
+        _: &'static str,
+        _: u32,
+        _: &'static str,
+        _: usize,
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
-        todo!()
+        Err(Error::UnsupportedKeyType)
     }
 }
 
@@ -531,6 +533,7 @@ mod tests {
     use serde::Serialize;
     use dullahan::{body::Body, serializer::serialize_body};
     use serde_bytes::Bytes;
+    use crate::ser::Error;
     use super::Serializer;
 
     #[test]
@@ -1019,24 +1022,40 @@ mod tests {
 
     #[test]
     fn serialize_map() {
-        let mut buf = Vec::new();
-        let mut serializer = Serializer::new(&mut buf);
-        let body = {
-            let mut map = BTreeMap::new();
-            map.insert("a".to_string(), 0u8);
-            map.insert("b".to_string(), 123u8);
-            map.insert("c".to_string(), 255u8);
-            map
-        };
-        body.serialize(&mut serializer).unwrap();
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = {
+                let mut map = BTreeMap::new();
+                map.insert("a".to_string(), 0u8);
+                map.insert("b".to_string(), 123u8);
+                map.insert("c".to_string(), 255u8);
+                map
+            };
+            body.serialize(&mut serializer).unwrap();
 
-        assert_eq!(buf, serialize_body(&Body::DynamicMap({
-            let mut map = BTreeMap::new();
-            map.insert("a".to_string(), Body::UInt8(0));
-            map.insert("b".to_string(), Body::UInt8(123));
-            map.insert("c".to_string(), Body::UInt8(255));
-            map
-        })));
+            assert_eq!(buf, serialize_body(&Body::DynamicMap({
+                let mut map = BTreeMap::new();
+                map.insert("a".to_string(), Body::UInt8(0));
+                map.insert("b".to_string(), Body::UInt8(123));
+                map.insert("c".to_string(), Body::UInt8(255));
+                map
+            })));
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = {
+                let mut map = BTreeMap::new();
+                map.insert(1, 0u8);
+                map.insert(2, 123u8);
+                map.insert(3, 255u8);
+                map
+            };
+
+            assert_eq!(body.serialize(&mut serializer), Err(Error::UnsupportedKeyType));
+        }
     }
 
     #[test]
