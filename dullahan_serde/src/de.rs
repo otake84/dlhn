@@ -1,6 +1,6 @@
 use std::{fmt::{self, Display}, io::Read, mem::MaybeUninit, slice::Iter};
 use integer_encoding::VarIntReader;
-use serde::de;
+use serde::{de, forward_to_deserialize_any};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
@@ -9,6 +9,7 @@ pub enum Error {
     UnknownSeqSize,
     CharSize,
     CharCode,
+    UnsupportedKeyType,
     Message(String),
 }
 
@@ -26,6 +27,7 @@ impl de::Expected for Error {
             Error::UnknownSeqSize => formatter.write_str("Unknown seq size"),
             Error::CharSize => formatter.write_str("The size of the char is more than 32bit"),
             Error::CharCode => formatter.write_str("Incorrect character encoding"),
+            Error::UnsupportedKeyType => formatter.write_str("Unsupported Key Type"),
             Error::Message(msg) => formatter.write_str(msg),
         }
     }
@@ -39,6 +41,7 @@ impl Display for Error {
             Error::UnknownSeqSize => formatter.write_str("Unknown seq size"),
             Error::CharSize => formatter.write_str("The size of the char is more than 32bit"),
             Error::CharCode => formatter.write_str("Incorrect character encoding"),
+            Error::UnsupportedKeyType => formatter.write_str("Unsupported Key Type"),
             Error::Message(msg) => formatter.write_str(msg),
         }
     }
@@ -411,189 +414,10 @@ impl StructKey {
 impl<'de> de::Deserializer<'de> for StructKey {
     type Error = Error;
 
-    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_any<V>(self, _: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_unit_struct<V>(
-        self,
-        name: &'static str,
-        visitor: V,
-    ) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_newtype_struct<V>(
-        self,
-        name: &'static str,
-        visitor: V,
-    ) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_tuple_struct<V>(
-        self,
-        name: &'static str,
-        len: usize,
-        visitor: V,
-    ) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_struct<V>(
-        self,
-        name: &'static str,
-        fields: &'static [&'static str],
-        visitor: V,
-    ) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
-    }
-
-    fn deserialize_enum<V>(
-        self,
-        name: &'static str,
-        variants: &'static [&'static str],
-        visitor: V,
-    ) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
+        Err(Error::UnsupportedKeyType)
     }
 
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -602,10 +426,9 @@ impl<'de> de::Deserializer<'de> for StructKey {
         visitor.visit_str(self.key)
     }
 
-    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de> {
-        todo!()
+    forward_to_deserialize_any! {
+        bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string bytes byte_buf option
+        unit unit_struct newtype_struct seq tuple tuple_struct map struct enum ignored_any
     }
 }
 
