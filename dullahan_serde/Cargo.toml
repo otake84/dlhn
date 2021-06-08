@@ -12,6 +12,8 @@ dullahan = { version = "0.1", path = "../dullahan" }
 serde = "1.0.125"
 integer-encoding = "3.0.1"
 time = "0.2.26"
+num-traits = "0.2.14"
+num-bigint = "0.3.2"
 
 [dev-dependencies]
 serde = { version = "1.0.125", features = ["derive"] }
