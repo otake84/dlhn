@@ -101,6 +101,12 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
         self.output.write_all(serialize_body(&Body::VarUInt64(v)).as_slice()).or(Err(Error::Write))
     }
 
+    serde_if_integer128! {
+        fn serialize_u128(self, v: u128) -> Result<Self::Ok, Self::Error> {
+            self.output.write_all(&v.to_le_bytes()).or(Err(Error::Write))
+        }
+    }
+
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
         self.output.write_all(serialize_body(&Body::Float32(v)).as_slice()).or(Err(Error::Write))
     }
@@ -731,6 +737,25 @@ mod tests {
             let body = u64::MAX;
             body.serialize(&mut serializer).unwrap();
             assert_eq!(buf, serialize_body(&Body::VarUInt64(u64::MAX)));
+        }
+    }
+
+    #[test]
+    fn serialize_u128() {
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = u128::MIN;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, u128::MIN.to_le_bytes());
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = u128::MAX;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, u128::MAX.to_le_bytes());
         }
     }
 

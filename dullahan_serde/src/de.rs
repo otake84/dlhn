@@ -154,6 +154,16 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
         visitor.visit_u64(self.reader.read_varint::<u64>().or(Err(Error::Read))?)
     }
 
+    serde_if_integer128! {
+        fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+        where
+            V: de::Visitor<'de> {
+                let mut buf: [u8; 16] = unsafe { MaybeUninit::uninit().assume_init() };
+                self.reader.read_exact(&mut buf).or(Err(Error::Read))?;
+                visitor.visit_u128(u128::from_le_bytes(buf))
+        }
+    }
+
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
@@ -600,6 +610,16 @@ mod tests {
             let mut deserializer = Deserializer::new(&mut reader);
             assert_eq!(v, u64::deserialize(&mut deserializer).unwrap());
         });
+    }
+
+    #[test]
+    fn deserialize_u128() {
+        IntoIter::new([u128::MIN, u128::MAX]).for_each(|v| {
+            let buf = serialize(v);
+            let mut reader = buf.as_slice();
+            let mut deserializer = Deserializer::new(&mut reader);
+            assert_eq!(v, Deserialize::deserialize(&mut deserializer).unwrap());
+        })
     }
 
     #[test]
