@@ -1,6 +1,6 @@
 use std::{fmt::{self, Display}, io::Write};
 use dullahan::{body::Body, serializer::serialize_body};
-use serde::{Serialize, de, ser::{self, Impossible}};
+use serde::{serde_if_integer128, Serialize, de, ser::{self, Impossible}};
 use integer_encoding::VarInt;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -77,6 +77,12 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
 
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
         self.output.write_all(serialize_body(&Body::VarInt64(v)).as_slice()).or(Err(Error::Write))
+    }
+
+    serde_if_integer128! {
+        fn serialize_i128(self, v: i128) -> Result<Self::Ok, Self::Error> {
+            self.output.write_all(&v.to_le_bytes()).or(Err(Error::Write))
+        }
     }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
@@ -630,6 +636,25 @@ mod tests {
             let body = i64::MAX;
             body.serialize(&mut serializer).unwrap();
             assert_eq!(buf, serialize_body(&Body::VarInt64(i64::MAX)));
+        }
+    }
+
+    #[test]
+    fn serialize_i128() {
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = i128::MIN;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, i128::MIN.to_le_bytes());
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = i128::MAX;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, i128::MAX.to_le_bytes());
         }
     }
 
