@@ -9,7 +9,7 @@ resolver = "2"
 
 [dependencies]
 dullahan = { version = "0.1", path = "../dullahan" }
-serde = "1.0.125"
+serde = "1.0.126"
 integer-encoding = "3.0.1"
 time = "0.2.26"
 num-traits = "0.2.14"

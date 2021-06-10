@@ -319,6 +319,11 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
         V: de::Visitor<'de> {
         todo!()
     }
+
+    #[inline]
+    fn is_human_readable(&self) -> bool {
+        false
+    }
 }
 
 struct SeqDeserializer<'a, 'de: 'a, R: Read> {
@@ -444,6 +449,11 @@ impl<'de> de::Deserializer<'de> for StructKey {
     where
         V: de::Visitor<'de> {
         visitor.visit_str(self.key)
+    }
+
+    #[inline]
+    fn is_human_readable(&self) -> bool {
+        false
     }
 
     forward_to_deserialize_any! {
