@@ -39,7 +39,6 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<BigUint
 #[cfg(test)]
 mod tests {
     use std::array::IntoIter;
-
     use num_bigint::BigUint;
     use serde::{Deserialize, Serialize};
     use crate::{de::Deserializer, ser::Serializer};
