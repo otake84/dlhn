@@ -2,6 +2,7 @@ use std::{fmt::{self, Display}, io::Write};
 use dullahan::{body::Body, serializer::serialize_body};
 use serde::{serde_if_integer128, Serialize, de, ser::{self, Impossible}};
 use integer_encoding::VarInt;
+use crate::leb128::Leb128;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
@@ -86,19 +87,22 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(serialize_body(&Body::UInt8(v)).as_slice()).or(Err(Error::Write))
+        self.output.write_all(&v.to_le_bytes()).or(Err(Error::Write))
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(serialize_body(&Body::VarUInt16(v)).as_slice()).or(Err(Error::Write))
+        let (buf, size) = v.encode_leb128();
+        self.output.write_all(&buf[0..size]).or(Err(Error::Write))
     }
 
     fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(serialize_body(&Body::VarUInt32(v)).as_slice()).or(Err(Error::Write))
+        let (buf, size) = v.encode_leb128();
+        self.output.write_all(&buf[0..size]).or(Err(Error::Write))
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(serialize_body(&Body::VarUInt64(v)).as_slice()).or(Err(Error::Write))
+        let (buf, size) = v.encode_leb128();
+        self.output.write_all(&buf[0..size]).or(Err(Error::Write))
     }
 
     serde_if_integer128! {
