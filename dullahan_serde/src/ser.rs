@@ -92,17 +92,17 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
         let (buf, size) = v.encode_leb128();
-        self.output.write_all(&buf[0..size]).or(Err(Error::Write))
+        self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
     fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
         let (buf, size) = v.encode_leb128();
-        self.output.write_all(&buf[0..size]).or(Err(Error::Write))
+        self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
         let (buf, size) = v.encode_leb128();
-        self.output.write_all(&buf[0..size]).or(Err(Error::Write))
+        self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
     serde_if_integer128! {
