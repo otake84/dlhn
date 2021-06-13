@@ -128,7 +128,8 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(v.len().encode_var_vec().as_slice()).or(Err(Error::Write))?;
+        let (buf, size) = v.len().encode_leb128();
+        self.output.write_all(&buf[..size]).or(Err(Error::Write))?;
         self.output.write_all(v).or(Err(Error::Write))?;
         Ok(())
     }

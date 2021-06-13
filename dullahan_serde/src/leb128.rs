@@ -22,6 +22,25 @@ impl<const N: usize> Buf<N> {
     }
 }
 
+impl Leb128<10> for usize {
+    fn encode_leb128(&self) -> ([u8; 10], usize) {
+        let mut value = *self;
+        let mut buf = Buf::new();
+        while value > 127 {
+            buf.write((value | 0x80) as u8);
+            value >>= 7;
+        }
+        buf.write(value as u8);
+
+        (buf.buf, buf.bytes)
+    }
+
+    fn encode_leb128_vec(&self) -> Vec<u8> {
+        let (buf, size) = self.encode_leb128();
+        buf[0..size].to_vec()
+    }
+}
+
 impl Leb128<10> for u64 {
     fn encode_leb128(&self) -> ([u8; 10], usize) {
         let mut value = *self;
