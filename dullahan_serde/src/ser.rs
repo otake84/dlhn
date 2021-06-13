@@ -1,7 +1,6 @@
 use std::{fmt::{self, Display}, io::Write};
 use dullahan::{body::Body, serializer::serialize_body};
 use serde::{serde_if_integer128, Serialize, de, ser::{self, Impossible}};
-use integer_encoding::VarInt;
 use crate::leb128::Leb128;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -187,7 +186,8 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
         if let Some(len) = len {
-            self.output.write_all(len.encode_var_vec().as_slice()).or(Err(Error::Write))?;
+            let (buf, size) = len.encode_leb128();
+            self.output.write_all(&buf[..size]).or(Err(Error::Write))?;
         }
         Ok(self)
     }

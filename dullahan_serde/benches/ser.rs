@@ -40,6 +40,13 @@ fn serialize_bytes() {
     body.serialize(&mut serializer).unwrap();
 }
 
+fn serialize_seq() {
+    let mut buf = Vec::new();
+    let mut serializer = Serializer::new(&mut buf);
+    let body = vec![true, false, true];
+    body.serialize(&mut serializer).unwrap();
+}
+
 main!(
     serialize_u8,
     serialize_u16,
@@ -47,4 +54,5 @@ main!(
     serialize_u64,
     serialize_u128,
     serialize_bytes,
+    serialize_seq,
 );
