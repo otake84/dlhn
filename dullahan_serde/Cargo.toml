@@ -24,3 +24,7 @@ iai = "0.1.1"
 [[bench]]
 name = "ser"
 harness = false
+
+[[bench]]
+name = "date"
+harness = false
