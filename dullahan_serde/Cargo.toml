@@ -28,3 +28,7 @@ harness = false
 [[bench]]
 name = "date"
 harness = false
+
+[[bench]]
+name = "date_time"
+harness = false
