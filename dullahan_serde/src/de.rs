@@ -1,6 +1,7 @@
 use std::{fmt::{self, Display}, io::Read, mem::MaybeUninit, slice::Iter};
 use integer_encoding::VarIntReader;
 use serde::{de, forward_to_deserialize_any, serde_if_integer128};
+use crate::leb128::Leb128;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
@@ -139,19 +140,19 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_u16(self.reader.read_varint::<u16>().or(Err(Error::Read))?)
+        visitor.visit_u16(u16::decode_leb128(self.reader).or(Err(Error::Read))?)
     }
 
     fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_u32(self.reader.read_varint::<u32>().or(Err(Error::Read))?)
+        visitor.visit_u32(u32::decode_leb128(self.reader).or(Err(Error::Read))?)
     }
 
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_u64(self.reader.read_varint::<u64>().or(Err(Error::Read))?)
+        visitor.visit_u64(u64::decode_leb128(self.reader).or(Err(Error::Read))?)
     }
 
     serde_if_integer128! {

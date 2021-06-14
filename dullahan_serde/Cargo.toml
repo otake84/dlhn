@@ -26,6 +26,10 @@ name = "ser"
 harness = false
 
 [[bench]]
+name = "de"
+harness = false
+
+[[bench]]
 name = "date"
 harness = false
 
