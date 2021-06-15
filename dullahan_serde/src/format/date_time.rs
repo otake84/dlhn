@@ -34,10 +34,9 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<OffsetD
 #[cfg(test)]
 mod tests {
     use std::array::IntoIter;
-    use integer_encoding::VarInt;
     use serde::{Serialize, Deserialize};
     use time::{NumericalDuration, OffsetDateTime};
-    use crate::{de::Deserializer, ser::Serializer};
+    use crate::{de::Deserializer, leb128::Leb128, ser::Serializer, zigzag::ZigZag};
 
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
     struct Test {
@@ -48,7 +47,7 @@ mod tests {
     #[test]
     fn serialize_date_time() {
         fn assert_date_time(date_time: OffsetDateTime) {
-            assert_eq!(encode_date_time(date_time), [date_time.unix_timestamp().encode_var_vec(), date_time.nanosecond().encode_var_vec()].concat());
+            assert_eq!(encode_date_time(date_time), [date_time.unix_timestamp().encode_zigzag().encode_leb128_vec(), date_time.nanosecond().encode_leb128_vec()].concat());
         }
 
         IntoIter::new([
