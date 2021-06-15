@@ -1,6 +1,6 @@
 use std::{fmt::{self, Display}, io::Read, mem::MaybeUninit, slice::Iter};
-use integer_encoding::VarIntReader;
 use serde::{de, forward_to_deserialize_any, serde_if_integer128};
+use crate::{leb128::Leb128, zigzag::ZigZag};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
@@ -60,9 +60,8 @@ impl<'de, R: Read> Deserializer<'de, R> {
         }
     }
 
-    #[inline]
     fn new_dynamic_buf(&mut self) -> Result<Vec<u8>, Error> {
-        let len = self.reader.read_varint::<usize>().or(Err(Error::Read))?;
+        let len = usize::decode_leb128(self.reader).or(Err(Error::Read))?;
         let mut buf = Vec::<u8>::with_capacity(len);
         unsafe {
             buf.set_len(len);
@@ -103,19 +102,19 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_i16(self.reader.read_varint::<i16>().or(Err(Error::Read))?)
+        visitor.visit_i16(i16::decode_zigzag(u16::decode_leb128(self.reader).or(Err(Error::Read))?))
     }
 
     fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_i32(self.reader.read_varint::<i32>().or(Err(Error::Read))?)
+        visitor.visit_i32(i32::decode_zigzag(u32::decode_leb128(self.reader).or(Err(Error::Read))?))
     }
 
     fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_i64(self.reader.read_varint::<i64>().or(Err(Error::Read))?)
+        visitor.visit_i64(i64::decode_zigzag(u64::decode_leb128(self.reader).or(Err(Error::Read))?))
     }
 
     serde_if_integer128! {
@@ -139,19 +138,19 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_u16(self.reader.read_varint::<u16>().or(Err(Error::Read))?)
+        visitor.visit_u16(u16::decode_leb128(self.reader).or(Err(Error::Read))?)
     }
 
     fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_u32(self.reader.read_varint::<u32>().or(Err(Error::Read))?)
+        visitor.visit_u32(u32::decode_leb128(self.reader).or(Err(Error::Read))?)
     }
 
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_u64(self.reader.read_varint::<u64>().or(Err(Error::Read))?)
+        visitor.visit_u64(u64::decode_leb128(self.reader).or(Err(Error::Read))?)
     }
 
     serde_if_integer128! {
@@ -258,7 +257,7 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_seq<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        let count = self.reader.read_varint::<usize>().or(Err(Error::Read))?;
+        let count = usize::decode_leb128(self.reader).or(Err(Error::Read))?;
         visitor.visit_seq(SeqDeserializer::new(&mut self, count))
     }
 
@@ -282,7 +281,7 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_map<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        let count = self.reader.read_varint::<usize>().or(Err(Error::Read))?;
+        let count = usize::decode_leb128(self.reader).or(Err(Error::Read))?;
         visitor.visit_map(MapDeserializer::new(&mut self, count))
     }
 
