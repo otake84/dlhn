@@ -1,5 +1,4 @@
 use std::{fmt::{self, Display}, io::Read, mem::MaybeUninit, slice::Iter};
-use integer_encoding::VarIntReader;
 use serde::{de, forward_to_deserialize_any, serde_if_integer128};
 use crate::{leb128::Leb128, zigzag::ZigZag};
 
@@ -61,9 +60,8 @@ impl<'de, R: Read> Deserializer<'de, R> {
         }
     }
 
-    #[inline]
     fn new_dynamic_buf(&mut self) -> Result<Vec<u8>, Error> {
-        let len = self.reader.read_varint::<usize>().or(Err(Error::Read))?;
+        let len = usize::decode_leb128(self.reader).or(Err(Error::Read))?;
         let mut buf = Vec::<u8>::with_capacity(len);
         unsafe {
             buf.set_len(len);

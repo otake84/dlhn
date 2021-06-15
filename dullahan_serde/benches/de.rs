@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use dullahan_serde::{de::Deserializer, ser::Serializer};
 use iai::main;
 use serde::{Deserialize, Serialize};
+use serde_bytes::ByteBuf;
 
 fn deserialize_u8() -> u8 {
     let buf = serialize(u8::MAX);
@@ -73,6 +74,27 @@ fn deserialize_i128() -> i128 {
     i128::deserialize(&mut deserializer).unwrap()
 }
 
+fn deserialize_char() -> char {
+    let buf = serialize('a');
+    let mut reader = buf.as_slice();
+    let mut deserializer = Deserializer::new(&mut reader);
+    char::deserialize(&mut deserializer).unwrap()
+}
+
+fn deserialize_string() -> String {
+    let buf = serialize("test");
+    let mut reader = buf.as_slice();
+    let mut deserializer = Deserializer::new(&mut reader);
+    String::deserialize(&mut deserializer).unwrap()
+}
+
+fn deserialize_byte_buf() -> ByteBuf {
+    let buf = serialize(ByteBuf::from(vec![0u8, 1, 2, 3, 255]));
+    let mut reader = buf.as_slice();
+    let mut deserializer = Deserializer::new(&mut reader);
+    ByteBuf::deserialize(&mut deserializer).unwrap()
+}
+
 fn deserialize_seq() -> Vec<bool> {
     let buf = serialize(vec![true, false, true]);
     let mut reader = buf.as_slice();
@@ -112,6 +134,9 @@ main!(
     deserialize_i32,
     deserialize_i64,
     deserialize_i128,
+    deserialize_char,
+    deserialize_string,
+    deserialize_byte_buf,
     deserialize_seq,
     deserialize_map,
 );
