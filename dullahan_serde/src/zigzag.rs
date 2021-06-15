@@ -1,3 +1,6 @@
+// https://developers.google.com/protocol-buffers/docs/encoding#signed_integers
+// https://stackoverflow.com/questions/2210923/zig-zag-decoding
+
 pub(crate) trait ZigZag<T> {
     fn encode_zigzag(self) -> T;
     fn decode_zigzag(value: T) -> Self;

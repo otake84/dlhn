@@ -1,5 +1,8 @@
 use std::io::{Read, Result, Error, ErrorKind};
 
+// https://en.wikipedia.org/wiki/LEB128
+// https://github.com/stoklund/varint/blob/master/leb128.cpp
+
 pub(crate) trait Leb128<const N: usize>: Sized {
     fn encode_leb128(&self) -> ([u8; N], usize);
     fn encode_leb128_vec(&self) -> Vec<u8>;
