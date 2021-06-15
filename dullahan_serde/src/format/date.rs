@@ -1,7 +1,6 @@
-use integer_encoding::VarInt;
 use serde::{Deserializer, Serializer, de::{self, SeqAccess, Unexpected, Visitor}, ser::SerializeSeq};
 use time::Date;
-use crate::{de::Error, leb128::Leb128};
+use crate::{de::Error, leb128::Leb128, zigzag::ZigZag};
 
 const DATE_YEAR_OFFSET: i32 = 2000;
 const DATE_ORDINAL_OFFSET: u16 = 1;
@@ -29,7 +28,8 @@ pub fn serialize<T: Serializer>(date: &Date, serializer: T) -> Result<T::Ok, T::
     let year = date.year() - DATE_YEAR_OFFSET;
     let ordinal = date.ordinal() - DATE_ORDINAL_OFFSET;
     let mut seq = serializer.serialize_seq(None)?;
-    for e in year.encode_var_vec().iter() {
+    let (buf, size) = year.encode_zigzag().encode_leb128();
+    for e in buf[..size].iter() {
         seq.serialize_element(e)?;
     }
     let (buf, size) = ordinal.encode_leb128();
@@ -48,7 +48,6 @@ mod tests {
     use dullahan::{body::Body, serializer::serialize_body};
     use serde::{Deserialize, Serialize};
     use time::Date;
-
     use crate::{de::Deserializer, ser::Serializer};
 
     #[test]
