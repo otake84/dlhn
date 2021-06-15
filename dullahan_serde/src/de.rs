@@ -259,7 +259,7 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_seq<V>(mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        let count = self.reader.read_varint::<usize>().or(Err(Error::Read))?;
+        let count = usize::decode_leb128(self.reader).or(Err(Error::Read))?;
         visitor.visit_seq(SeqDeserializer::new(&mut self, count))
     }
 

@@ -102,6 +102,21 @@ fn deserialize_i128() -> i128 {
     i128::deserialize(&mut deserializer).unwrap()
 }
 
+fn deserialize_seq() -> Vec<bool> {
+    let buf = serialize(vec![true, false, true]);
+    let mut reader = buf.as_slice();
+    let mut deserializer = Deserializer::new(&mut reader);
+    Vec::<bool>::deserialize(&mut deserializer).unwrap()
+
+}
+
+fn serialize<T: Serialize>(v: T) -> Vec<u8> {
+    let mut buf = Vec::new();
+    let mut serializer = Serializer::new(&mut buf);
+    v.serialize(&mut serializer).unwrap();
+    buf
+}
+
 main!(
     deserialize_u8,
     deserialize_u16,
@@ -113,4 +128,5 @@ main!(
     deserialize_i32,
     deserialize_i64,
     deserialize_i128,
+    deserialize_seq,
 );
