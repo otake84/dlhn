@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use dullahan_serde::{de::Deserializer, ser::Serializer};
 use iai::main;
 use serde::{Deserialize, Serialize};
@@ -107,7 +108,20 @@ fn deserialize_seq() -> Vec<bool> {
     let mut reader = buf.as_slice();
     let mut deserializer = Deserializer::new(&mut reader);
     Vec::<bool>::deserialize(&mut deserializer).unwrap()
+}
 
+fn deserialize_map() -> BTreeMap<String, bool> {
+    let buf = serialize({
+        let mut map = BTreeMap::new();
+        map.insert("a".to_string(), true);
+        map.insert("b".to_string(), false);
+        map.insert("c".to_string(), true);
+        map.insert("1".to_string(), false);
+        map
+    });
+    let mut reader = buf.as_slice();
+    let mut deserializer = Deserializer::new(&mut reader);
+    BTreeMap::<String, bool>::deserialize(&mut deserializer).unwrap()
 }
 
 fn serialize<T: Serialize>(v: T) -> Vec<u8> {
@@ -129,4 +143,5 @@ main!(
     deserialize_i64,
     deserialize_i128,
     deserialize_seq,
+    deserialize_map,
 );
