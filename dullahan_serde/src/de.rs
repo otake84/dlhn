@@ -1,7 +1,7 @@
 use std::{fmt::{self, Display}, io::Read, mem::MaybeUninit, slice::Iter};
 use integer_encoding::VarIntReader;
 use serde::{de, forward_to_deserialize_any, serde_if_integer128};
-use crate::leb128::Leb128;
+use crate::{leb128::Leb128, zigzag::ZigZag};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
@@ -104,19 +104,19 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_i16(self.reader.read_varint::<i16>().or(Err(Error::Read))?)
+        visitor.visit_i16(i16::decode_zigzag(u16::decode_leb128(self.reader).or(Err(Error::Read))?))
     }
 
     fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_i32(self.reader.read_varint::<i32>().or(Err(Error::Read))?)
+        visitor.visit_i32(i32::decode_zigzag(u32::decode_leb128(self.reader).or(Err(Error::Read))?))
     }
 
     fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_i64(self.reader.read_varint::<i64>().or(Err(Error::Read))?)
+        visitor.visit_i64(i64::decode_zigzag(u64::decode_leb128(self.reader).or(Err(Error::Read))?))
     }
 
     serde_if_integer128! {
