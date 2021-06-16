@@ -1,5 +1,4 @@
 use std::{fmt::{self, Display}, io::Write};
-use dullahan::{body::Body, serializer::serialize_body};
 use serde::{serde_if_integer128, Serialize, de, ser::{self, Impossible}};
 use crate::{leb128::Leb128, zigzag::ZigZag};
 
