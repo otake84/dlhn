@@ -125,16 +125,16 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
         self.output.write_all(&v.to_le_bytes()).or(Err(Error::Write))
     }
 
+    #[inline]
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
-        let string = v.to_string();
-        let bytes = string.as_bytes();
-        let (buf, size) = bytes.len().encode_leb128();
-        self.output.write_all(&buf[..size]).or(Err(Error::Write))?;
-        self.output.write_all(bytes).or(Err(Error::Write))
+        self.serialize_str(v.to_string().as_str())
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(serialize_body(&Body::String(v.to_string())).as_slice()).or(Err(Error::Write))
+        let bytes = v.as_bytes();
+        let (buf, size) = bytes.len().encode_leb128();
+        self.output.write_all(&buf[..size]).or(Err(Error::Write))?;
+        self.output.write_all(bytes).or(Err(Error::Write))
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
