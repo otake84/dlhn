@@ -3,6 +3,12 @@ use iai::main;
 use serde::Serialize;
 use serde_bytes::Bytes;
 
+fn serialize_bool() {
+    let mut buf = Vec::new();
+    let mut serializer = Serializer::new(&mut buf);
+    true.serialize(&mut serializer).unwrap();
+}
+
 fn serialize_u8() {
     let mut buf = Vec::new();
     let mut serializer = Serializer::new(&mut buf);
@@ -63,6 +69,30 @@ fn serialize_i128() {
     i128::MAX.serialize(&mut serializer).unwrap();
 }
 
+fn serialize_f32() {
+    let mut buf = Vec::new();
+    let mut serializer = Serializer::new(&mut buf);
+    f32::MAX.serialize(&mut serializer).unwrap();
+}
+
+fn serialize_f64() {
+    let mut buf = Vec::new();
+    let mut serializer = Serializer::new(&mut buf);
+    f64::MAX.serialize(&mut serializer).unwrap();
+}
+
+fn serialize_char() {
+    let mut buf = Vec::new();
+    let mut serializer = Serializer::new(&mut buf);
+    'a'.serialize(&mut serializer).unwrap();
+}
+
+fn serialize_str() {
+    let mut buf = Vec::new();
+    let mut serializer = Serializer::new(&mut buf);
+    "test".serialize(&mut serializer).unwrap();
+}
+
 fn serialize_bytes() {
     let mut buf = Vec::new();
     let mut serializer = Serializer::new(&mut buf);
@@ -78,6 +108,7 @@ fn serialize_seq() {
 }
 
 main!(
+    serialize_bool,
     serialize_u8,
     serialize_u16,
     serialize_u32,
@@ -88,6 +119,10 @@ main!(
     serialize_i32,
     serialize_i64,
     serialize_i128,
+    serialize_f32,
+    serialize_f64,
+    serialize_char,
+    serialize_str,
     serialize_bytes,
     serialize_seq,
 );

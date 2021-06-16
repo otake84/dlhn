@@ -1,5 +1,4 @@
 use std::{fmt::{self, Display}, io::Write};
-use dullahan::{body::Body, serializer::serialize_body};
 use serde::{serde_if_integer128, Serialize, de, ser::{self, Impossible}};
 use crate::{leb128::Leb128, zigzag::ZigZag};
 
@@ -60,11 +59,15 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     type SerializeStructVariant = Self;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(serialize_body(&Body::Boolean(v)).as_slice()).or(Err(Error::Write))
+        if v {
+            self.output.write_all(&[1]).or(Err(Error::Write))
+        } else {
+            self.output.write_all(&[0]).or(Err(Error::Write))
+        }
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(serialize_body(&Body::Int8(v)).as_slice()).or(Err(Error::Write))
+        self.output.write_all(&v.to_le_bytes()).or(Err(Error::Write))
     }
 
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
@@ -114,19 +117,23 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(serialize_body(&Body::Float32(v)).as_slice()).or(Err(Error::Write))
+        self.output.write_all(&v.to_le_bytes()).or(Err(Error::Write))
     }
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(serialize_body(&Body::Float64(v)).as_slice()).or(Err(Error::Write))
+        self.output.write_all(&v.to_le_bytes()).or(Err(Error::Write))
     }
 
+    #[inline]
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(serialize_body(&Body::String(v.to_string())).as_slice()).or(Err(Error::Write))
+        self.serialize_str(v.to_string().as_str())
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(serialize_body(&Body::String(v.to_string())).as_slice()).or(Err(Error::Write))
+        let bytes = v.as_bytes();
+        let (buf, size) = bytes.len().encode_leb128();
+        self.output.write_all(&buf[..size]).or(Err(Error::Write))?;
+        self.output.write_all(bytes).or(Err(Error::Write))
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
