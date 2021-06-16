@@ -118,7 +118,7 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(serialize_body(&Body::Float32(v)).as_slice()).or(Err(Error::Write))
+        self.output.write_all(&v.to_le_bytes()).or(Err(Error::Write))
     }
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {

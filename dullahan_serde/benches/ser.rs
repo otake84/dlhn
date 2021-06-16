@@ -69,6 +69,12 @@ fn serialize_i128() {
     i128::MAX.serialize(&mut serializer).unwrap();
 }
 
+fn serialize_f32() {
+    let mut buf = Vec::new();
+    let mut serializer = Serializer::new(&mut buf);
+    f32::MAX.serialize(&mut serializer).unwrap();
+}
+
 fn serialize_bytes() {
     let mut buf = Vec::new();
     let mut serializer = Serializer::new(&mut buf);
@@ -95,6 +101,7 @@ main!(
     serialize_i32,
     serialize_i64,
     serialize_i128,
+    serialize_f32,
     serialize_bytes,
     serialize_seq,
 );
