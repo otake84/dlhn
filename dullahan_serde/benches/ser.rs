@@ -3,6 +3,12 @@ use iai::main;
 use serde::Serialize;
 use serde_bytes::Bytes;
 
+fn serialize_bool() {
+    let mut buf = Vec::new();
+    let mut serializer = Serializer::new(&mut buf);
+    true.serialize(&mut serializer).unwrap();
+}
+
 fn serialize_u8() {
     let mut buf = Vec::new();
     let mut serializer = Serializer::new(&mut buf);
@@ -78,6 +84,7 @@ fn serialize_seq() {
 }
 
 main!(
+    serialize_bool,
     serialize_u8,
     serialize_u16,
     serialize_u32,

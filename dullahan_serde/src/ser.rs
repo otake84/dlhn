@@ -60,7 +60,11 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     type SerializeStructVariant = Self;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(serialize_body(&Body::Boolean(v)).as_slice()).or(Err(Error::Write))
+        if v {
+            self.output.write_all(&[1]).or(Err(Error::Write))
+        } else {
+            self.output.write_all(&[0]).or(Err(Error::Write))
+        }
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
