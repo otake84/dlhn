@@ -68,7 +68,7 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
-        self.output.write_all(serialize_body(&Body::Int8(v)).as_slice()).or(Err(Error::Write))
+        self.output.write_all(&v.to_le_bytes()).or(Err(Error::Write))
     }
 
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
