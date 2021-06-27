@@ -141,6 +141,12 @@ impl SerializeHeader for &str {
     }
 }
 
+impl SerializeHeader for String {
+    fn serialize_header<W: Write>(mut writer: W) -> Result<()> {
+        writer.write_all(&[STRING_CODE])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use bigdecimal::BigDecimal;
@@ -263,6 +269,13 @@ mod tests {
     fn serialize_header_str() {
         let mut buf = Vec::new();
         <&str>::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [16]);
+    }
+
+    #[test]
+    fn serialize_header_string() {
+        let mut buf = Vec::new();
+        String::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [16]);
     }
 }
