@@ -109,6 +109,12 @@ impl SerializeHeader for f32 {
     }
 }
 
+impl SerializeHeader for f64 {
+    fn serialize_header<W: Write>(mut writer: W) -> Result<()> {
+        writer.write_all(&[FLOAT64_CODE])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::SerializeHeader;
@@ -195,5 +201,12 @@ mod tests {
         let mut buf = Vec::new();
         f32::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [11]);
+    }
+
+    #[test]
+    fn serialize_header_f64() {
+        let mut buf = Vec::new();
+        f64::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [12]);
     }
 }
