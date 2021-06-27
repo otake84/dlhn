@@ -1,4 +1,5 @@
 use std::io::{Result, Write};
+use bigdecimal::BigDecimal;
 use num_bigint::{BigInt, BigUint};
 
 const UNIT_CODE: u8 = 0;
@@ -128,8 +129,15 @@ impl SerializeHeader for BigInt {
     }
 }
 
+impl SerializeHeader for BigDecimal {
+    fn serialize_header<W: Write>(mut writer: W) -> Result<()> {
+        writer.write_all(&[BIG_DECIMAL_CODE])
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
     use super::SerializeHeader;
 
@@ -236,5 +244,12 @@ mod tests {
         let mut buf = Vec::new();
         BigInt::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [14]);
+    }
+
+    #[test]
+    fn serialize_header_big_decimal() {
+        let mut buf = Vec::new();
+        BigDecimal::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [15]);
     }
 }
