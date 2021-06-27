@@ -135,6 +135,12 @@ impl SerializeHeader for BigDecimal {
     }
 }
 
+impl SerializeHeader for &str {
+    fn serialize_header<W: Write>(mut writer: W) -> Result<()> {
+        writer.write_all(&[STRING_CODE])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use bigdecimal::BigDecimal;
@@ -251,5 +257,12 @@ mod tests {
         let mut buf = Vec::new();
         BigDecimal::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [15]);
+    }
+
+    #[test]
+    fn serialize_header_str() {
+        let mut buf = Vec::new();
+        <&str>::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [16]);
     }
 }
