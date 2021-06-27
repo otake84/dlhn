@@ -1,4 +1,5 @@
 use std::io::{Result, Write};
+use num_bigint::BigUint;
 
 const UNIT_CODE: u8 = 0;
 const OPTIONAL_CODE: u8 = 1;
@@ -115,8 +116,15 @@ impl SerializeHeader for f64 {
     }
 }
 
+impl SerializeHeader for BigUint {
+    fn serialize_header<W: Write>(mut writer: W) -> Result<()> {
+        writer.write_all(&[BIG_UINT_CODE])
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use num_bigint::BigUint;
     use super::SerializeHeader;
 
     #[test]
@@ -208,5 +216,12 @@ mod tests {
         let mut buf = Vec::new();
         f64::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [12]);
+    }
+
+    #[test]
+    fn serialize_header_big_uint() {
+        let mut buf = Vec::new();
+        BigUint::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [13]);
     }
 }
