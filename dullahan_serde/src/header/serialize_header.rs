@@ -61,6 +61,12 @@ impl SerializeHeader for bool {
     }
 }
 
+impl SerializeHeader for u8 {
+    fn serialize_header<W: Write>(mut writer: W) -> Result<()> {
+        writer.write_all(&[UINT8_CODE])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::SerializeHeader;
@@ -84,5 +90,12 @@ mod tests {
         let mut buf = Vec::new();
         bool::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [2]);
+    }
+
+    #[test]
+    fn serialize_header_u8() {
+        let mut buf = Vec::new();
+        u8::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [3]);
     }
 }
