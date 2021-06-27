@@ -1,5 +1,5 @@
 use std::io::{Result, Write};
-use num_bigint::BigUint;
+use num_bigint::{BigInt, BigUint};
 
 const UNIT_CODE: u8 = 0;
 const OPTIONAL_CODE: u8 = 1;
@@ -122,9 +122,15 @@ impl SerializeHeader for BigUint {
     }
 }
 
+impl SerializeHeader for BigInt {
+    fn serialize_header<W: Write>(mut writer: W) -> Result<()> {
+        writer.write_all(&[BIG_INT_CODE])
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use num_bigint::BigUint;
+    use num_bigint::{BigInt, BigUint};
     use super::SerializeHeader;
 
     #[test]
@@ -223,5 +229,12 @@ mod tests {
         let mut buf = Vec::new();
         BigUint::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [13]);
+    }
+
+    #[test]
+    fn serialize_header_big_int() {
+        let mut buf = Vec::new();
+        BigInt::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [14]);
     }
 }
