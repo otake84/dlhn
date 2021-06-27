@@ -7,36 +7,30 @@ const UINT8_CODE: u8 = 3;
 const UINT16_CODE: u8 = 4;
 const UINT32_CODE: u8 = 5;
 const UINT64_CODE: u8 = 6;
-const VAR_UINT16_CODE: u8 = 7;
-const VAR_UINT32_CODE: u8 = 8;
-const VAR_UINT64_CODE: u8 = 9;
-const INT8_CODE: u8 = 10;
-const INT16_CODE: u8 = 11;
-const INT32_CODE: u8 = 12;
-const INT64_CODE: u8 = 13;
-const VAR_INT16_CODE: u8 = 14;
-const VAR_INT32_CODE: u8 = 15;
-const VAR_INT64_CODE: u8 = 16;
-const FLOAT32_CODE: u8 = 17;
-const FLOAT64_CODE: u8 = 18;
-const BIG_UINT_CODE: u8 = 19;
-const BIG_INT_CODE: u8 = 20;
-const BIG_DECIMAL_CODE: u8 = 21;
-const STRING_CODE: u8 = 22;
-const BINARY_CODE: u8 = 23;
-const ARRAY_CODE: u8 = 24;
-const TUPLE_CODE: u8 = 25;
-const MAP_CODE: u8 = 26;
-const DYNAMIC_MAP_CODE: u8 = 27;
-const ENUM_CODE: u8 = 28;
-const UNIT_ENUM_CODE: u8 = 29;
-const DATE_CODE: u8 = 30;
-const DATETIME_CODE: u8 = 31;
-const EXTENSION8_CODE: u8 = 32;
-const EXTENSION16_CODE: u8 = 33;
-const EXTENSION32_CODE: u8 = 34;
-const EXTENSION64_CODE: u8 = 35;
-const EXTENSION_CODE: u8 = 36;
+const INT8_CODE: u8 = 7;
+const INT16_CODE: u8 = 8;
+const INT32_CODE: u8 = 9;
+const INT64_CODE: u8 = 10;
+const FLOAT32_CODE: u8 = 11;
+const FLOAT64_CODE: u8 = 12;
+const BIG_UINT_CODE: u8 = 13;
+const BIG_INT_CODE: u8 = 14;
+const BIG_DECIMAL_CODE: u8 = 15;
+const STRING_CODE: u8 = 16;
+const BINARY_CODE: u8 = 17;
+const ARRAY_CODE: u8 = 18;
+const TUPLE_CODE: u8 = 19;
+const MAP_CODE: u8 = 20;
+const DYNAMIC_MAP_CODE: u8 = 21;
+const ENUM_CODE: u8 = 22;
+const UNIT_ENUM_CODE: u8 = 23;
+const DATE_CODE: u8 = 24;
+const DATETIME_CODE: u8 = 25;
+const EXTENSION8_CODE: u8 = 26;
+const EXTENSION16_CODE: u8 = 27;
+const EXTENSION32_CODE: u8 = 28;
+const EXTENSION64_CODE: u8 = 29;
+const EXTENSION_CODE: u8 = 30;
 
 trait SerializeHeader {
     fn serialize_header<W: Write>(writer: W) -> Result<()>;
@@ -85,6 +79,12 @@ impl SerializeHeader for u64 {
     }
 }
 
+impl SerializeHeader for i8 {
+    fn serialize_header<W: Write>(mut writer: W) -> Result<()> {
+        writer.write_all(&[INT8_CODE])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::SerializeHeader;
@@ -118,23 +118,30 @@ mod tests {
     }
 
     #[test]
-    fn serialize_header_16() {
+    fn serialize_header_u16() {
         let mut buf = Vec::new();
         u16::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [4]);
     }
 
     #[test]
-    fn serialize_header_32() {
+    fn serialize_header_u32() {
         let mut buf = Vec::new();
         u32::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [5]);
     }
 
     #[test]
-    fn serialize_header_64() {
+    fn serialize_header_u64() {
         let mut buf = Vec::new();
         u64::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [6]);
+    }
+
+    #[test]
+    fn serialize_header_i8() {
+        let mut buf = Vec::new();
+        i8::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [7]);
     }
 }
