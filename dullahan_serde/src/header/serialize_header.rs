@@ -67,6 +67,12 @@ impl SerializeHeader for u8 {
     }
 }
 
+impl SerializeHeader for u16 {
+    fn serialize_header<W: Write>(mut writer: W) -> Result<()> {
+        writer.write_all(&[UINT16_CODE])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::SerializeHeader;
@@ -97,5 +103,12 @@ mod tests {
         let mut buf = Vec::new();
         u8::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [3]);
+    }
+
+    #[test]
+    fn serialize_header_16() {
+        let mut buf = Vec::new();
+        u16::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [4]);
     }
 }
