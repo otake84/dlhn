@@ -1,6 +1,7 @@
 use std::io::{Result, Write};
 use bigdecimal::BigDecimal;
 use num_bigint::{BigInt, BigUint};
+use serde_bytes::Bytes;
 
 const UNIT_CODE: u8 = 0;
 const OPTIONAL_CODE: u8 = 1;
@@ -147,10 +148,17 @@ impl SerializeHeader for String {
     }
 }
 
+impl SerializeHeader for Bytes {
+    fn serialize_header<W: Write>(mut writer: W) -> Result<()> {
+        writer.write_all(&[BINARY_CODE])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
+    use serde_bytes::Bytes;
     use super::SerializeHeader;
 
     #[test]
@@ -277,5 +285,12 @@ mod tests {
         let mut buf = Vec::new();
         String::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [16]);
+    }
+
+    #[test]
+    fn serialize_header_binary() {
+        let mut buf = Vec::new();
+        Bytes::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [17]);
     }
 }
