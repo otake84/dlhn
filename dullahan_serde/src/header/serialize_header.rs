@@ -154,6 +154,13 @@ impl SerializeHeader for Bytes {
     }
 }
 
+impl<T: SerializeHeader> SerializeHeader for Vec<T> {
+    fn serialize_header<W: Write>(mut writer: W) -> Result<()> {
+        writer.write_all(&[ARRAY_CODE])?;
+        T::serialize_header(writer)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use bigdecimal::BigDecimal;
@@ -292,5 +299,12 @@ mod tests {
         let mut buf = Vec::new();
         Bytes::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [17]);
+    }
+
+    #[test]
+    fn serialize_header_vec() {
+        let mut buf = Vec::new();
+        Vec::<bool>::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [18, 2]);
     }
 }
