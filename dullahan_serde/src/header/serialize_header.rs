@@ -2,6 +2,7 @@ use std::io::{Result, Write};
 use bigdecimal::BigDecimal;
 use num_bigint::{BigInt, BigUint};
 use serde_bytes::Bytes;
+use time::Date;
 use crate::leb128::Leb128;
 
 const UNIT_CODE: u8 = 0;
@@ -162,6 +163,12 @@ impl<T: SerializeHeader> SerializeHeader for Vec<T> {
     }
 }
 
+impl SerializeHeader for Date {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[DATE_CODE])
+    }
+}
+
 macro_rules! tuple_impls {
     ($($len:expr => ($($name:ident)+))+) => {
         $(
@@ -207,6 +214,7 @@ mod tests {
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
     use serde_bytes::Bytes;
+    use time::Date;
     use super::SerializeHeader;
 
     #[test]
@@ -350,9 +358,16 @@ mod tests {
     }
 
     #[test]
-    fn serialize_tuple() {
+    fn serialize_header_tuple() {
         let mut buf = Vec::new();
         <((), Option<()>, bool, u8)>::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [19, 4, 0, 1, 0, 2, 3]);
+    }
+
+    #[test]
+    fn serialize_header_date() {
+        let mut buf = Vec::new();
+        Date::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [24]);
     }
 }
