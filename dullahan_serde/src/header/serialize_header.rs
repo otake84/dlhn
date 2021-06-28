@@ -2,7 +2,7 @@ use std::io::{Result, Write};
 use bigdecimal::BigDecimal;
 use num_bigint::{BigInt, BigUint};
 use serde_bytes::Bytes;
-use time::Date;
+use time::{Date, OffsetDateTime};
 use crate::leb128::Leb128;
 
 const UNIT_CODE: u8 = 0;
@@ -169,6 +169,12 @@ impl SerializeHeader for Date {
     }
 }
 
+impl SerializeHeader for OffsetDateTime {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[DATETIME_CODE])
+    }
+}
+
 macro_rules! tuple_impls {
     ($($len:expr => ($($name:ident)+))+) => {
         $(
@@ -214,7 +220,7 @@ mod tests {
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
     use serde_bytes::Bytes;
-    use time::Date;
+    use time::{Date, OffsetDateTime};
     use super::SerializeHeader;
 
     #[test]
@@ -369,5 +375,12 @@ mod tests {
         let mut buf = Vec::new();
         Date::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [24]);
+    }
+
+    #[test]
+    fn serialize_header_date_time() {
+        let mut buf = Vec::new();
+        OffsetDateTime::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [25]);
     }
 }
