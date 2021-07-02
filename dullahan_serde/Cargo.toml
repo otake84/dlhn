@@ -14,6 +14,7 @@ num-traits = "0.2.14"
 num-bigint = "0.3.2"
 bigdecimal = "0.2.0"
 serde_bytes = "0.11.5"
+dullahan_serde_derive = { path = "../dullahan_serde_derive" }
 
 [dev-dependencies]
 dullahan = { version = "0.1", path = "../dullahan" }

@@ -37,7 +37,7 @@ const EXTENSION32_CODE: u8 = 28;
 const EXTENSION64_CODE: u8 = 29;
 const EXTENSION_CODE: u8 = 30;
 
-trait SerializeHeader {
+pub trait SerializeHeader {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()>;
 }
 
