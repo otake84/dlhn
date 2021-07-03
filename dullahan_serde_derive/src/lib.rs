@@ -17,7 +17,7 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
 
     match item.data {
         syn::Data::Struct(data) => {
-            let fields_count = data.fields.len().encode_leb128_vec().into_iter().map(|v| v.to_token_stream()).collect::<Vec<proc_macro2::TokenStream>>();
+            let fields_count = data.fields.len().encode_leb128_vec().iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>();
             let mut types = Vec::new();
 
             data.fields.iter().for_each(|field| {
@@ -58,9 +58,7 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
             });
 
             let types_count = types.iter().map(|v| {
-                v.len().encode_leb128_vec().into_iter().map(|v| {
-                    v.to_token_stream()
-                }).collect::<Vec<proc_macro2::TokenStream>>()
+                v.len().encode_leb128_vec().iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>()
             }).collect::<Vec<Vec<proc_macro2::TokenStream>>>();
 
             let gen = quote! {
