@@ -44,13 +44,13 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
             gen.into()
         }
         syn::Data::Enum(data) => {
-            let variants_count = data.variants.len().encode_leb128_vec().into_iter().map(|v| v.to_token_stream()).collect::<Vec<proc_macro2::TokenStream>>();
+            let variants_count = data.variants.len().encode_leb128_vec().iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>();
             let mut variant_names = Vec::new();
             let mut types = Vec::new();
 
             data.variants.iter().for_each(|variant| {
                 variant_names.push(variant.ident.to_token_stream());
-                let mut inner_types = variant.fields.iter().map(|field| field.to_token_stream()).collect::<Vec<proc_macro2::TokenStream>>();
+                let mut inner_types = variant.fields.iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>();
                 if inner_types.is_empty() {
                     inner_types.push(Group::new(Delimiter::Parenthesis, proc_macro2::TokenStream::new()).into_token_stream());
                 }
