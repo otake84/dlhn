@@ -36,3 +36,7 @@ harness = false
 [[bench]]
 name = "date_time"
 harness = false
+
+[[bench]]
+name = "derive_serialize_header"
+harness = false
