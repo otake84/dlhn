@@ -27,6 +27,7 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
             let gen = quote! {
                 impl dullahan_serde::header::serialize_header::SerializeHeader for #type_name {
                     fn serialize_header<W: std::io::Write>(writer: &mut W) -> std::io::Result<()> {
+                        writer.write_all(&[#MAP_CODE])?;
                         writer.write_all(&[
                             #(
                                 #fields_count,

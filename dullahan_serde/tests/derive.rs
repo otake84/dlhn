@@ -14,7 +14,7 @@ fn derive_serialize_header() {
 
         let mut buf = Vec::new();
         Test::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [3, 2, 3, 1, 5]);
+        assert_eq!(buf, [20, 3, 2, 3, 1, 5]);
     }
 
     {
