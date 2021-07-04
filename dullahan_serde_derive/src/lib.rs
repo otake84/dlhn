@@ -1,14 +1,13 @@
 mod leb128;
 
 use proc_macro::TokenStream;
-use proc_macro2::{Delimiter, Group};
+use proc_macro2::{Delimiter, Group, Span};
 use quote::{ToTokens, quote};
 use syn::{DeriveInput, parse_macro_input};
 use crate::leb128::Leb128;
 
 const MAP_CODE: u8 = 20;
 const ENUM_CODE: u8 = 22;
-const UNIT_ENUM_CODE: u8 = 23;
 
 #[proc_macro_derive(SerializeHeader)]
 pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
@@ -87,6 +86,8 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
 
             gen.into()
         }
-        syn::Data::Union(_) => todo!(),
+        syn::Data::Union(_) => {
+            syn::Error::new(Span::call_site(), "union is not supported").to_compile_error().into()
+        }
     }
 }
