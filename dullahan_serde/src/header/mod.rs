@@ -47,4 +47,5 @@ pub enum Header {
     Int32,
     Int64,
     Float32,
+    Float64,
 }
