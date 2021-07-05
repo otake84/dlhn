@@ -43,4 +43,5 @@ pub enum Header {
     UInt32,
     UInt64,
     Int8,
+    Int16,
 }
