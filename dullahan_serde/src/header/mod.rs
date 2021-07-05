@@ -38,4 +38,5 @@ pub enum Header {
     Unit,
     Optional(Box<Header>),
     Boolean,
+    UInt8,
 }
