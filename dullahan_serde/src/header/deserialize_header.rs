@@ -16,6 +16,7 @@ impl<R: Read> DeserializeHeader<R> for R {
                 let inner = self.deserialize_header()?;
                 Ok(Header::Optional(Box::new(inner)))
             }
+            super::BOOLEAN_CODE => Ok(Header::Boolean),
             _ => todo!(),
         }
     }
@@ -24,7 +25,6 @@ impl<R: Read> DeserializeHeader<R> for R {
 #[cfg(test)]
 mod tests {
     use std::io::Cursor;
-
     use crate::header::{Header, serialize_header::SerializeHeader};
     use super::DeserializeHeader;
 
@@ -40,5 +40,12 @@ mod tests {
         let mut buf = Vec::new();
         Option::<()>::serialize_header(&mut buf).unwrap();
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Optional(Box::new(Header::Unit)));
+    }
+
+    #[test]
+    fn deserialize_header_boolean() {
+        let mut buf = Vec::new();
+        bool::serialize_header(&mut buf).unwrap();
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Boolean);
     }
 }

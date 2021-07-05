@@ -37,4 +37,5 @@ const EXTENSION_CODE: u8 = 30;
 pub enum Header {
     Unit,
     Optional(Box<Header>),
+    Boolean,
 }
