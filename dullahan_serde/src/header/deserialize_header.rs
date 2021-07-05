@@ -20,6 +20,7 @@ impl<R: Read> DeserializeHeader<R> for R {
             super::UINT8_CODE => Ok(Header::UInt8),
             super::UINT16_CODE => Ok(Header::UInt16),
             super::UINT32_CODE => Ok(Header::UInt32),
+            super::UINT64_CODE => Ok(Header::UInt64),
             _ => todo!(),
         }
     }
@@ -71,5 +72,12 @@ mod tests {
         let mut buf = Vec::new();
         u32::serialize_header(&mut buf).unwrap();
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::UInt32);
+    }
+
+    #[test]
+    fn deserialize_header_uint64() {
+        let mut buf = Vec::new();
+        u64::serialize_header(&mut buf).unwrap();
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::UInt64);
     }
 }
