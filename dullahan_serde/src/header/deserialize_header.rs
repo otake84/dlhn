@@ -11,7 +11,11 @@ impl<R: Read> DeserializeHeader<R> for R {
         self.read_exact(&mut buf)?;
 
         match buf[0] {
-            0 => Ok(Header::Unit),
+            super::UNIT_CODE => Ok(Header::Unit),
+            super::OPTIONAL_CODE => {
+                let inner = self.deserialize_header()?;
+                Ok(Header::Optional(Box::new(inner)))
+            }
             _ => todo!(),
         }
     }
@@ -28,7 +32,13 @@ mod tests {
     fn deserialize_header_unit() {
         let mut buf = Vec::new();
         <()>::serialize_header(&mut buf).unwrap();
-
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Unit);
+    }
+
+    #[test]
+    fn deserialize_header_optional() {
+        let mut buf = Vec::new();
+        Option::<()>::serialize_header(&mut buf).unwrap();
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Optional(Box::new(Header::Unit)));
     }
 }
