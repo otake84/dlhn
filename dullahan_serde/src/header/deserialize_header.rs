@@ -27,6 +27,7 @@ impl<R: Read> DeserializeHeader<R> for R {
             super::INT64_CODE => Ok(Header::Int64),
             super::FLOAT32_CODE => Ok(Header::Float32),
             super::FLOAT64_CODE => Ok(Header::Float64),
+            super::BIG_UINT_CODE => Ok(Header::BigUInt),
             _ => todo!(),
         }
     }
@@ -35,6 +36,8 @@ impl<R: Read> DeserializeHeader<R> for R {
 #[cfg(test)]
 mod tests {
     use std::io::Cursor;
+    use num_bigint::BigUint;
+
     use crate::header::{Header, serialize_header::SerializeHeader};
     use super::DeserializeHeader;
 
@@ -127,5 +130,12 @@ mod tests {
         let mut buf = Vec::new();
         f64::serialize_header(&mut buf).unwrap();
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Float64);
+    }
+
+    #[test]
+    fn deserialize_header_big_uint() {
+        let mut buf = Vec::new();
+        BigUint::serialize_header(&mut buf).unwrap();
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::BigUInt);
     }
 }
