@@ -39,4 +39,5 @@ pub enum Header {
     Optional(Box<Header>),
     Boolean,
     UInt8,
+    UInt16,
 }
