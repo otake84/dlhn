@@ -45,6 +45,14 @@ impl<R: Read> DeserializeHeader<R> for R {
                 }
                 Ok(Header::Tuple(vec))
             }
+            super::MAP_CODE => {
+                let size = usize::decode_leb128(self)?;
+                let mut buf = Vec::with_capacity(size);
+                for _ in 0..size {
+                    buf.push(self.deserialize_header()?);
+                }
+                Ok(Header::Struct(buf))
+            }
             _ => todo!(),
         }
     }
@@ -56,7 +64,6 @@ mod tests {
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
     use serde_bytes::Bytes;
-
     use crate::header::{Header, serialize_header::SerializeHeader};
     use super::DeserializeHeader;
 

@@ -55,4 +55,5 @@ pub enum Header {
     Binary,
     Array(Box<Header>),
     Tuple(Vec<Header>),
+    Struct(Vec<Header>),
 }
