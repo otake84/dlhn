@@ -45,7 +45,7 @@ impl<R: Read> DeserializeHeader<R> for R {
                 }
                 Ok(Header::Tuple(vec))
             }
-            super::MAP_CODE => {
+            super::STRUCT_CODE => {
                 let size = usize::decode_leb128(self)?;
                 let mut buf = Vec::with_capacity(size);
                 for _ in 0..size {
