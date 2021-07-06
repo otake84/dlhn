@@ -1,4 +1,5 @@
 use std::io::{Read, Result};
+use crate::leb128::Leb128;
 use super::Header;
 
 pub trait DeserializeHeader<R: Read> {
@@ -35,6 +36,14 @@ impl<R: Read> DeserializeHeader<R> for R {
             super::ARRAY_CODE => {
                 let inner = self.deserialize_header()?;
                 Ok(Header::Array(Box::new(inner)))
+            }
+            super::TUPLE_CODE => {
+                let size = usize::decode_leb128(self)?;
+                let mut vec = Vec::with_capacity(size);
+                for _ in 0..size {
+                    vec.push(self.deserialize_header()?);
+                }
+                Ok(Header::Tuple(vec))
             }
             _ => todo!(),
         }
@@ -190,5 +199,12 @@ mod tests {
         let mut buf = Vec::new();
         Vec::<()>::serialize_header(&mut buf).unwrap();
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Array(Box::new(Header::Unit)));
+    }
+
+    #[test]
+    fn deserialize_header_tuple() {
+        let mut buf = Vec::new();
+        <((), bool, u8)>::serialize_header(&mut buf).unwrap();
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Tuple(vec![Header::Unit, Header::Boolean, Header::UInt8]));
     }
 }

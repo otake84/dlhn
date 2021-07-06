@@ -54,4 +54,5 @@ pub enum Header {
     String,
     Binary,
     Array(Box<Header>),
+    Tuple(Vec<Header>),
 }
