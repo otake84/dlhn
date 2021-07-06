@@ -51,4 +51,5 @@ pub enum Header {
     BigUInt,
     BigInt,
     BigDecimal,
+    String,
 }

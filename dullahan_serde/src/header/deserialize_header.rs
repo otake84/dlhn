@@ -30,6 +30,7 @@ impl<R: Read> DeserializeHeader<R> for R {
             super::BIG_UINT_CODE => Ok(Header::BigUInt),
             super::BIG_INT_CODE => Ok(Header::BigInt),
             super::BIG_DECIMAL_CODE => Ok(Header::BigDecimal),
+            super::STRING_CODE => Ok(Header::String),
             _ => todo!(),
         }
     }
@@ -154,5 +155,20 @@ mod tests {
         let mut buf = Vec::new();
         BigDecimal::serialize_header(&mut buf).unwrap();
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::BigDecimal);
+    }
+
+    #[test]
+    fn deserialize_header_string() {
+        {
+            let mut buf = Vec::new();
+            String::serialize_header(&mut buf).unwrap();
+            assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::String);
+        }
+
+        {
+            let mut buf = Vec::new();
+            <&str>::serialize_header(&mut buf).unwrap();
+            assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::String);
+        }
     }
 }
