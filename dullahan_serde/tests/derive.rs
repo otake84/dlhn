@@ -36,16 +36,34 @@ fn derive_serialize_header() {
 
 #[test]
 fn deserialize_header() {
-    #[allow(dead_code)]
-    #[derive(SerializeHeader)]
-    struct Test {
-        a: (),
-        b: bool,
-        c: u8,
+    {
+        #[allow(dead_code)]
+        #[derive(SerializeHeader)]
+        struct Test {
+            a: (),
+            b: bool,
+            c: u8,
+        }
+
+        let mut buf = Vec::new();
+        Test::serialize_header(&mut buf).unwrap();
+        let mut cursor = Cursor::new(buf);
+        assert_eq!(cursor.deserialize_header().unwrap(), Header::Struct(vec![Header::Unit, Header::Boolean, Header::UInt8]));
     }
 
-    let mut buf = Vec::new();
-    Test::serialize_header(&mut buf).unwrap();
-    let mut cursor = Cursor::new(buf);
-    assert_eq!(cursor.deserialize_header().unwrap(), Header::Struct(vec![Header::Unit, Header::Boolean, Header::UInt8]));
+    {
+        #[allow(dead_code)]
+        #[derive(SerializeHeader)]
+        enum Test {
+            A(bool),
+            B,
+            C(u32),
+            D(bool, u8, u32),
+        }
+
+        let mut buf = Vec::new();
+        Test::serialize_header(&mut buf).unwrap();
+        let mut cursor = Cursor::new(buf);
+        assert_eq!(cursor.deserialize_header().unwrap(), Header::Enum(vec![vec![Header::Boolean], vec![Header::Unit], vec![Header::UInt32], vec![Header::Boolean, Header::UInt8, Header::UInt32]]));
+    }
 }
