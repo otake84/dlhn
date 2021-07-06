@@ -53,6 +53,10 @@ impl<R: Read> DeserializeHeader<R> for R {
                 }
                 Ok(Header::Struct(buf))
             }
+            super::MAP_CODE => {
+                let inner = self.deserialize_header()?;
+                Ok(Header::Map(Box::new(inner)))
+            }
             _ => todo!(),
         }
     }
@@ -60,7 +64,7 @@ impl<R: Read> DeserializeHeader<R> for R {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Cursor;
+    use std::{collections::BTreeMap, io::Cursor};
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
     use serde_bytes::Bytes;
@@ -213,5 +217,12 @@ mod tests {
         let mut buf = Vec::new();
         <((), bool, u8)>::serialize_header(&mut buf).unwrap();
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Tuple(vec![Header::Unit, Header::Boolean, Header::UInt8]));
+    }
+
+    #[test]
+    fn deserialize_header_map() {
+        let mut buf = Vec::new();
+        BTreeMap::<String, bool>::serialize_header(&mut buf).unwrap();
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Map(Box::new(Header::Boolean)));
     }
 }
