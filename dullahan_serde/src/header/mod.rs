@@ -53,4 +53,5 @@ pub enum Header {
     BigDecimal,
     String,
     Binary,
+    Array(Box<Header>),
 }

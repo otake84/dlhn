@@ -32,6 +32,10 @@ impl<R: Read> DeserializeHeader<R> for R {
             super::BIG_DECIMAL_CODE => Ok(Header::BigDecimal),
             super::STRING_CODE => Ok(Header::String),
             super::BINARY_CODE => Ok(Header::Binary),
+            super::ARRAY_CODE => {
+                let inner = self.deserialize_header()?;
+                Ok(Header::Array(Box::new(inner)))
+            }
             _ => todo!(),
         }
     }
@@ -179,5 +183,12 @@ mod tests {
         let mut buf = Vec::new();
         Bytes::serialize_header(&mut buf).unwrap();
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Binary);
+    }
+
+    #[test]
+    fn deserialize_header_array() {
+        let mut buf = Vec::new();
+        Vec::<()>::serialize_header(&mut buf).unwrap();
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Array(Box::new(Header::Unit)));
     }
 }
