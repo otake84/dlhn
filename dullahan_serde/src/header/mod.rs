@@ -52,4 +52,5 @@ pub enum Header {
     BigInt,
     BigDecimal,
     String,
+    Binary,
 }

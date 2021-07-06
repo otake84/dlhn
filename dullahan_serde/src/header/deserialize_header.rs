@@ -31,6 +31,7 @@ impl<R: Read> DeserializeHeader<R> for R {
             super::BIG_INT_CODE => Ok(Header::BigInt),
             super::BIG_DECIMAL_CODE => Ok(Header::BigDecimal),
             super::STRING_CODE => Ok(Header::String),
+            super::BINARY_CODE => Ok(Header::Binary),
             _ => todo!(),
         }
     }
@@ -41,6 +42,7 @@ mod tests {
     use std::io::Cursor;
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
+    use serde_bytes::Bytes;
 
     use crate::header::{Header, serialize_header::SerializeHeader};
     use super::DeserializeHeader;
@@ -170,5 +172,12 @@ mod tests {
             <&str>::serialize_header(&mut buf).unwrap();
             assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::String);
         }
+    }
+
+    #[test]
+    fn deserialize_header_binary() {
+        let mut buf = Vec::new();
+        Bytes::serialize_header(&mut buf).unwrap();
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Binary);
     }
 }
