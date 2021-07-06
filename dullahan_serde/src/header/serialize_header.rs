@@ -1,4 +1,4 @@
-use std::io::{Result, Write};
+use std::{collections::{BTreeMap, HashMap}, io::{Result, Write}};
 use bigdecimal::BigDecimal;
 use num_bigint::{BigInt, BigUint};
 use serde_bytes::{ByteBuf, Bytes};
@@ -149,6 +149,20 @@ impl SerializeHeader for OffsetDateTime {
     }
 }
 
+impl<K: AsRef<str>, V: SerializeHeader> SerializeHeader for BTreeMap<K, V> {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::MAP_CODE])?;
+        V::serialize_header(writer)
+    }
+}
+
+impl<K: AsRef<str>, V: SerializeHeader> SerializeHeader for HashMap<K, V> {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::MAP_CODE])?;
+        V::serialize_header(writer)
+    }
+}
+
 macro_rules! tuple_impls {
     ($($len:expr => ($($name:ident)+))+) => {
         $(
@@ -191,6 +205,7 @@ tuple_impls! {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::{BTreeMap, HashMap};
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
     use serde_bytes::{ByteBuf, Bytes};
@@ -350,6 +365,21 @@ mod tests {
         let mut buf = Vec::new();
         <((), Option<()>, bool, u8)>::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [19, 4, 0, 1, 0, 2, 3]);
+    }
+
+    #[test]
+    fn serialize_header_map() {
+        {
+            let mut buf = Vec::new();
+            BTreeMap::<String, bool>::serialize_header(&mut buf).unwrap();
+            assert_eq!(buf, [21, 2]);
+        }
+
+        {
+            let mut buf = Vec::new();
+            HashMap::<String, bool>::serialize_header(&mut buf).unwrap();
+            assert_eq!(buf, [21, 2]);
+        }
     }
 
     #[test]
