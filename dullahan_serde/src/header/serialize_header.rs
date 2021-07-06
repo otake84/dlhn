@@ -1,7 +1,7 @@
 use std::io::{Result, Write};
 use bigdecimal::BigDecimal;
 use num_bigint::{BigInt, BigUint};
-use serde_bytes::Bytes;
+use serde_bytes::{ByteBuf, Bytes};
 use time::{Date, OffsetDateTime};
 use crate::leb128::Leb128;
 
@@ -124,6 +124,12 @@ impl SerializeHeader for Bytes {
     }
 }
 
+impl SerializeHeader for ByteBuf {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::BINARY_CODE])
+    }
+}
+
 impl<T: SerializeHeader> SerializeHeader for Vec<T> {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::ARRAY_CODE])?;
@@ -187,7 +193,7 @@ tuple_impls! {
 mod tests {
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
-    use serde_bytes::Bytes;
+    use serde_bytes::{ByteBuf, Bytes};
     use time::{Date, OffsetDateTime};
     use super::SerializeHeader;
 
@@ -319,9 +325,17 @@ mod tests {
 
     #[test]
     fn serialize_header_binary() {
-        let mut buf = Vec::new();
-        Bytes::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [17]);
+        {
+            let mut buf = Vec::new();
+            Bytes::serialize_header(&mut buf).unwrap();
+            assert_eq!(buf, [17]);
+        }
+
+        {
+            let mut buf = Vec::new();
+            ByteBuf::serialize_header(&mut buf).unwrap();
+            assert_eq!(buf, [17]);
+        }
     }
 
     #[test]
