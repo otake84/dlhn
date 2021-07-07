@@ -6,7 +6,7 @@ use quote::{ToTokens, quote};
 use syn::{DeriveInput, parse_macro_input};
 use crate::leb128::Leb128;
 
-const MAP_CODE: u8 = 20;
+const STRUCT_CODE: u8 = 20;
 const ENUM_CODE: u8 = 22;
 
 #[proc_macro_derive(SerializeHeader)]
@@ -27,7 +27,7 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                 impl dullahan_serde::header::serialize_header::SerializeHeader for #type_name {
                     fn serialize_header<W: std::io::Write>(writer: &mut W) -> std::io::Result<()> {
                         writer.write_all(&[
-                            #MAP_CODE,
+                            #STRUCT_CODE,
                             #(
                                 #fields_count,
                             )*

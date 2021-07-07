@@ -1,41 +1,9 @@
-use std::io::{Result, Write};
+use std::{collections::{BTreeMap, HashMap}, io::{Result, Write}};
 use bigdecimal::BigDecimal;
 use num_bigint::{BigInt, BigUint};
-use serde_bytes::Bytes;
+use serde_bytes::{ByteBuf, Bytes};
 use time::{Date, OffsetDateTime};
 use crate::leb128::Leb128;
-
-const UNIT_CODE: u8 = 0;
-const OPTIONAL_CODE: u8 = 1;
-const BOOLEAN_CODE: u8 = 2;
-const UINT8_CODE: u8 = 3;
-const UINT16_CODE: u8 = 4;
-const UINT32_CODE: u8 = 5;
-const UINT64_CODE: u8 = 6;
-const INT8_CODE: u8 = 7;
-const INT16_CODE: u8 = 8;
-const INT32_CODE: u8 = 9;
-const INT64_CODE: u8 = 10;
-const FLOAT32_CODE: u8 = 11;
-const FLOAT64_CODE: u8 = 12;
-const BIG_UINT_CODE: u8 = 13;
-const BIG_INT_CODE: u8 = 14;
-const BIG_DECIMAL_CODE: u8 = 15;
-const STRING_CODE: u8 = 16;
-const BINARY_CODE: u8 = 17;
-const ARRAY_CODE: u8 = 18;
-const TUPLE_CODE: u8 = 19;
-const MAP_CODE: u8 = 20;
-const DYNAMIC_MAP_CODE: u8 = 21;
-const ENUM_CODE: u8 = 22;
-const UNIT_ENUM_CODE: u8 = 23;
-const DATE_CODE: u8 = 24;
-const DATETIME_CODE: u8 = 25;
-const EXTENSION8_CODE: u8 = 26;
-const EXTENSION16_CODE: u8 = 27;
-const EXTENSION32_CODE: u8 = 28;
-const EXTENSION64_CODE: u8 = 29;
-const EXTENSION_CODE: u8 = 30;
 
 pub trait SerializeHeader {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()>;
@@ -43,135 +11,155 @@ pub trait SerializeHeader {
 
 impl SerializeHeader for () {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[UNIT_CODE])
+        writer.write_all(&[super::UNIT_CODE])
     }
 }
 
 impl<T: SerializeHeader> SerializeHeader for Option<T> {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[OPTIONAL_CODE])?;
+        writer.write_all(&[super::OPTIONAL_CODE])?;
         T::serialize_header(writer)
     }
 }
 
 impl SerializeHeader for bool {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[BOOLEAN_CODE])
+        writer.write_all(&[super::BOOLEAN_CODE])
     }
 }
 
 impl SerializeHeader for u8 {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[UINT8_CODE])
+        writer.write_all(&[super::UINT8_CODE])
     }
 }
 
 impl SerializeHeader for u16 {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[UINT16_CODE])
+        writer.write_all(&[super::UINT16_CODE])
     }
 }
 
 impl SerializeHeader for u32 {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[UINT32_CODE])
+        writer.write_all(&[super::UINT32_CODE])
     }
 }
 
 impl SerializeHeader for u64 {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[UINT64_CODE])
+        writer.write_all(&[super::UINT64_CODE])
     }
 }
 
 impl SerializeHeader for i8 {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[INT8_CODE])
+        writer.write_all(&[super::INT8_CODE])
     }
 }
 
 impl SerializeHeader for i16 {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[INT16_CODE])
+        writer.write_all(&[super::INT16_CODE])
     }
 }
 
 impl SerializeHeader for i32 {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[INT32_CODE])
+        writer.write_all(&[super::INT32_CODE])
     }
 }
 
 impl SerializeHeader for i64 {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[INT64_CODE])
+        writer.write_all(&[super::INT64_CODE])
     }
 }
 
 impl SerializeHeader for f32 {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[FLOAT32_CODE])
+        writer.write_all(&[super::FLOAT32_CODE])
     }
 }
 
 impl SerializeHeader for f64 {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[FLOAT64_CODE])
+        writer.write_all(&[super::FLOAT64_CODE])
     }
 }
 
 impl SerializeHeader for BigUint {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[BIG_UINT_CODE])
+        writer.write_all(&[super::BIG_UINT_CODE])
     }
 }
 
 impl SerializeHeader for BigInt {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[BIG_INT_CODE])
+        writer.write_all(&[super::BIG_INT_CODE])
     }
 }
 
 impl SerializeHeader for BigDecimal {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[BIG_DECIMAL_CODE])
+        writer.write_all(&[super::BIG_DECIMAL_CODE])
     }
 }
 
 impl SerializeHeader for &str {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[STRING_CODE])
+        writer.write_all(&[super::STRING_CODE])
     }
 }
 
 impl SerializeHeader for String {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[STRING_CODE])
+        writer.write_all(&[super::STRING_CODE])
     }
 }
 
 impl SerializeHeader for Bytes {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[BINARY_CODE])
+        writer.write_all(&[super::BINARY_CODE])
+    }
+}
+
+impl SerializeHeader for ByteBuf {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::BINARY_CODE])
     }
 }
 
 impl<T: SerializeHeader> SerializeHeader for Vec<T> {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[ARRAY_CODE])?;
+        writer.write_all(&[super::ARRAY_CODE])?;
         T::serialize_header(writer)
     }
 }
 
 impl SerializeHeader for Date {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[DATE_CODE])
+        writer.write_all(&[super::DATE_CODE])
     }
 }
 
 impl SerializeHeader for OffsetDateTime {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[DATETIME_CODE])
+        writer.write_all(&[super::DATETIME_CODE])
+    }
+}
+
+impl<K: AsRef<str>, V: SerializeHeader> SerializeHeader for BTreeMap<K, V> {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::MAP_CODE])?;
+        V::serialize_header(writer)
+    }
+}
+
+impl<K: AsRef<str>, V: SerializeHeader> SerializeHeader for HashMap<K, V> {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::MAP_CODE])?;
+        V::serialize_header(writer)
     }
 }
 
@@ -183,7 +171,7 @@ macro_rules! tuple_impls {
                 $($name: SerializeHeader,)+
             {
                 fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-                    writer.write_all(&[TUPLE_CODE])?;
+                    writer.write_all(&[super::TUPLE_CODE])?;
                     let (buf, size) = ($len as usize).encode_leb128();
                     writer.write_all(&buf[..size])?;
                     $(
@@ -217,9 +205,10 @@ tuple_impls! {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::{BTreeMap, HashMap};
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
-    use serde_bytes::Bytes;
+    use serde_bytes::{ByteBuf, Bytes};
     use time::{Date, OffsetDateTime};
     use super::SerializeHeader;
 
@@ -351,9 +340,17 @@ mod tests {
 
     #[test]
     fn serialize_header_binary() {
-        let mut buf = Vec::new();
-        Bytes::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [17]);
+        {
+            let mut buf = Vec::new();
+            Bytes::serialize_header(&mut buf).unwrap();
+            assert_eq!(buf, [17]);
+        }
+
+        {
+            let mut buf = Vec::new();
+            ByteBuf::serialize_header(&mut buf).unwrap();
+            assert_eq!(buf, [17]);
+        }
     }
 
     #[test]
@@ -371,16 +368,31 @@ mod tests {
     }
 
     #[test]
+    fn serialize_header_map() {
+        {
+            let mut buf = Vec::new();
+            BTreeMap::<String, bool>::serialize_header(&mut buf).unwrap();
+            assert_eq!(buf, [21, 2]);
+        }
+
+        {
+            let mut buf = Vec::new();
+            HashMap::<String, bool>::serialize_header(&mut buf).unwrap();
+            assert_eq!(buf, [21, 2]);
+        }
+    }
+
+    #[test]
     fn serialize_header_date() {
         let mut buf = Vec::new();
         Date::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [24]);
+        assert_eq!(buf, [23]);
     }
 
     #[test]
     fn serialize_header_date_time() {
         let mut buf = Vec::new();
         OffsetDateTime::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [25]);
+        assert_eq!(buf, [24]);
     }
 }
