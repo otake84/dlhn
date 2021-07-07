@@ -60,4 +60,5 @@ pub enum Header {
     Enum(Vec<Vec<Header>>),
     Date,
     DateTime,
+    Extension8(u64),
 }
