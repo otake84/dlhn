@@ -64,4 +64,5 @@ pub enum Header {
     Extension16(u64),
     Extension32(u64),
     Extension64(u64),
+    Extension(u64),
 }
