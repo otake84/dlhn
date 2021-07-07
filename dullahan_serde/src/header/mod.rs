@@ -24,14 +24,13 @@ const TUPLE_CODE: u8 = 19;
 const STRUCT_CODE: u8 = 20;
 const MAP_CODE: u8 = 21;
 const ENUM_CODE: u8 = 22;
-const UNIT_ENUM_CODE: u8 = 23;
-const DATE_CODE: u8 = 24;
-const DATETIME_CODE: u8 = 25;
-const EXTENSION8_CODE: u8 = 26;
-const EXTENSION16_CODE: u8 = 27;
-const EXTENSION32_CODE: u8 = 28;
-const EXTENSION64_CODE: u8 = 29;
-const EXTENSION_CODE: u8 = 30;
+const DATE_CODE: u8 = 23;
+const DATETIME_CODE: u8 = 24;
+const EXTENSION8_CODE: u8 = 25;
+const EXTENSION16_CODE: u8 = 26;
+const EXTENSION32_CODE: u8 = 27;
+const EXTENSION64_CODE: u8 = 28;
+const EXTENSION_CODE: u8 = 29;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Header {

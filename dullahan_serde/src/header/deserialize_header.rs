@@ -263,31 +263,31 @@ mod tests {
 
     #[test]
     fn deserialize_header_extension8() {
-        let buf = vec![26u8, 123];
+        let buf = vec![25u8, 123];
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension8(123));
     }
 
     #[test]
     fn deserialize_header_extension16() {
-        let buf = vec![27u8, 123];
+        let buf = vec![26u8, 123];
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension16(123));
     }
 
     #[test]
     fn deserialize_header_extension32() {
-        let buf = vec![28u8, 123];
+        let buf = vec![27u8, 123];
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension32(123));
     }
 
     #[test]
     fn deserialize_header_extension64() {
-        let buf = vec![29u8, 123];
+        let buf = vec![28u8, 123];
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension64(123));
     }
 
     #[test]
     fn deserialize_header_extension() {
-        let buf = vec![30u8, 123];
+        let buf = vec![29u8, 123];
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension(123));
     }
 }

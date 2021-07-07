@@ -386,13 +386,13 @@ mod tests {
     fn serialize_header_date() {
         let mut buf = Vec::new();
         Date::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [24]);
+        assert_eq!(buf, [23]);
     }
 
     #[test]
     fn serialize_header_date_time() {
         let mut buf = Vec::new();
         OffsetDateTime::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [25]);
+        assert_eq!(buf, [24]);
     }
 }
