@@ -73,6 +73,7 @@ impl<R: Read> DeserializeHeader<R> for R {
             super::DATE_CODE => Ok(Header::Date),
             super::DATETIME_CODE => Ok(Header::DateTime),
             super::EXTENSION8_CODE => Ok(Header::Extension8(u64::decode_leb128(self)?)),
+            super::EXTENSION16_CODE => Ok(Header::Extension16(u64::decode_leb128(self)?)),
             _ => todo!(),
         }
     }
@@ -261,5 +262,11 @@ mod tests {
     fn deserialize_header_extension8() {
         let buf = vec![26u8, 123];
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension8(123));
+    }
+
+    #[test]
+    fn deserialize_header_extension16() {
+        let buf = vec![27u8, 123];
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension16(123));
     }
 }

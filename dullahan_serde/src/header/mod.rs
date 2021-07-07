@@ -61,4 +61,5 @@ pub enum Header {
     Date,
     DateTime,
     Extension8(u64),
+    Extension16(u64),
 }
