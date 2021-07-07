@@ -58,4 +58,5 @@ pub enum Header {
     Struct(Vec<Header>),
     Map(Box<Header>),
     Enum(Vec<Vec<Header>>),
+    Date,
 }

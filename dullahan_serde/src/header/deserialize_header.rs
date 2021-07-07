@@ -70,6 +70,7 @@ impl<R: Read> DeserializeHeader<R> for R {
                 }
                 Ok(Header::Enum(buf))
             }
+            super::DATE_CODE => Ok(Header::Date),
             _ => todo!(),
         }
     }
@@ -81,6 +82,7 @@ mod tests {
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
     use serde_bytes::Bytes;
+    use time::Date;
     use crate::header::{Header, serialize_header::SerializeHeader};
     use super::DeserializeHeader;
 
@@ -237,5 +239,12 @@ mod tests {
         let mut buf = Vec::new();
         BTreeMap::<String, bool>::serialize_header(&mut buf).unwrap();
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Map(Box::new(Header::Boolean)));
+    }
+
+    #[test]
+    fn deserialize_header_date() {
+        let mut buf = Vec::new();
+        Date::serialize_header(&mut buf).unwrap();
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Date);
     }
 }
