@@ -1,4 +1,4 @@
-use std::io::{Read, Result};
+use std::io::{ErrorKind, Read, Result};
 use crate::leb128::Leb128;
 use super::Header;
 
@@ -76,7 +76,7 @@ impl<R: Read> DeserializeHeader<R> for R {
             super::EXTENSION16_CODE => Ok(Header::Extension16(u64::decode_leb128(self)?)),
             super::EXTENSION32_CODE => Ok(Header::Extension32(u64::decode_leb128(self)?)),
             super::EXTENSION64_CODE => Ok(Header::Extension64(u64::decode_leb128(self)?)),
-            _ => todo!(),
+            code => Err(std::io::Error::new(ErrorKind::InvalidData, format!("invalid header code: {}", code))),
         }
     }
 }
