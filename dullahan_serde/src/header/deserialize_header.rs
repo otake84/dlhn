@@ -71,6 +71,7 @@ impl<R: Read> DeserializeHeader<R> for R {
                 Ok(Header::Enum(buf))
             }
             super::DATE_CODE => Ok(Header::Date),
+            super::DATETIME_CODE => Ok(Header::DateTime),
             _ => todo!(),
         }
     }
@@ -82,7 +83,7 @@ mod tests {
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
     use serde_bytes::Bytes;
-    use time::Date;
+    use time::{Date, OffsetDateTime};
     use crate::header::{Header, serialize_header::SerializeHeader};
     use super::DeserializeHeader;
 
@@ -246,5 +247,12 @@ mod tests {
         let mut buf = Vec::new();
         Date::serialize_header(&mut buf).unwrap();
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Date);
+    }
+
+    #[test]
+    fn deserialize_header_date_time() {
+        let mut buf = Vec::new();
+        OffsetDateTime::serialize_header(&mut buf).unwrap();
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::DateTime);
     }
 }
