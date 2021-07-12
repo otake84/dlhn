@@ -35,6 +35,38 @@ fn derive_serialize_header() {
 }
 
 #[test]
+fn derive_serialize_header_with_skip() {
+    #[allow(dead_code)]
+    #[derive(SerializeHeader)]
+    struct Test {
+        a: bool,
+        #[serde(skip)]
+        b: u8,
+        c: Option<u32>,
+    }
+
+    let mut buf = Vec::new();
+    Test::serialize_header(&mut buf).unwrap();
+    assert_eq!(buf, [20, 2, 2, 1, 5]);
+}
+
+#[test]
+fn derive_serialize_header_with_skip_serializing() {
+    #[allow(dead_code)]
+    #[derive(SerializeHeader)]
+    struct Test {
+        a: bool,
+        #[serde(skip_serializing)]
+        b: u8,
+        c: Option<u32>,
+    }
+
+    let mut buf = Vec::new();
+    Test::serialize_header(&mut buf).unwrap();
+    assert_eq!(buf, [20, 2, 2, 1, 5]);
+}
+
+#[test]
 fn deserialize_header() {
     {
         #[allow(dead_code)]

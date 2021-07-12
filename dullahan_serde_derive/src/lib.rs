@@ -3,25 +3,47 @@ mod leb128;
 use proc_macro::TokenStream;
 use proc_macro2::{Delimiter, Group, Span};
 use quote::{ToTokens, quote};
-use syn::{DeriveInput, parse_macro_input};
+use syn::{DeriveInput, Meta, NestedMeta, parse_macro_input};
 use crate::leb128::Leb128;
 
 const STRUCT_CODE: u8 = 20;
 const ENUM_CODE: u8 = 22;
+const SERDE_ATTRIBUTE: &str = "serde";
+const SKIP_ATTRIBUTE: &str = "skip";
+const SKIP_SERIALIZING_ATTRIBUTE: &str = "skip_serializing";
 
-#[proc_macro_derive(SerializeHeader)]
+#[proc_macro_derive(SerializeHeader, attributes(serde))]
 pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
     let item = parse_macro_input!(input as DeriveInput);
     let type_name = item.ident;
 
     match item.data {
         syn::Data::Struct(data) => {
-            let fields_count = data.fields.len().encode_leb128_vec().iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>();
             let mut types = Vec::new();
 
-            data.fields.iter().for_each(|field| {
-                types.push(field.ty.to_token_stream());
-            });
+            for field in data.fields.iter() {
+                if !field.attrs.iter().any(|attribute| {
+                    attribute.path.get_ident().map(ToString::to_string) == Some(SERDE_ATTRIBUTE.to_string()) &&
+                        match attribute.parse_meta() {
+                            Ok(Meta::List(v)) => {
+                                v.nested.iter().any(|v| {
+                                    match v {
+                                        NestedMeta::Meta(v) => {
+                                            let ident = v.path().get_ident().map(ToString::to_string);
+                                            ident == Some(SKIP_ATTRIBUTE.to_string()) || ident == Some(SKIP_SERIALIZING_ATTRIBUTE.to_string())
+                                        }
+                                        _ => false
+                                    }
+                                })
+                            },
+                            _ => false
+                        }
+                }) {
+                    types.push(field.ty.to_token_stream());
+                }
+            }
+
+            let fields_count = types.len().encode_leb128_vec().iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>();
 
             let gen = quote! {
                 impl dullahan_serde::header::serialize_header::SerializeHeader for #type_name {
