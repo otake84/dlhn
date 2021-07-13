@@ -1,5 +1,5 @@
 use iai::main;
-use dullahan_serde::header::serialize_header::SerializeHeader;
+use dullahan_serde::header::ser::SerializeHeader;
 use dullahan_serde_derive::*;
 
 fn serialize_header_struct() {

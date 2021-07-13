@@ -89,7 +89,7 @@ mod tests {
     use num_bigint::{BigInt, BigUint};
     use serde_bytes::Bytes;
     use time::{Date, OffsetDateTime};
-    use crate::header::{Header, serialize_header::SerializeHeader};
+    use crate::header::{Header, ser::SerializeHeader};
     use super::DeserializeHeader;
 
     #[test]

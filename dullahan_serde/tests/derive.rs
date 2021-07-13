@@ -1,5 +1,5 @@
 use std::io::Cursor;
-use dullahan_serde::header::{Header, serialize_header::SerializeHeader, deserialize_header::DeserializeHeader};
+use dullahan_serde::header::{Header, ser::SerializeHeader, de::DeserializeHeader};
 use dullahan_serde_derive::*;
 
 #[test]
