@@ -54,7 +54,7 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
 
             data.variants.iter().for_each(|variant| {
                 if !is_skip_field(variant.attrs.iter()) {
-                    let mut inner_types = variant.fields.iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>();
+                    let mut inner_types = variant.fields.iter().map(|field| field.ty.to_token_stream()).collect::<Vec<proc_macro2::TokenStream>>();
                     if inner_types.is_empty() {
                         inner_types.push(Group::new(Delimiter::Parenthesis, proc_macro2::TokenStream::new()).into_token_stream());
                     }
