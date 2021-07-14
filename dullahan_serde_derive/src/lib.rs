@@ -12,6 +12,7 @@ const ENUM_CODE: u8 = 22;
 const SERDE_ATTRIBUTE: &str = "serde";
 const SKIP_ATTRIBUTE: &str = "skip";
 const SKIP_SERIALIZING_ATTRIBUTE: &str = "skip_serializing";
+const SKIP_SERIALIZING_IF_ATTRIBUTE: &str = "skip_serializing_if";
 
 #[proc_macro_derive(SerializeHeader, attributes(serde))]
 pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
@@ -23,6 +24,10 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
             let mut types = Vec::new();
 
             for field in data.fields.iter() {
+                if has_skip_serializing_if(field.attrs.iter()) {
+                    return syn::Error::new(Span::call_site(), "skip_serializing_if is not supported").to_compile_error().into()
+                }
+
                 if !is_skip_field(field.attrs.iter()) {
                     types.push(field.ty.to_token_stream());
                 }
@@ -52,7 +57,11 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
         syn::Data::Enum(data) => {
             let mut types = Vec::new();
 
-            data.variants.iter().for_each(|variant| {
+            for variant in data.variants.iter() {
+                if has_skip_serializing_if(variant.attrs.iter()) {
+                    return syn::Error::new(Span::call_site(), "skip_serializing_if is not supported").to_compile_error().into()
+                }
+
                 if !is_skip_field(variant.attrs.iter()) {
                     let mut inner_types = variant.fields.iter().map(|field| field.ty.to_token_stream()).collect::<Vec<proc_macro2::TokenStream>>();
                     if inner_types.is_empty() {
@@ -60,7 +69,7 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                     }
                     types.push(inner_types);
                 }
-            });
+            }
 
             let variants_count = types.len().encode_leb128_vec().iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>();
             let types_count = types.iter().map(|v| {
@@ -109,6 +118,26 @@ fn is_skip_field(mut attributes: Iter<Attribute>) -> bool {
                             NestedMeta::Meta(v) => {
                                 let ident = v.path().get_ident().map(ToString::to_string);
                                 ident == Some(SKIP_ATTRIBUTE.to_string()) || ident == Some(SKIP_SERIALIZING_ATTRIBUTE.to_string())
+                            }
+                            _ => false
+                        }
+                    })
+                },
+                _ => false
+            }
+    })
+}
+
+fn has_skip_serializing_if(mut attributes: Iter<Attribute>) -> bool {
+    attributes.any(|attribute| {
+        attribute.path.get_ident().map(ToString::to_string) == Some(SERDE_ATTRIBUTE.to_string()) &&
+            match attribute.parse_meta() {
+                Ok(Meta::List(v)) => {
+                    v.nested.iter().any(|v| {
+                        match v {
+                            NestedMeta::Meta(v) => {
+                                let ident = v.path().get_ident().map(ToString::to_string);
+                                ident == Some(SKIP_SERIALIZING_IF_ATTRIBUTE.to_string())
                             }
                             _ => false
                         }
