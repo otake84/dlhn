@@ -1,0 +1,17 @@
+[package]
+name = "dullahan_bench"
+version = "0.1.0"
+authors = ["Shogo Otake <shogo.otake@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = "1.0.126"
+dullahan_serde = { path = "../dullahan_serde" }
+dullahan_serde_derive = { path = "../dullahan_serde_derive" }
+iai = "0.1.1"
+
+[[bench]]
+name = "dullahan"
+harness = false

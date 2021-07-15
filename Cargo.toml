@@ -3,4 +3,5 @@ members = [
     "dullahan",
     "dullahan_serde",
     "dullahan_serde_derive",
+    "dullahan_bench",
 ]
