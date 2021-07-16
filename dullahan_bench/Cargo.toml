@@ -11,6 +11,7 @@ serde = "1.0.126"
 dullahan_serde = { path = "../dullahan_serde" }
 dullahan_serde_derive = { path = "../dullahan_serde_derive" }
 serde_json = "1.0.64"
+rmp-serde = "0.15.5"
 iai = "0.1.1"
 
 [[bench]]
@@ -19,4 +20,8 @@ harness = false
 
 [[bench]]
 name = "json"
+harness = false
+
+[[bench]]
+name = "messagepack"
 harness = false
