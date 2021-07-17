@@ -33,20 +33,77 @@ impl Leb128<10> for usize {
         let mut buf = [0u8; 1];
         let mut value: Self = 0;
         let mut shift = 0;
-        let mut i = 0;
 
-        while {
-            if i >= Self::LEB128_BUF_SIZE {
-                Err(Error::new(ErrorKind::InvalidData, "Invalid data"))?;
-            }
-            reader.read_exact(&mut buf)?;
-            value |= (buf[0] as Self & 0x7f) << shift;
-            shift += 7;
-            i += 1;
-            buf[0] >= 128
-        } {}
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
 
-        Ok(value)
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        if buf[0] < 128 {
+            Ok(value)
+        } else {
+            Err(Error::new(ErrorKind::InvalidData, "Invalid data"))
+        }
     }
 }
 
@@ -67,20 +124,77 @@ impl Leb128<10> for u64 {
         let mut buf = [0u8; 1];
         let mut value: Self = 0;
         let mut shift = 0;
-        let mut i = 0;
 
-        while {
-            if i >= Self::LEB128_BUF_SIZE {
-                Err(Error::new(ErrorKind::InvalidData, "Invalid data"))?;
-            }
-            reader.read_exact(&mut buf)?;
-            value |= (buf[0] as Self & 0x7f) << shift;
-            shift += 7;
-            i += 1;
-            buf[0] >= 128
-        } {}
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
 
-        Ok(value)
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        if buf[0] < 128 {
+            Ok(value)
+        } else {
+            Err(Error::new(ErrorKind::InvalidData, "Invalid data"))
+        }
     }
 }
 
@@ -101,20 +215,42 @@ impl Leb128<5> for u32 {
         let mut buf = [0u8; 1];
         let mut value: Self = 0;
         let mut shift = 0;
-        let mut i = 0;
 
-        while {
-            if i >= Self::LEB128_BUF_SIZE {
-                Err(Error::new(ErrorKind::InvalidData, "Invalid data"))?;
-            }
-            reader.read_exact(&mut buf)?;
-            value |= (buf[0] as Self & 0x7f) << shift;
-            shift += 7;
-            i += 1;
-            buf[0] >= 128
-        } {}
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
 
-        Ok(value)
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        if buf[0] < 128 {
+            Ok(value)
+        } else {
+            Err(Error::new(ErrorKind::InvalidData, "Invalid data"))
+        }
     }
 }
 
@@ -135,20 +271,28 @@ impl Leb128<3> for u16 {
         let mut buf = [0u8; 1];
         let mut value: Self = 0;
         let mut shift = 0;
-        let mut i = 0;
 
-        while {
-            if i >= Self::LEB128_BUF_SIZE {
-                Err(Error::new(ErrorKind::InvalidData, "Invalid data"))?;
-            }
-            reader.read_exact(&mut buf)?;
-            value |= (buf[0] as Self & 0x7f) << shift;
-            shift += 7;
-            i += 1;
-            buf[0] >= 128
-        } {}
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
 
-        Ok(value)
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
+
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        if buf[0] < 128 {
+            Ok(value)
+        } else {
+            Err(Error::new(ErrorKind::InvalidData, "Invalid data"))
+        }
     }
 }
 
@@ -169,20 +313,21 @@ impl Leb128<2> for u8 {
         let mut buf = [0u8; 1];
         let mut value: Self = 0;
         let mut shift = 0;
-        let mut i = 0;
 
-        while {
-            if i >= Self::LEB128_BUF_SIZE {
-                Err(Error::new(ErrorKind::InvalidData, "Invalid data"))?;
-            }
-            reader.read_exact(&mut buf)?;
-            value |= (buf[0] as Self & 0x7f) << shift;
-            shift += 7;
-            i += 1;
-            buf[0] >= 128
-        } {}
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        shift += 7;
+        if buf[0] < 128 {
+            return Ok(value);
+        }
 
-        Ok(value)
+        reader.read_exact(&mut buf)?;
+        value |= (buf[0] as Self & 0x7f) << shift;
+        if buf[0] < 128 {
+            Ok(value)
+        } else {
+            Err(Error::new(ErrorKind::InvalidData, "Invalid data"))
+        }
     }
 }
 
