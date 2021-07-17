@@ -71,17 +71,20 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
-        let (buf, size) = v.encode_zigzag().encode_leb128();
+        let mut buf = [0u8; u16::LEB128_BUF_SIZE];
+        let size = v.encode_zigzag().encode_leb128(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
     fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
-        let (buf, size) = v.encode_zigzag().encode_leb128();
+        let mut buf = [0u8; u32::LEB128_BUF_SIZE];
+        let size = v.encode_zigzag().encode_leb128(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
-        let (buf, size) = v.encode_zigzag().encode_leb128();
+        let mut buf = [0u8; u64::LEB128_BUF_SIZE];
+        let size = v.encode_zigzag().encode_leb128(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
@@ -96,17 +99,20 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
-        let (buf, size) = v.encode_leb128();
+        let mut buf = [0u8; u16::LEB128_BUF_SIZE];
+        let size = v.encode_leb128(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
     fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
-        let (buf, size) = v.encode_leb128();
+        let mut buf = [0u8; u32::LEB128_BUF_SIZE];
+        let size = v.encode_leb128(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-        let (buf, size) = v.encode_leb128();
+        let mut buf = [0u8; u64::LEB128_BUF_SIZE];
+        let size = v.encode_leb128(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
@@ -131,13 +137,15 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
         let bytes = v.as_bytes();
-        let (buf, size) = bytes.len().encode_leb128();
+        let mut buf = [0u8; usize::LEB128_BUF_SIZE];
+        let size = bytes.len().encode_leb128(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))?;
         self.output.write_all(bytes).or(Err(Error::Write))
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        let (buf, size) = v.len().encode_leb128();
+        let mut buf = [0u8; usize::LEB128_BUF_SIZE];
+        let size = v.len().encode_leb128(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))?;
         self.output.write_all(v).or(Err(Error::Write))?;
         Ok(())
@@ -196,7 +204,8 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
         if let Some(len) = len {
-            let (buf, size) = len.encode_leb128();
+            let mut buf = [0u8; usize::LEB128_BUF_SIZE];
+            let size = len.encode_leb128(&mut buf);
             self.output.write_all(&buf[..size]).or(Err(Error::Write))?;
         }
         Ok(self)

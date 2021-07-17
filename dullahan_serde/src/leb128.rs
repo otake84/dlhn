@@ -4,46 +4,29 @@ use std::io::{Read, Result, Error, ErrorKind};
 // https://github.com/stoklund/varint/blob/master/leb128.cpp
 
 pub(crate) trait Leb128<const N: usize>: Sized {
-    fn encode_leb128(&self) -> ([u8; N], usize);
-    fn encode_leb128_vec(&self) -> Vec<u8>;
+    const LEB128_BUF_SIZE: usize = N;
+
+    fn encode_leb128(self, buf: &mut [u8; N]) -> usize;
     fn decode_leb128<R: Read>(reader: &mut R) -> Result<Self>;
-}
 
-struct Buf<const N: usize> {
-    buf: [u8; N],
-    bytes: usize,
-}
-
-impl<const N: usize> Buf<N> {
-    fn new() -> Self {
-        Self {
-            buf: [0; N],
-            bytes: 0,
-        }
-    }
-
-    fn write(&mut self, byte: u8) {
-        self.buf[self.bytes] = byte;
-        self.bytes += 1;
+    fn encode_leb128_vec(self) -> Vec<u8> {
+        let mut buf = [0u8; N];
+        let size = self.encode_leb128(&mut buf);
+        buf[..size].to_vec()
     }
 }
 
 impl Leb128<10> for usize {
-    fn encode_leb128(&self) -> ([u8; 10], usize) {
-        let mut value = *self;
-        let mut buf = Buf::new();
-        while value > 127 {
-            buf.write((value | 0x80) as u8);
-            value >>= 7;
+    fn encode_leb128(mut self, buf: &mut [u8; Self::LEB128_BUF_SIZE]) -> usize {
+        let mut bytes = 0;
+        while self > 127 {
+            buf[bytes] = (self | 0x80) as u8;
+            bytes += 1;
+            self >>= 7;
         }
-        buf.write(value as u8);
+        buf[bytes] = self as u8;
 
-        (buf.buf, buf.bytes)
-    }
-
-    fn encode_leb128_vec(&self) -> Vec<u8> {
-        let (buf, size) = self.encode_leb128();
-        buf[0..size].to_vec()
+        bytes + 1
     }
 
     fn decode_leb128<R: Read>(reader: &mut R) -> Result<Self> {
@@ -53,7 +36,7 @@ impl Leb128<10> for usize {
         let mut i = 0;
 
         while {
-            if i >= 10 {
+            if i >= Self::LEB128_BUF_SIZE {
                 Err(Error::new(ErrorKind::InvalidData, "Invalid data"))?;
             }
             reader.read_exact(&mut buf)?;
@@ -68,21 +51,16 @@ impl Leb128<10> for usize {
 }
 
 impl Leb128<10> for u64 {
-    fn encode_leb128(&self) -> ([u8; 10], usize) {
-        let mut value = *self;
-        let mut buf = Buf::new();
-        while value > 127 {
-            buf.write((value | 0x80) as u8);
-            value >>= 7;
+    fn encode_leb128(mut self, buf: &mut [u8; Self::LEB128_BUF_SIZE]) -> usize {
+        let mut bytes = 0;
+        while self > 127 {
+            buf[bytes] = (self | 0x80) as u8;
+            bytes += 1;
+            self >>= 7;
         }
-        buf.write(value as u8);
+        buf[bytes] = self as u8;
 
-        (buf.buf, buf.bytes)
-    }
-
-    fn encode_leb128_vec(&self) -> Vec<u8> {
-        let (buf, size) = self.encode_leb128();
-        buf[0..size].to_vec()
+        bytes + 1
     }
 
     fn decode_leb128<R: Read>(reader: &mut R) -> Result<Self> {
@@ -92,7 +70,7 @@ impl Leb128<10> for u64 {
         let mut i = 0;
 
         while {
-            if i >= 10 {
+            if i >= Self::LEB128_BUF_SIZE {
                 Err(Error::new(ErrorKind::InvalidData, "Invalid data"))?;
             }
             reader.read_exact(&mut buf)?;
@@ -107,21 +85,16 @@ impl Leb128<10> for u64 {
 }
 
 impl Leb128<5> for u32 {
-    fn encode_leb128(&self) -> ([u8; 5], usize) {
-        let mut value = *self;
-        let mut buf = Buf::new();
-        while value > 127 {
-            buf.write((value | 0x80) as u8);
-            value >>= 7;
+    fn encode_leb128(mut self, buf: &mut [u8; Self::LEB128_BUF_SIZE]) -> usize {
+        let mut bytes = 0;
+        while self > 127 {
+            buf[bytes] = (self | 0x80) as u8;
+            bytes += 1;
+            self >>= 7;
         }
-        buf.write(value as u8);
+        buf[bytes] = self as u8;
 
-        (buf.buf, buf.bytes)
-    }
-
-    fn encode_leb128_vec(&self) -> Vec<u8> {
-        let (buf, size) = self.encode_leb128();
-        buf[0..size].to_vec()
+        bytes + 1
     }
 
     fn decode_leb128<R: Read>(reader: &mut R) -> Result<Self> {
@@ -131,7 +104,7 @@ impl Leb128<5> for u32 {
         let mut i = 0;
 
         while {
-            if i >= 5 {
+            if i >= Self::LEB128_BUF_SIZE {
                 Err(Error::new(ErrorKind::InvalidData, "Invalid data"))?;
             }
             reader.read_exact(&mut buf)?;
@@ -146,21 +119,16 @@ impl Leb128<5> for u32 {
 }
 
 impl Leb128<3> for u16 {
-    fn encode_leb128(&self) -> ([u8; 3], usize) {
-        let mut value = *self;
-        let mut buf = Buf::new();
-        while value > 127 {
-            buf.write((value | 0x80) as u8);
-            value >>= 7;
+    fn encode_leb128(mut self, buf: &mut [u8; Self::LEB128_BUF_SIZE]) -> usize {
+        let mut bytes = 0;
+        while self > 127 {
+            buf[bytes] = (self | 0x80) as u8;
+            bytes += 1;
+            self >>= 7;
         }
-        buf.write(value as u8);
+        buf[bytes] = self as u8;
 
-        (buf.buf, buf.bytes)
-    }
-
-    fn encode_leb128_vec(&self) -> Vec<u8> {
-        let (buf, size) = self.encode_leb128();
-        buf[0..size].to_vec()
+        bytes + 1
     }
 
     fn decode_leb128<R: Read>(reader: &mut R) -> Result<Self> {
@@ -170,7 +138,7 @@ impl Leb128<3> for u16 {
         let mut i = 0;
 
         while {
-            if i >= 3 {
+            if i >= Self::LEB128_BUF_SIZE {
                 Err(Error::new(ErrorKind::InvalidData, "Invalid data"))?;
             }
             reader.read_exact(&mut buf)?;
@@ -185,21 +153,16 @@ impl Leb128<3> for u16 {
 }
 
 impl Leb128<2> for u8 {
-    fn encode_leb128(&self) -> ([u8; 2], usize) {
-        let mut value = *self;
-        let mut buf = Buf::new();
-        while value > 127 {
-            buf.write((value | 0x80) as u8);
-            value >>= 7;
+    fn encode_leb128(mut self, buf: &mut [u8; Self::LEB128_BUF_SIZE]) -> usize {
+        let mut bytes = 0;
+        while self > 127 {
+            buf[bytes] = (self | 0x80) as u8;
+            bytes += 1;
+            self >>= 7;
         }
-        buf.write(value as u8);
+        buf[bytes] = self as u8;
 
-        (buf.buf, buf.bytes)
-    }
-
-    fn encode_leb128_vec(&self) -> Vec<u8> {
-        let (buf, size) = self.encode_leb128();
-        buf[0..size].to_vec()
+        bytes + 1
     }
 
     fn decode_leb128<R: Read>(reader: &mut R) -> Result<Self> {
@@ -209,7 +172,7 @@ impl Leb128<2> for u8 {
         let mut i = 0;
 
         while {
-            if i >= 2 {
+            if i >= Self::LEB128_BUF_SIZE {
                 Err(Error::new(ErrorKind::InvalidData, "Invalid data"))?;
             }
             reader.read_exact(&mut buf)?;
@@ -232,19 +195,22 @@ mod tests {
 
         #[test]
         fn decode_leb128_u8_min() {
-            let (buf, size) = u8::MIN.encode_leb128();
+            let mut buf = [0u8; u8::LEB128_BUF_SIZE];
+            let size = u8::MIN.encode_leb128(&mut buf);
             assert_eq!(u8::MIN, u8::decode_leb128(&mut buf[..size].as_ref()).unwrap());
         }
 
         #[test]
         fn decode_leb128_u8_max() {
-            let (buf, size) = u8::MAX.encode_leb128();
+            let mut buf = [0u8; u8::LEB128_BUF_SIZE];
+            let size = u8::MAX.encode_leb128(&mut buf);
             assert_eq!(u8::MAX, u8::decode_leb128(&mut buf[..size].as_ref()).unwrap());
         }
 
         #[test]
         fn decode_leb128_u16_max_is_err() {
-            let (buf, size) = u16::MAX.encode_leb128();
+            let mut buf = [0u8; u16::LEB128_BUF_SIZE];
+            let size = u16::MAX.encode_leb128(&mut buf);
             assert!(u8::decode_leb128(&mut buf[..size].as_ref()).is_err());
         }
 
@@ -260,19 +226,22 @@ mod tests {
 
         #[test]
         fn decode_leb128_u16_min() {
-            let (buf, size) = u16::MIN.encode_leb128();
+            let mut buf = [0u8; u16::LEB128_BUF_SIZE];
+            let size = u16::MIN.encode_leb128(&mut buf);
             assert_eq!(u16::MIN, u16::decode_leb128(&mut buf[..size].as_ref()).unwrap());
         }
 
         #[test]
         fn decode_leb128_u16_max() {
-            let (buf, size) = u16::MAX.encode_leb128();
+            let mut buf = [0u8; u16::LEB128_BUF_SIZE];
+            let size = u16::MAX.encode_leb128(&mut buf);
             assert_eq!(u16::MAX, u16::decode_leb128(&mut buf[..size].as_ref()).unwrap());
         }
 
         #[test]
         fn decode_leb128_u32_max_is_err() {
-            let (buf, size) = u32::MAX.encode_leb128();
+            let mut buf = [0u8; u32::LEB128_BUF_SIZE];
+            let size = u32::MAX.encode_leb128(&mut buf);
             assert!(u16::decode_leb128(&mut buf[..size].as_ref()).is_err());
         }
 
@@ -288,19 +257,22 @@ mod tests {
 
         #[test]
         fn decode_leb128_u32_min() {
-            let (buf, size) = u32::MIN.encode_leb128();
+            let mut buf = [0u8; u32::LEB128_BUF_SIZE];
+            let size = u32::MIN.encode_leb128(&mut buf);
             assert_eq!(u32::MIN, u32::decode_leb128(&mut buf[..size].as_ref()).unwrap());
         }
 
         #[test]
         fn decode_leb128_u32_max() {
-            let (buf, size) = u32::MAX.encode_leb128();
+            let mut buf = [0u8; u32::LEB128_BUF_SIZE];
+            let size = u32::MAX.encode_leb128(&mut buf);
             assert_eq!(u32::MAX, u32::decode_leb128(&mut buf[..size].as_ref()).unwrap());
         }
 
         #[test]
         fn decode_leb128_u64_max_is_err() {
-            let (buf, size) = u64::MAX.encode_leb128();
+            let mut buf = [0u8; u64::LEB128_BUF_SIZE];
+            let size = u64::MAX.encode_leb128(&mut buf);
             assert!(u32::decode_leb128(&mut buf[..size].as_ref()).is_err());
         }
 
@@ -316,13 +288,15 @@ mod tests {
 
         #[test]
         fn decode_leb128_u64_min() {
-            let (buf, size) = u64::MIN.encode_leb128();
+            let mut buf = [0u8; u64::LEB128_BUF_SIZE];
+            let size = u64::MIN.encode_leb128(&mut buf);
             assert_eq!(u64::MIN, u64::decode_leb128(&mut buf[..size].as_ref()).unwrap());
         }
 
         #[test]
         fn decode_leb128_u64_max() {
-            let (buf, size) = u64::MAX.encode_leb128();
+            let mut buf = [0u8; u64::LEB128_BUF_SIZE];
+            let size = u64::MAX.encode_leb128(&mut buf);
             assert_eq!(u64::MAX, u64::decode_leb128(&mut buf[..size].as_ref()).unwrap());
         }
 
