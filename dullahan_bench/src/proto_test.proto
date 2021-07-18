@@ -1,0 +1,19 @@
+syntax = "proto3";
+package proto_test;
+
+message ProtoTest {
+    bool a = 1;
+    uint32 b = 2;
+    uint32 c = 3;
+    uint32 d = 4;
+    uint64 e = 5;
+    sint32 f = 6;
+    sint32 g = 7;
+    sint32 h = 8;
+    sint64 i = 9;
+    float j = 10;
+    double k = 11;
+    string l = 12;
+    repeated bool m = 13;
+    map<string, bool> n = 14;
+}

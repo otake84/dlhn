@@ -28,11 +28,13 @@ pub fn serialize<T: Serializer>(date: &Date, serializer: T) -> Result<T::Ok, T::
     let year = date.year() - DATE_YEAR_OFFSET;
     let ordinal = date.ordinal() - DATE_ORDINAL_OFFSET;
     let mut seq = serializer.serialize_seq(None)?;
-    let (buf, size) = year.encode_zigzag().encode_leb128();
+    let mut buf = [0u8; u32::LEB128_BUF_SIZE];
+    let size = year.encode_zigzag().encode_leb128(&mut buf);
     for e in buf[..size].iter() {
         seq.serialize_element(e)?;
     }
-    let (buf, size) = ordinal.encode_leb128();
+    let mut buf = [0u8; u16::LEB128_BUF_SIZE];
+    let size = ordinal.encode_leb128(&mut buf);
     for e in buf[..size].iter() {
         seq.serialize_element(e)?;
     }

@@ -172,7 +172,8 @@ macro_rules! tuple_impls {
             {
                 fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
                     writer.write_all(&[super::TUPLE_CODE])?;
-                    let (buf, size) = ($len as usize).encode_leb128();
+                    let mut buf = [0u8; usize::LEB128_BUF_SIZE];
+                    let size = ($len as usize).encode_leb128(&mut buf);
                     writer.write_all(&buf[..size])?;
                     $(
                         $name::serialize_header(writer)?;
