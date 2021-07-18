@@ -46,3 +46,5 @@ impl Default for Test {
         }
     }
 }
+
+include!(concat!(env!("OUT_DIR"), "/proto_test.rs"));
