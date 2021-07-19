@@ -1,3 +1,4 @@
+pub mod body;
 pub mod de;
 pub mod format;
 pub mod header;
