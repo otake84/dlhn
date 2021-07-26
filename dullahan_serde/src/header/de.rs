@@ -61,12 +61,7 @@ impl<R: Read> DeserializeHeader<R> for R {
                 let size = usize::decode_leb128(self)?;
                 let mut buf = Vec::with_capacity(size);
                 for _ in 0..size {
-                    let inner_size = usize::decode_leb128(self)?;
-                    let mut inner = Vec::with_capacity(inner_size);
-                    for _ in 0..inner_size {
-                        inner.push(self.deserialize_header()?);
-                    }
-                    buf.push(inner);
+                    buf.push(self.deserialize_header()?);
                 }
                 Ok(Header::Enum(buf))
             }

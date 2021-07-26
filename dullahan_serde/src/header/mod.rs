@@ -56,7 +56,7 @@ pub enum Header {
     Tuple(Vec<Header>),
     Struct(Vec<Header>),
     Map(Box<Header>),
-    Enum(Vec<Vec<Header>>),
+    Enum(Vec<Header>),
     Date,
     DateTime,
     Extension8(u64),

@@ -1,9 +1,12 @@
 use std::{fmt::{self, Display}, io::{self, ErrorKind, Read}, mem::MaybeUninit, slice::Iter};
+use bigdecimal::{BigDecimal, Zero};
+use num_bigint::{BigInt, BigUint};
 use serde::{de, forward_to_deserialize_any, serde_if_integer128};
 use serde_bytes::ByteBuf;
-use crate::{leb128::Leb128, zigzag::ZigZag};
+use time::{Date, NumericalDuration, OffsetDateTime};
+use crate::{format, leb128::Leb128, zigzag::ZigZag};
 
-trait DeserializeDullahan<R: Read>: Sized {
+pub trait DeserializeDullahan<R: Read>: Sized {
     fn deserialize_dullahan(reader: &mut R) -> io::Result<Self>;
 }
 
@@ -125,6 +128,46 @@ impl<R: Read, T: DeserializeDullahan<R>> DeserializeDullahan<R> for Option<T> {
             1 => Ok(Some(T::deserialize_dullahan(reader)?)),
             _ => Err(io::Error::new(ErrorKind::InvalidData, "")),
         }
+    }
+}
+
+impl<R: Read> DeserializeDullahan<R> for BigUint {
+    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
+        Ok(Self::from_bytes_le(ByteBuf::deserialize_dullahan(reader)?.as_slice()))
+    }
+}
+
+impl<R: Read> DeserializeDullahan<R> for BigInt {
+    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
+        Ok(Self::from_signed_bytes_le(ByteBuf::deserialize_dullahan(reader)?.as_slice()))
+    }
+}
+
+impl<R: Read> DeserializeDullahan<R> for BigDecimal {
+    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
+        let digits = BigInt::deserialize_dullahan(reader)?;
+        if digits.is_zero() {
+            Ok(BigDecimal::from(digits))
+        } else {
+            Ok(BigDecimal::new(digits, i64::deserialize_dullahan(reader)?))
+        }
+    }
+}
+
+impl<R: Read> DeserializeDullahan<R> for Date {
+    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
+        let year = i32::deserialize_dullahan(reader)? + format::date::DATE_YEAR_OFFSET;
+        let ordinal = u16::deserialize_dullahan(reader)? + format::date::DATE_ORDINAL_OFFSET;
+        let date = Date::try_from_yo(year, ordinal).or(Err(io::Error::new(ErrorKind::InvalidData, "")))?;
+        Ok(date)
+    }
+}
+
+impl<R: Read> DeserializeDullahan<R> for OffsetDateTime {
+    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
+        let unix_timestamp = i64::deserialize_dullahan(reader)?;
+        let nanosecond = u32::deserialize_dullahan(reader)?;
+        Ok(OffsetDateTime::from_unix_timestamp(unix_timestamp) + nanosecond.nanoseconds())
     }
 }
 

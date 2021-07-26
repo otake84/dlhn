@@ -2,8 +2,8 @@ use serde::{Deserializer, Serializer, de::{self, SeqAccess, Unexpected, Visitor}
 use time::Date;
 use crate::{de::Error, leb128::Leb128, zigzag::ZigZag};
 
-const DATE_YEAR_OFFSET: i32 = 2000;
-const DATE_ORDINAL_OFFSET: u16 = 1;
+pub(crate) const DATE_YEAR_OFFSET: i32 = 2000;
+pub(crate) const DATE_ORDINAL_OFFSET: u16 = 1;
 
 struct DateVisitor;
 
