@@ -1,184 +1,6 @@
-use std::{fmt::{self, Display}, io::{self, ErrorKind, Read}, mem::MaybeUninit, slice::Iter};
-use bigdecimal::{BigDecimal, Zero};
-use num_bigint::{BigInt, BigUint};
-use serde::{de, forward_to_deserialize_any, serde_if_integer128};
-use serde_bytes::ByteBuf;
-use time::{Date, NumericalDuration, OffsetDateTime};
-use crate::{format, leb128::Leb128, zigzag::ZigZag};
-
-pub trait DeserializeDullahan<R: Read>: Sized {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self>;
-}
-
-impl<R: Read> DeserializeDullahan<R> for () {
-    fn deserialize_dullahan(_reader: &mut R) -> io::Result<Self> {
-        Ok(())
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for bool {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        let mut buf = [0u8; 1];
-        reader.read_exact(&mut buf)?;
-        match buf[0] {
-            0 => Ok(false),
-            1 => Ok(true),
-            _ => Err(io::Error::new(ErrorKind::InvalidData, "")),
-        }
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for u8 {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        let mut buf = [0u8; 1];
-        reader.read_exact(&mut buf)?;
-        Ok(u8::from_le_bytes(buf))
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for u16 {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        u16::decode_leb128(reader)
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for u32 {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        u32::decode_leb128(reader)
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for u64 {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        u64::decode_leb128(reader)
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for i8 {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        let mut buf = [0u8; 1];
-        reader.read_exact(&mut buf)?;
-        Ok(i8::from_le_bytes(buf))
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for i16 {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        u16::decode_leb128(reader).map(i16::decode_zigzag)
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for i32 {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        u32::decode_leb128(reader).map(i32::decode_zigzag)
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for i64 {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        u64::decode_leb128(reader).map(i64::decode_zigzag)
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for f32 {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        let mut buf = [0u8; 4];
-        reader.read_exact(&mut buf)?;
-        Ok(f32::from_le_bytes(buf))
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for f64 {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        let mut buf = [0u8; 8];
-        reader.read_exact(&mut buf)?;
-        Ok(f64::from_le_bytes(buf))
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for char {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        let s = String::deserialize_dullahan(reader)?;
-        s.chars().into_iter().next().ok_or(io::Error::new(ErrorKind::InvalidData, ""))
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for String {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        let mut buf = new_dynamic_buf(reader)?;
-        reader.read_exact(&mut buf)?;
-        String::from_utf8(buf).or(Err(io::Error::new(ErrorKind::InvalidData, "")))
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for ByteBuf {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        let mut buf = new_dynamic_buf(reader)?;
-        reader.read_exact(&mut buf)?;
-        Ok(ByteBuf::from(buf))
-    }
-}
-
-impl<R: Read, T: DeserializeDullahan<R>> DeserializeDullahan<R> for Option<T> {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        let mut buf = [0u8; 1];
-        reader.read_exact(&mut buf)?;
-        match buf[0] {
-            0 => Ok(None),
-            1 => Ok(Some(T::deserialize_dullahan(reader)?)),
-            _ => Err(io::Error::new(ErrorKind::InvalidData, "")),
-        }
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for BigUint {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        Ok(Self::from_bytes_le(ByteBuf::deserialize_dullahan(reader)?.as_slice()))
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for BigInt {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        Ok(Self::from_signed_bytes_le(ByteBuf::deserialize_dullahan(reader)?.as_slice()))
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for BigDecimal {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        let digits = BigInt::deserialize_dullahan(reader)?;
-        if digits.is_zero() {
-            Ok(BigDecimal::from(digits))
-        } else {
-            Ok(BigDecimal::new(digits, i64::deserialize_dullahan(reader)?))
-        }
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for Date {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        let year = i32::deserialize_dullahan(reader)? + format::date::DATE_YEAR_OFFSET;
-        let ordinal = u16::deserialize_dullahan(reader)? + format::date::DATE_ORDINAL_OFFSET;
-        let date = Date::try_from_yo(year, ordinal).or(Err(io::Error::new(ErrorKind::InvalidData, "")))?;
-        Ok(date)
-    }
-}
-
-impl<R: Read> DeserializeDullahan<R> for OffsetDateTime {
-    fn deserialize_dullahan(reader: &mut R) -> io::Result<Self> {
-        let unix_timestamp = i64::deserialize_dullahan(reader)?;
-        let nanosecond = u32::deserialize_dullahan(reader)?;
-        Ok(OffsetDateTime::from_unix_timestamp(unix_timestamp) + nanosecond.nanoseconds())
-    }
-}
-
-fn new_dynamic_buf<R: Read>(reader: &mut R) -> io::Result<Vec<u8>> {
-    let len = usize::decode_leb128(reader)?;
-    let mut buf = Vec::<u8>::with_capacity(len);
-    unsafe {
-        buf.set_len(len);
-    }
-    Ok(buf)
-}
+use std::{fmt::{self, Display}, io::Read, mem::MaybeUninit, slice::Iter};
+use serde::{de, forward_to_deserialize_any, serde_if_integer128, Deserialize};
+use crate::{leb128::Leb128, zigzag::ZigZag};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
@@ -260,31 +82,39 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_bool(bool::deserialize_dullahan(self.reader).or(Err(Error::Read))?)
+        let mut buf = [0u8; 1];
+        self.reader.read_exact(&mut buf).or(Err(Error::Read))?;
+        match buf[0] {
+            0 => visitor.visit_bool(false),
+            1 => visitor.visit_bool(true),
+            _ => Err(Error::Read),
+        }
     }
 
     fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-            visitor.visit_i8(i8::deserialize_dullahan(self.reader).or(Err(Error::Read))?)
+            let mut buf = [0u8; 1];
+            self.reader.read_exact(&mut buf).or(Err(Error::Read))?;
+            visitor.visit_i8(i8::from_le_bytes(buf))
         }
 
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_i16(i16::deserialize_dullahan(self.reader).or(Err(Error::Read))?)
+        visitor.visit_i16(u16::decode_leb128(self.reader).map(i16::decode_zigzag).or(Err(Error::Read))?)
     }
 
     fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_i32(i32::deserialize_dullahan(self.reader).or(Err(Error::Read))?)
+        visitor.visit_i32(u32::decode_leb128(self.reader).map(i32::decode_zigzag).or(Err(Error::Read))?)
     }
 
     fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_i64(i64::deserialize_dullahan(self.reader).or(Err(Error::Read))?)
+        visitor.visit_i64(u64::decode_leb128(self.reader).map(i64::decode_zigzag).or(Err(Error::Read))?)
     }
 
     serde_if_integer128! {
@@ -300,25 +130,27 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_u8(u8::deserialize_dullahan(self.reader).or(Err(Error::Read))?)
+        let mut buf = [0u8; 1];
+        self.reader.read_exact(&mut buf).or(Err(Error::Read))?;
+        visitor.visit_u8(u8::from_le_bytes(buf))
     }
 
     fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_u16(u16::deserialize_dullahan(self.reader).or(Err(Error::Read))?)
+        visitor.visit_u16(u16::decode_leb128(self.reader).or(Err(Error::Read))?)
     }
 
     fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_u32(u32::deserialize_dullahan(self.reader).or(Err(Error::Read))?)
+        visitor.visit_u32(u32::decode_leb128(self.reader).or(Err(Error::Read))?)
     }
 
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_u64(u64::deserialize_dullahan(self.reader).or(Err(Error::Read))?)
+        visitor.visit_u64(u64::decode_leb128(self.reader).or(Err(Error::Read))?)
     }
 
     serde_if_integer128! {
@@ -334,13 +166,17 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_f32(f32::deserialize_dullahan(self.reader).or(Err(Error::Read))?)
+        let mut buf = [0u8; 4];
+        self.reader.read_exact(&mut buf).or(Err(Error::Read))?;
+        visitor.visit_f32(f32::from_le_bytes(buf))
     }
 
     fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_f64(f64::deserialize_dullahan(self.reader).or(Err(Error::Read))?)
+        let mut buf = [0u8; 8];
+        self.reader.read_exact(&mut buf).or(Err(Error::Read))?;
+        visitor.visit_f64(f64::from_le_bytes(buf))
     }
 
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -350,7 +186,6 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
             self.reader.read_exact(&mut body_buf).or(Err(Error::Read))?;
             let s = String::from_utf8(body_buf).or(Err(Error::CharCode))?;
             visitor.visit_char(s.chars().into_iter().next().ok_or(Error::CharSize)?)
-            // visitor.visit_char(char::deserialize_dullahan(self.reader).or(Err(Error::Read))?) // For some reason, it slows me down. (Rust 1.53)
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -365,7 +200,6 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
             let mut body_buf = self.new_dynamic_buf()?;
             self.reader.read_exact(&mut body_buf).or(Err(Error::Read))?;
             visitor.visit_string(String::from_utf8(body_buf).or(Err(Error::Read))?)
-            // visitor.visit_string(String::deserialize_dullahan(self.reader).or(Err(Error::Read))?) // For some reason, it slows me down. (Rust 1.53)
     }
 
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -377,18 +211,18 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        visitor.visit_byte_buf(ByteBuf::deserialize_dullahan(self.reader).or(Err(Error::Read))?.into_vec())
+        let mut buf = self.new_dynamic_buf()?;
+        self.reader.read_exact(&mut buf).or(Err(Error::Read))?;
+        visitor.visit_byte_buf(buf)
     }
 
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
-        let mut buf: [u8; 1] = unsafe { MaybeUninit::uninit().assume_init() };
-        self.reader.read_exact(&mut buf).or(Err(Error::Read))?;
-        match buf[0] {
-            0 => visitor.visit_none(),
-            1 => visitor.visit_some(self),
-            _ => Err(Error::Read),
+        if bool::deserialize(&mut *self)? {
+            visitor.visit_some(self)
+        } else {
+            visitor.visit_none()
         }
     }
 
