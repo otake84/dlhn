@@ -1,6 +1,6 @@
 mod leb128;
 
-use std::slice::Iter;
+use std::{slice::Iter, str::FromStr};
 use proc_macro::TokenStream;
 use proc_macro2::{Delimiter, Group, Span};
 use quote::{ToTokens, quote};
@@ -55,7 +55,8 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
             gen.into()
         }
         syn::Data::Enum(data) => {
-            let mut types = Vec::new();
+            let mut outers = Vec::new();
+            let mut inners = Vec::new();
 
             for variant in data.variants.iter() {
                 if has_skip_serializing_if(variant.attrs.iter()) {
@@ -63,18 +64,47 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                 }
 
                 if !is_skip_field(variant.attrs.iter()) {
-                    let mut inner_types = variant.fields.iter().map(|field| field.ty.to_token_stream()).collect::<Vec<proc_macro2::TokenStream>>();
-                    if inner_types.is_empty() {
-                        inner_types.push(Group::new(Delimiter::Parenthesis, proc_macro2::TokenStream::new()).into_token_stream());
+                    if variant.fields.is_empty() {
+                        outers.push(Group::new(Delimiter::Bracket, proc_macro2::TokenStream::new()).into_token_stream());
+                        inners.push(vec![Group::new(Delimiter::Parenthesis, proc_macro2::TokenStream::new()).into_token_stream()]);
+                    } else {
+                        if variant.fields.len() > 1 {
+                            match &variant.fields {
+                                syn::Fields::Named(fields) => {
+                                    let mut buf = vec![20];
+                                    buf.append(&mut variant.fields.len().encode_leb128_vec());
+                                    outers.push(proc_macro2::TokenStream::from_str(format!("{:?}", buf).as_str()).unwrap());
+
+                                    let mut field_types = Vec::new();
+                                    fields.named.iter().for_each(|field| {
+                                        field_types.push(field.ty.to_token_stream());
+                                    });
+                                    inners.push(field_types);
+                                }
+                                syn::Fields::Unnamed(fields) => {
+                                    let mut buf = vec![19];
+                                    buf.append(&mut variant.fields.len().encode_leb128_vec());
+                                    outers.push(proc_macro2::TokenStream::from_str(format!("{:?}", buf).as_str()).unwrap());
+
+                                    inners.push(fields.unnamed.iter().map(|field| {
+                                        field.ty.to_token_stream()
+                                    }).collect());
+                                }
+                                syn::Fields::Unit => todo!(),
+                            }
+                        } else {
+                            outers.push(Group::new(Delimiter::Bracket, proc_macro2::TokenStream::new()).into_token_stream());
+                            let mut field_types = Vec::new();
+                            variant.fields.iter().for_each(|field| {
+                                field_types.push(field.ty.to_token_stream());
+                            });
+                            inners.push(field_types);
+                        }
                     }
-                    types.push(inner_types);
                 }
             }
 
-            let variants_count = types.len().encode_leb128_vec().iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>();
-            let types_count = types.iter().map(|v| {
-                v.len().encode_leb128_vec().iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>()
-            }).collect::<Vec<Vec<proc_macro2::TokenStream>>>();
+            let variants_count = outers.len().encode_leb128_vec().iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>();
 
             let gen = quote! {
                 impl dullahan_serde::header::ser::SerializeHeader for #type_name {
@@ -86,13 +116,9 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                             )*
                         ])?;
                         #(
-                            writer.write_all(&[
-                                #(
-                                    #types_count,
-                                )*
-                            ])?;
+                            writer.write_all(&#outers)?;
                             #(
-                                <#types>::serialize_header(writer)?;
+                                <#inners>::serialize_header(writer)?;
                             )*
                         )*
                         Ok(())

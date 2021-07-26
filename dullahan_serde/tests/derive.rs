@@ -30,7 +30,7 @@ fn derive_serialize_header() {
 
         let mut buf = Vec::new();
         Test::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [22, 4, 1, 2, 1, 0, 1, 5, 3, 2, 3, 5]);
+        assert_eq!(buf, [22, 4, 2, 0, 5, 19, 3, 2, 3, 5]);
     }
 
     {
@@ -49,7 +49,7 @@ fn derive_serialize_header() {
 
         let mut buf = Vec::new();
         Test::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [22, 4, 1, 2, 1, 0, 1, 5, 3, 2, 3, 5]);
+        assert_eq!(buf, [22, 4, 2, 0, 5, 20, 3, 2, 3, 5]);
     }
 }
 
@@ -83,7 +83,7 @@ fn derive_serialize_header_with_skip() {
 
         let mut buf = Vec::new();
         Test::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [22, 3, 1, 2, 1, 0, 3, 2, 3, 5]);
+        assert_eq!(buf, [22, 3, 2, 0, 19, 3, 2, 3, 5]);
     }
 }
 
@@ -117,7 +117,7 @@ fn derive_serialize_header_with_skip_serializing() {
 
         let mut buf = Vec::new();
         Test::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [22, 3, 1, 2, 1, 0, 3, 2, 3, 5]);
+        assert_eq!(buf, [22, 3, 2, 0, 19, 3, 2, 3, 5]);
     }
 }
 
@@ -151,6 +151,6 @@ fn deserialize_header() {
         let mut buf = Vec::new();
         Test::serialize_header(&mut buf).unwrap();
         let mut cursor = Cursor::new(buf);
-        assert_eq!(cursor.deserialize_header().unwrap(), Header::Enum(vec![vec![Header::Boolean], vec![Header::Unit], vec![Header::UInt32], vec![Header::Boolean, Header::UInt8, Header::UInt32]]));
+        assert_eq!(cursor.deserialize_header().unwrap(), Header::Enum(vec![Header::Boolean, Header::Unit, Header::UInt32, Header::Tuple(vec![Header::Boolean, Header::UInt8, Header::UInt32])]));
     }
 }
