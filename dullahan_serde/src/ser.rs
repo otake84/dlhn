@@ -675,9 +675,8 @@ impl<'a, W: Write> ser::Serializer for MapKeySerializer<'a, W> {
 mod tests {
     use std::collections::BTreeMap;
     use serde::Serialize;
-    use dullahan::{body::Body, serializer::serialize_body};
     use serde_bytes::Bytes;
-    use crate::ser::Error;
+    use crate::{leb128::Leb128, ser::Error, zigzag::ZigZag};
     use super::Serializer;
 
     #[test]
@@ -688,7 +687,7 @@ mod tests {
 
             let body = true;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::Boolean(true)));
+            assert_eq!(buf, [1]);
         }
 
         {
@@ -697,7 +696,7 @@ mod tests {
 
             let body = false;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::Boolean(false)));
+            assert_eq!(buf, [0]);
         }
     }
 
@@ -708,7 +707,15 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = i8::MIN;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::Int8(i8::MIN)));
+            assert_eq!(buf, i8::MIN.to_le_bytes());
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = 0i8;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, [0]);
         }
 
         {
@@ -716,7 +723,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = i8::MAX;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::Int8(i8::MAX)));
+            assert_eq!(buf, i8::MAX.to_le_bytes());
         }
     }
 
@@ -727,7 +734,15 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = i16::MIN;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::VarInt16(i16::MIN)));
+            assert_eq!(buf, i16::MIN.encode_zigzag().encode_leb128_vec());
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = 0i16;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, [0]);
         }
 
         {
@@ -735,7 +750,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = i16::MAX;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::VarInt16(i16::MAX)));
+            assert_eq!(buf, i16::MAX.encode_zigzag().encode_leb128_vec());
         }
     }
 
@@ -746,7 +761,15 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = i32::MIN;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::VarInt32(i32::MIN)));
+            assert_eq!(buf, i32::MIN.encode_zigzag().encode_leb128_vec());
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = 0i32;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, [0]);
         }
 
         {
@@ -754,7 +777,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = i32::MAX;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::VarInt32(i32::MAX)));
+            assert_eq!(buf, i32::MAX.encode_zigzag().encode_leb128_vec());
         }
     }
 
@@ -765,7 +788,15 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = i64::MIN;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::VarInt64(i64::MIN)));
+            assert_eq!(buf, i64::MIN.encode_zigzag().encode_leb128_vec());
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = 0i64;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, [0]);
         }
 
         {
@@ -773,7 +804,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = i64::MAX;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::VarInt64(i64::MAX)));
+            assert_eq!(buf, i64::MAX.encode_zigzag().encode_leb128_vec());
         }
     }
 
@@ -803,7 +834,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = u8::MIN;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::UInt8(u8::MIN)));
+            assert_eq!(buf, u8::MIN.to_le_bytes());
         }
 
         {
@@ -811,7 +842,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = u8::MAX;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::UInt8(u8::MAX)));
+            assert_eq!(buf, u8::MAX.to_le_bytes());
         }
     }
 
@@ -822,7 +853,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = u16::MIN;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::VarUInt16(u16::MIN)));
+            assert_eq!(buf, u16::MIN.encode_leb128_vec());
         }
 
         {
@@ -830,7 +861,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = u16::MAX;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::VarUInt16(u16::MAX)));
+            assert_eq!(buf, u16::MAX.encode_leb128_vec());
         }
     }
 
@@ -841,7 +872,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = u32::MIN;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::VarUInt32(u32::MIN)));
+            assert_eq!(buf, u32::MIN.encode_leb128_vec());
         }
 
         {
@@ -849,7 +880,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = u32::MAX;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::VarUInt32(u32::MAX)));
+            assert_eq!(buf, u32::MAX.encode_leb128_vec());
         }
     }
 
@@ -860,7 +891,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = u64::MIN;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::VarUInt64(u64::MIN)));
+            assert_eq!(buf, u64::MIN.encode_leb128_vec());
         }
 
         {
@@ -868,7 +899,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = u64::MAX;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::VarUInt64(u64::MAX)));
+            assert_eq!(buf, u64::MAX.encode_leb128_vec());
         }
     }
 
@@ -896,9 +927,25 @@ mod tests {
         {
             let mut buf = Vec::new();
             let mut serializer = Serializer::new(&mut buf);
-            let body = 1.2f32;
+            let body = 0f32;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::Float32(1.2)));
+            assert_eq!(buf, 0f32.to_le_bytes());
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = 1.1f32;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, 1.1f32.to_le_bytes());
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = -1.1f32;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, (-1.1f32).to_le_bytes());
         }
 
         {
@@ -906,7 +953,32 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = f32::INFINITY;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::Float32(f32::INFINITY)));
+            assert_eq!(buf, f32::INFINITY.to_le_bytes());
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = -f32::INFINITY;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, (-f32::INFINITY).to_le_bytes());
+        }
+
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = f32::NAN;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, f32::NAN.to_le_bytes());
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = -f32::NAN;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, (-f32::NAN).to_le_bytes());
         }
     }
 
@@ -915,9 +987,25 @@ mod tests {
         {
             let mut buf = Vec::new();
             let mut serializer = Serializer::new(&mut buf);
-            let body = 1.2f64;
+            let body = 0f64;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::Float64(1.2)));
+            assert_eq!(buf, 0f64.to_le_bytes());
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = 1.1f64;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, 1.1f64.to_le_bytes());
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = -1.1f64;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, (-1.1f64).to_le_bytes());
         }
 
         {
@@ -925,7 +1013,15 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = f64::INFINITY;
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::Float64(f64::INFINITY)));
+            assert_eq!(buf, f64::INFINITY.to_le_bytes());
+        }
+
+        {
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            let body = -f64::INFINITY;
+            body.serialize(&mut serializer).unwrap();
+            assert_eq!(buf, (-f64::INFINITY).to_le_bytes());
         }
     }
 
@@ -936,7 +1032,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = 'a';
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::String(String::from('a'))));
+            assert_eq!(buf, ["a".as_bytes().len().encode_leb128_vec().as_slice(), "a".as_bytes()].concat());
         }
 
         {
@@ -944,7 +1040,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = 'あ';
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::String(String::from('あ'))));
+            assert_eq!(buf, ["あ".as_bytes().len().encode_leb128_vec().as_slice(), "あ".as_bytes()].concat());
         }
     }
 
@@ -955,7 +1051,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = "";
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::String("".to_string())));
+            assert_eq!(buf, ["".len().encode_leb128_vec().as_slice(), "".as_bytes()].concat());
         }
 
         {
@@ -963,7 +1059,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = "test";
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::String("test".to_string())));
+            assert_eq!(buf, ["test".as_bytes().len().encode_leb128_vec().as_slice(), "test".as_bytes()].concat());
         }
     }
 
@@ -973,7 +1069,7 @@ mod tests {
         let mut serializer = Serializer::new(&mut buf);
         let body: Option<bool> = None;
         body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, serialize_body(&Body::Optional(None)));
+        assert_eq!(buf, [0]);
     }
 
     #[test]
@@ -982,7 +1078,7 @@ mod tests {
         let mut serializer = Serializer::new(&mut buf);
         let body = Some(123u8);
         body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, serialize_body(&Body::Optional(Some(Box::new(Body::UInt8(123))))));
+        assert_eq!(buf, [1, 123]);
     }
 
     #[test]
@@ -991,7 +1087,7 @@ mod tests {
         let mut serializer = Serializer::new(&mut buf);
         let body = ();
         body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, serialize_body(&Body::Unit));
+        assert_eq!(buf, []);
     }
 
     #[test]
@@ -1003,7 +1099,7 @@ mod tests {
         let mut serializer = Serializer::new(&mut buf);
         let body = Test;
         body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, serialize_body(&Body::Unit));
+        assert_eq!(buf, []);
     }
 
     #[test]
@@ -1017,7 +1113,7 @@ mod tests {
         let mut serializer = Serializer::new(&mut buf);
         let body = Test::A;
         body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, serialize_body(&Body::VarUInt32(0)));
+        assert_eq!(buf, [0]);
     }
 
     #[test]
@@ -1089,7 +1185,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body: Vec<u8> = Vec::new();
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::Array(Vec::new())));
+            assert_eq!(buf, [0]);
         }
 
         {
@@ -1097,7 +1193,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = vec![123u8];
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::Array(vec![Body::UInt8(123)])));
+            assert_eq!(buf, [1, 123]);
         }
 
         {
@@ -1105,7 +1201,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = [1u8].repeat(128);
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::Array([1u8].repeat(128).into_iter().map(Body::UInt8).collect())));
+            assert_eq!(buf, [128usize.encode_leb128_vec(), [1u8].repeat(128)].concat());
         }
 
         {
@@ -1113,7 +1209,7 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = vec![true, false, true];
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, serialize_body(&Body::Array(vec![Body::Boolean(true), Body::Boolean(false), Body::Boolean(true)])));
+            assert_eq!(buf, [3, 1, 0, 1]);
         }
     }
 
@@ -1123,7 +1219,7 @@ mod tests {
         let mut serializer = Serializer::new(&mut buf);
         let body = (true, 123u8, "test");
         body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, serialize_body(&Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123), Body::String("test".to_string())])));
+        assert_eq!(buf, [&[1], &[123], "test".len().encode_leb128_vec().as_slice(), "test".as_bytes()].concat());
     }
 
     #[test]
@@ -1135,7 +1231,7 @@ mod tests {
         let mut serializer = Serializer::new(&mut buf);
         let body = Test(true, 123u8, "test".to_string());
         body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, serialize_body(&Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123), Body::String("test".to_string())])));
+        assert_eq!(buf, [&[1], &[123], "test".len().encode_leb128_vec().as_slice(), "test".as_bytes()].concat());
     }
 
     #[test]
@@ -1216,13 +1312,7 @@ mod tests {
             };
             body.serialize(&mut serializer).unwrap();
 
-            assert_eq!(buf, serialize_body(&Body::DynamicMap({
-                let mut map = BTreeMap::new();
-                map.insert("a".to_string(), Body::UInt8(0));
-                map.insert("b".to_string(), Body::UInt8(123));
-                map.insert("c".to_string(), Body::UInt8(255));
-                map
-            })));
+            assert_eq!(buf, [&[3], &[1], "a".as_bytes(), &[0], &[1], "b".as_bytes(), &[123], &[1], "c".as_bytes(), &[255]].concat());
         }
 
         {
@@ -1246,6 +1336,6 @@ mod tests {
         let mut serializer = Serializer::new(&mut buf);
         let body = Bytes::new(&[0u8, 1, 2, 3, 255]);
         body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, serialize_body(&Body::Binary(vec![0, 1, 2, 3, 255])));
+        assert_eq!(buf, [5, 0, 1, 2, 3, 255]);
     }
 }

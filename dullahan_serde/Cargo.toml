@@ -17,7 +17,6 @@ serde_bytes = "0.11.5"
 dullahan_serde_derive = { path = "../dullahan_serde_derive" }
 
 [dev-dependencies]
-dullahan = { version = "0.1", path = "../dullahan" }
 serde = { version = "1.0.125", features = ["derive"] }
 iai = "0.1.1"
 

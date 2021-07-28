@@ -47,36 +47,28 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<Date, T
 
 #[cfg(test)]
 mod tests {
-    use dullahan::{body::Body, serializer::serialize_body};
     use serde::{Deserialize, Serialize};
     use time::Date;
     use crate::{de::Deserializer, ser::Serializer};
 
+    #[derive(Debug, PartialEq, Serialize, Deserialize)]
+    struct Test {
+        #[serde(with = "crate::format::date")]
+        date: Date,
+    }
+
     #[test]
     fn serialize_date() {
-        #[derive(Serialize)]
-        struct Test {
-            #[serde(with = "crate::format::date")]
-            date: Date,
-        }
-
-        let mut buf = Vec::new();
-        let mut serializer = Serializer::new(&mut buf);
-        let body = Test {
-            date: Date::try_from_ymd(1970, 1, 1).unwrap(),
-        };
-        body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, serialize_body(&Body::Date(Date::try_from_ymd(1970, 1, 1).unwrap())));
+        assert_eq!(serialize(Test { date: Date::try_from_yo(2000, 1).unwrap()}), [0, 0]);
+        assert_eq!(serialize(Test { date: Date::try_from_yo(1936, 1).unwrap()}), [127, 0]);
+        assert_eq!(serialize(Test { date: Date::try_from_yo(1935, 1).unwrap()}), [129, 1, 0]);
+        assert_eq!(serialize(Test { date: Date::try_from_yo(2063, 128).unwrap()}), [126, 127]);
+        assert_eq!(serialize(Test { date: Date::try_from_yo(2064, 129).unwrap()}), [128, 1, 128, 1]);
+        assert_eq!(serialize(Test { date: Date::try_from_yo(2000, 366).unwrap()}), [0, 237, 2]);
     }
 
     #[test]
     fn deserialize_date() {
-        #[derive(Debug, PartialEq, Serialize, Deserialize)]
-        struct Test {
-            #[serde(with = "crate::format::date")]
-            date: Date,
-        }
-
         let buf = serialize(Test {
             date: Date::try_from_ymd(1970, 1, 11).unwrap(),
         });
