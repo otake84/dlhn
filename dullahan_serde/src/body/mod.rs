@@ -207,6 +207,71 @@ impl Body {
             Header::Extension(_) => todo!(),
         }
     }
+
+    pub fn validate(&self, header: &Header) -> bool {
+        match (header, self) {
+            (Header::Unit, Body::Unit) => true,
+            (Header::Optional(inner_header), Body::Optional(inner_body)) => {
+                if let Some(v) = inner_body {
+                    v.validate(inner_header)
+                } else {
+                    true
+                }
+            }
+            (Header::Boolean, Body::Boolean(_)) => true,
+            (Header::UInt8, Body::UInt8(_)) => true,
+            (Header::UInt16, Body::UInt16(_)) => true,
+            (Header::UInt32, Body::UInt32(_)) => true,
+            (Header::UInt64, Body::UInt64(_)) => true,
+            (Header::Int8, Body::Int8(_)) => true,
+            (Header::Int16, Body::Int16(_)) => true,
+            (Header::Int32, Body::Int32(_)) => true,
+            (Header::Int64, Body::Int64(_)) => true,
+            (Header::Float32, Body::Float32(_)) => true,
+            (Header::Float64, Body::Float64(_)) => true,
+            (Header::BigUInt, Body::BigUInt(_)) => true,
+            (Header::BigInt, Body::BigInt(_)) => true,
+            (Header::BigDecimal, Body::BigDecimal(_)) => true,
+            (Header::String, Body::String(_)) => true,
+            (Header::Binary, Body::Binary(_)) => true,
+            (Header::Array(inner_header), Body::Array(inner_body)) => {
+                inner_body.iter().all(|v| v.validate(inner_header))
+            }
+            (Header::Tuple(inner_headers), Body::Tuple(inner_bodies)) => {
+                inner_headers.len() == inner_bodies.len()
+                    && inner_headers
+                        .iter()
+                        .zip(inner_bodies)
+                        .all(|(header, body)| body.validate(header))
+            }
+            (Header::Struct(inner_header), Body::Struct(inner_body)) => {
+                inner_header.len() == inner_body.len()
+                    && inner_header.iter().zip(inner_body).all(|(header, body)| {
+                        body.validate(header)
+                    })
+            }
+            (Header::Map(inner_header), Body::Map(inner_body)) => {
+                inner_body
+                    .values()
+                    .all(|value| value.validate(inner_header))
+            }
+            (Header::Enum(inner_header), Body::Enum(i, v)) => {
+                if let Some(header) = inner_header.get(*i as usize) {
+                    v.validate(header)
+                } else {
+                    false
+                }
+            }
+            (Header::Date, Body::Date(_)) => true,
+            (Header::DateTime, Body::DateTime(_)) => true,
+            (Header::Extension8(_), Body::Extension8(_)) => todo!(),
+            (Header::Extension16(_), Body::Extension16(_)) => todo!(),
+            (Header::Extension32(_), Body::Extension32(_)) => todo!(),
+            (Header::Extension64(_), Body::Extension64(_)) => todo!(),
+            (Header::Extension(_), Body::Extension(_)) => todo!(),
+            _ => false,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -603,6 +668,222 @@ mod tests {
             let body = Body::DateTime(OffsetDateTime::unix_epoch());
             body.serialize(&mut serializer).unwrap();
             assert_eq!(Body::deserialize(&Header::DateTime, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
+        }
+    }
+
+    mod validate {
+        use std::collections::BTreeMap;
+        use bigdecimal::BigDecimal;
+        use num_bigint::{BigInt, BigUint};
+        use time::{Date, OffsetDateTime};
+        use crate::header::Header;
+        use super::*;
+
+        #[test]
+        fn validate_unit() {
+            let header = Header::Unit;
+            assert!(Body::Unit.validate(&header));
+            assert!(!Body::Boolean(true).validate(&header));
+        }
+
+        #[test]
+        fn validate_optional() {
+            let header = Header::Optional(Box::new(Header::Boolean));
+            assert!(Body::Optional(Some(Box::new(Body::Boolean(true)))).validate(&header));
+            assert!(!Body::Optional(Some(Box::new(Body::Unit))).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_boolean() {
+            let header = Header::Boolean;
+            assert!(Body::Boolean(true).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_uint8() {
+            let header = Header::UInt8;
+            assert!(Body::UInt8(123).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_uint16() {
+            let header = Header::UInt16;
+            assert!(Body::UInt16(123).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_uint32() {
+            let header = Header::UInt32;
+            assert!(Body::UInt32(123).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_uint64() {
+            let header = Header::UInt64;
+            assert!(Body::UInt64(123).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_int8() {
+            let header = Header::Int8;
+            assert!(Body::Int8(123).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_int16() {
+            let header = Header::Int16;
+            assert!(Body::Int16(123).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_int32() {
+            let header = Header::Int32;
+            assert!(Body::Int32(123).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_int64() {
+            let header = Header::Int64;
+            assert!(Body::Int64(123).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_float32() {
+            let header = Header::Float32;
+            assert!(Body::Float32(1.1).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_float64() {
+            let header = Header::Float64;
+            assert!(Body::Float64(1.1).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_big_uint() {
+            let header = Header::BigUInt;
+            assert!(Body::BigUInt(BigUint::from(123u8)).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_big_int() {
+            let header = Header::BigInt;
+            assert!(Body::BigInt(BigInt::from(123)).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_big_decimal() {
+            let header = Header::BigDecimal;
+            assert!(Body::BigDecimal(BigDecimal::from(123)).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_string() {
+            let header = Header::String;
+            assert!(Body::String("test".to_string()).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_binary() {
+            let header = Header::Binary;
+            assert!(Body::Binary(vec![0, 1, 2, 3]).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_array() {
+            let header = Header::Array(Box::new(Header::Boolean));
+            assert!(Body::Array(vec![Body::Boolean(true), Body::Boolean(false), Body::Boolean(true)]).validate(&header));
+            assert!(!Body::Array(vec![Body::Unit]).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_tuple() {
+            let header = Header::Tuple(vec![Header::Boolean, Header::UInt8]);
+            assert!(Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123)]).validate(&header));
+            assert!(!Body::Tuple(vec![Body::Boolean(true), Body::Boolean(true)]).validate(&header));
+            assert!(!Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123), Body::UInt8(123)]).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_struct() {
+            let header = Header::Struct(vec![Header::Boolean, Header::UInt8]);
+            assert!(Body::Struct(vec![Body::Boolean(true), Body::UInt8(123)]).validate(&header));
+            assert!(!Body::Struct(vec![Body::Boolean(true), Body::Boolean(true)]).validate(&header));
+            assert!(!Body::Struct(vec![Body::Boolean(true), Body::UInt8(123), Body::UInt8(123)]).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_map() {
+            let header = Header::Map(Box::new(Header::Boolean));
+            assert!(Body::Map({
+                let mut buf = BTreeMap::new();
+                buf.insert("a".to_string(), Body::Boolean(true));
+                buf.insert("b".to_string(), Body::Boolean(false));
+                buf.insert("c".to_string(), Body::Boolean(true));
+                buf
+            }).validate(&header));
+
+            assert!(!Body::Map({
+                let mut buf = BTreeMap::new();
+                buf.insert("a".to_string(), Body::Unit);
+                buf.insert("b".to_string(), Body::Unit);
+                buf.insert("c".to_string(), Body::Unit);
+                buf
+            }).validate(&header));
+
+            assert!(!Body::Map({
+                let mut buf = BTreeMap::new();
+                buf.insert("a".to_string(), Body::Boolean(true));
+                buf.insert("b".to_string(), Body::Unit);
+                buf.insert("c".to_string(), Body::Unit);
+                buf
+            }).validate(&header));
+
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_enum() {
+            let header = Header::Enum(vec![Header::Unit, Header::Boolean]);
+            assert!(Body::Enum(0, Box::new(Body::Unit)).validate(&header));
+            assert!(Body::Enum(1, Box::new(Body::Boolean(true))).validate(&header));
+            assert!(!Body::Enum(0, Box::new(Body::Boolean(true))).validate(&header));
+            assert!(!Body::Enum(1, Box::new(Body::Unit)).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_date() {
+            let header = Header::Date;
+            assert!(Body::Date(Date::try_from_ymd(1970, 1, 1).unwrap()).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_date_time() {
+            let header = Header::DateTime;
+            assert!(Body::DateTime(OffsetDateTime::unix_epoch()).validate(&header));
+            assert!(!Body::Unit.validate(&header));
         }
     }
 }
