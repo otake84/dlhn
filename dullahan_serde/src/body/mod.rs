@@ -279,33 +279,255 @@ mod tests {
     use serde::Serialize;
     use crate::{body::Body, ser::Serializer};
 
-    #[test]
-    fn serialize_unit() {
+    fn serialize<T: Serialize>(v: T) -> Vec<u8> {
         let mut buf = Vec::new();
         let mut serializer = Serializer::new(&mut buf);
-        ().serialize(&mut serializer).unwrap();
-
-        let mut buf2 = Vec::new();
-        let mut serializer2 = Serializer::new(&mut buf2);
-        Body::Unit.serialize(&mut serializer2).unwrap();
-
-        assert_eq!(buf, buf2);
+        v.serialize(&mut serializer).unwrap();
+        buf
     }
 
-    #[test]
-    fn serialize_bool() {
+    fn serialize_body(v: Body) -> Vec<u8> {
         let mut buf = Vec::new();
-        let mut serializer = Serializer::new(&mut buf);
-        true.serialize(&mut serializer).unwrap();
+        let mut serializer2 = Serializer::new(&mut buf);
+        v.serialize(&mut serializer2).unwrap();
+        buf
+    }
 
-        let mut buf2 = Vec::new();
-        let mut serializer2 = Serializer::new(&mut buf2);
-        Body::Boolean(true).serialize(&mut serializer2).unwrap();
+    mod serialize {
+        use std::{array::IntoIter, collections::BTreeMap};
+        use bigdecimal::BigDecimal;
+        use num_bigint::{BigInt, BigUint};
+        use serde_bytes::ByteBuf;
+        use time::{Date, OffsetDateTime};
+        use super::*;
 
-        assert_eq!(buf, buf2);
+        #[test]
+        fn serialize_unit() {
+            assert_eq!(serialize_body(Body::Unit), serialize(()));
+        }
+
+        #[test]
+        fn serialize_optional() {
+            assert_eq!(serialize_body(Body::Optional(Some(Box::new(Body::Boolean(true))))), serialize(Some(true)));
+            assert_eq!(serialize_body(Body::Optional(None)), serialize(None::<Option<bool>>));
+        }
+
+        #[test]
+        fn serialize_bool() {
+            assert_eq!(serialize_body(Body::Boolean(true)), serialize(true));
+            assert_eq!(serialize_body(Body::Boolean(false)), serialize(false));
+            assert_ne!(serialize_body(Body::Boolean(false)), serialize(true));
+        }
+
+        #[test]
+        fn serialize_uint8() {
+            assert_eq!(serialize_body(Body::UInt8(0)), serialize(0u8));
+            assert_eq!(serialize_body(Body::UInt8(u8::MAX)), serialize(u8::MAX));
+            assert_ne!(serialize_body(Body::UInt8(u8::MAX)), serialize(true));
+        }
+
+        #[test]
+        fn serialize_uint16() {
+            assert_eq!(serialize_body(Body::UInt16(0)), serialize(0u16));
+            assert_eq!(serialize_body(Body::UInt16(u16::MAX)), serialize(u16::MAX));
+            assert_ne!(serialize_body(Body::UInt16(u16::MAX)), serialize(true));
+        }
+
+        #[test]
+        fn serialize_uint32() {
+            assert_eq!(serialize_body(Body::UInt32(0)), serialize(0u32));
+            assert_eq!(serialize_body(Body::UInt32(u32::MAX)), serialize(u32::MAX));
+            assert_ne!(serialize_body(Body::UInt32(u32::MAX)), serialize(true));
+        }
+
+        #[test]
+        fn serialize_uint64() {
+            assert_eq!(serialize_body(Body::UInt64(0)), serialize(0u64));
+            assert_eq!(serialize_body(Body::UInt64(u64::MAX)), serialize(u64::MAX));
+            assert_ne!(serialize_body(Body::UInt64(u64::MAX)), serialize(true));
+        }
+
+        #[test]
+        fn serialize_f32() {
+            assert_eq!(serialize_body(Body::Float32(0f32)), serialize(0f32));
+            assert_eq!(serialize_body(Body::Float32(1.1f32)), serialize(1.1f32));
+            assert_eq!(serialize_body(Body::Float32(-1.1f32)), serialize(-1.1f32));
+            assert_eq!(serialize_body(Body::Float32(f32::INFINITY)), serialize(f32::INFINITY));
+            assert_eq!(serialize_body(Body::Float32(-f32::INFINITY)), serialize(-f32::INFINITY));
+            assert_eq!(serialize_body(Body::Float32(f32::NAN)), serialize(f32::NAN));
+            assert_eq!(serialize_body(Body::Float32(-f32::NAN)), serialize(-f32::NAN));
+        }
+
+        #[test]
+        fn serialize_f64() {
+            assert_eq!(serialize_body(Body::Float64(0f64)), serialize(0f64));
+            assert_eq!(serialize_body(Body::Float64(1.1f64)), serialize(1.1f64));
+            assert_eq!(serialize_body(Body::Float64(-1.1f64)), serialize(-1.1f64));
+            assert_eq!(serialize_body(Body::Float64(f64::INFINITY)), serialize(f64::INFINITY));
+            assert_eq!(serialize_body(Body::Float64(-f64::INFINITY)), serialize(-f64::INFINITY));
+            assert_eq!(serialize_body(Body::Float64(f64::NAN)), serialize(f64::NAN));
+            assert_eq!(serialize_body(Body::Float64(-f64::NAN)), serialize(-f64::NAN));
+        }
+
+        #[test]
+        fn serialize_big_uint() {
+            IntoIter::new([
+                BigUint::from(0u8),
+                BigUint::from(u8::MAX),
+                BigUint::from(u16::MAX),
+                BigUint::from(u16::MAX) + 1u8,
+                BigUint::from(u32::MAX),
+                BigUint::from(u32::MAX) + 1u8,
+                BigUint::from(u64::MAX),
+                BigUint::from(u64::MAX) + 1u8,
+                BigUint::from(u128::MAX),
+                BigUint::from(u128::MAX) + 1u8,
+            ]).for_each(|v| {
+                let mut buf = Vec::new();
+                let mut serializer = Serializer::new(&mut buf);
+                crate::format::big_uint::serialize(&v, &mut serializer).unwrap();
+                assert_eq!(serialize_body(Body::BigUInt(v)), buf);
+            });
+        }
+
+        #[test]
+        fn serialize_big_int() {
+            IntoIter::new([
+                BigInt::from(0),
+                BigInt::from(i8::MIN),
+                BigInt::from(i8::MAX),
+                BigInt::from(i8::MIN) - 1,
+                BigInt::from(i8::MAX) + 1,
+                BigInt::from(i16::MIN),
+                BigInt::from(i16::MAX),
+                BigInt::from(i16::MIN) - 1,
+                BigInt::from(i16::MAX) + 1,
+                BigInt::from(i32::MIN),
+                BigInt::from(i32::MAX),
+                BigInt::from(i32::MIN) - 1,
+                BigInt::from(i32::MAX) + 1,
+                BigInt::from(i64::MIN),
+                BigInt::from(i64::MAX),
+                BigInt::from(i64::MIN) - 1,
+                BigInt::from(i64::MAX) + 1,
+                BigInt::from(i128::MIN),
+                BigInt::from(i128::MAX),
+                BigInt::from(i128::MIN) - 1,
+                BigInt::from(i128::MAX) + 1,
+            ]).for_each(|v| {
+                let mut buf = Vec::new();
+                let mut serializer = Serializer::new(&mut buf);
+                crate::format::big_int::serialize(&v, &mut serializer).unwrap();
+                assert_eq!(serialize_body(Body::BigInt(v)), buf);
+            });
+        }
+
+        #[test]
+        fn serialize_big_decimal() {
+            IntoIter::new([
+                BigDecimal::from(0),
+                BigDecimal::new(BigInt::from(1), 0),
+                BigDecimal::new(BigInt::from(1), -1),
+                BigDecimal::new(BigInt::from(1), 1),
+                BigDecimal::new(BigInt::from(1), 63),
+                BigDecimal::new(BigInt::from(1), 64),
+                BigDecimal::new(BigInt::from(1), -64),
+                BigDecimal::new(BigInt::from(1), -65),
+                BigDecimal::new(BigInt::from(i16::MIN), 0),
+                BigDecimal::new(BigInt::from(i16::MAX), 0),
+            ]).for_each(|v| {
+                let mut buf = Vec::new();
+                let mut serializer = Serializer::new(&mut buf);
+                crate::format::big_decimal::serialize(&v, &mut serializer).unwrap();
+                assert_eq!(serialize_body(Body::BigDecimal(v)), buf);
+            });
+        }
+
+        #[test]
+        fn serialize_string() {
+            IntoIter::new([
+                "test",
+                "テスト",
+            ]).for_each(|v| {
+                assert_eq!(serialize_body(Body::String(v.to_string())), serialize(v));
+            });
+        }
+
+        #[test]
+        fn serialize_binary() {
+            assert_eq!(serialize_body(Body::Binary(vec![0, 1, 2, 3])), serialize(ByteBuf::from(vec![0 , 1, 2, 3])));
+        }
+
+        #[test]
+        fn serialize_array() {
+            assert_eq!(serialize_body(Body::Array(vec![Body::Boolean(true), Body::Boolean(false)])), serialize(vec![true, false]));
+        }
+
+        #[test]
+        fn serialize_tuple() {
+            assert_eq!(serialize_body(Body::Tuple(vec![Body::Unit, Body::Boolean(false)])), serialize(((), false)));
+        }
+
+        #[test]
+        fn serialize_struct() {
+            #[derive(Serialize)]
+            struct Test {
+                a: (),
+                b: bool,
+            }
+            assert_eq!(serialize_body(Body::Struct(vec![Body::Unit, Body::Boolean(false)])), serialize(Test { a: (), b: false }));
+        }
+
+        #[test]
+        fn serialize_map() {
+            assert_eq!(serialize_body(Body::Map({
+                let mut v = BTreeMap::new();
+                v.insert("a".to_string(), Body::Boolean(true));
+                v.insert("b".to_string(), Body::Boolean(false));
+                v.insert("c".to_string(), Body::Boolean(true));
+                v
+            })), serialize({
+                let mut v = BTreeMap::new();
+                v.insert("a".to_string(), Body::Boolean(true));
+                v.insert("b".to_string(), Body::Boolean(false));
+                v.insert("c".to_string(), Body::Boolean(true));
+                v
+            }));
+        }
+
+        #[test]
+        fn serialize_enum() {
+            #[allow(dead_code)]
+            #[derive(Serialize)]
+            enum Test {
+                A,
+                B(bool),
+                C(bool, u8),
+            }
+            assert_eq!(serialize_body(Body::Enum(2, Box::new(Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123)])))), serialize(Test::C(true, 123)));
+        }
+
+        #[test]
+        fn serialize_date() {
+            let v = Date::try_from_ymd(1970, 1, 1).unwrap();
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            crate::format::date::serialize(&v, &mut serializer).unwrap();
+            assert_eq!(serialize_body(Body::Date(v)), buf);
+        }
+
+        #[test]
+        fn serialize_date_time() {
+            let v = OffsetDateTime::unix_epoch();
+            let mut buf = Vec::new();
+            let mut serializer = Serializer::new(&mut buf);
+            crate::format::date_time::serialize(&v, &mut serializer).unwrap();
+            assert_eq!(serialize_body(Body::DateTime(v)), buf);
+        }
     }
 
     mod deserialize {
+        use super::*;
         use std::{array::IntoIter, collections::BTreeMap};
         use bigdecimal::BigDecimal;
         use num_bigint::{BigInt, BigUint};
@@ -315,8 +537,8 @@ mod tests {
 
         #[test]
         fn deserialize_unit() {
-            let buf = [];
-            assert_eq!(Body::deserialize(&Header::Unit, &mut Deserializer::new(&mut buf.as_ref())).unwrap(), Body::Unit);
+            let buf = serialize(());
+            assert_eq!(Body::deserialize(&Header::Unit, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Unit);
         }
 
         #[test]
@@ -329,9 +551,7 @@ mod tests {
             }
 
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                None::<Option<bool>>.serialize(&mut serializer).unwrap();
+                let buf = serialize(None::<Option<bool>>);
                 assert_eq!(Body::deserialize(&Header::Optional(Box::new(Header::Boolean)), &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Optional(None));
             }
         }
@@ -339,16 +559,12 @@ mod tests {
         #[test]
         fn deserialize_bool() {
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                true.serialize(&mut serializer).unwrap();
+                let buf = serialize(true);
                 assert_eq!(Body::deserialize(&Header::Boolean, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Boolean(true));
             }
 
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                false.serialize(&mut serializer).unwrap();
+                let buf = serialize(false);
                 assert_eq!(Body::deserialize(&Header::Boolean, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Boolean(false));
             }
         }
@@ -356,16 +572,12 @@ mod tests {
         #[test]
         fn deserialize_u8() {
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                0u8.serialize(&mut serializer).unwrap();
+                let buf = serialize(0u8);
                 assert_eq!(Body::deserialize(&Header::UInt8, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt8(0));
             }
 
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                u8::MAX.serialize(&mut serializer).unwrap();
+                let buf = serialize(u8::MAX);
                 assert_eq!(Body::deserialize(&Header::UInt8, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt8(u8::MAX));
             }
         }
@@ -373,16 +585,12 @@ mod tests {
         #[test]
         fn deserialize_u16() {
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                0u16.serialize(&mut serializer).unwrap();
+                let buf = serialize(0u16);
                 assert_eq!(Body::deserialize(&Header::UInt16, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt16(0));
             }
 
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                u16::MAX.serialize(&mut serializer).unwrap();
+                let buf = serialize(u16::MAX);
                 assert_eq!(Body::deserialize(&Header::UInt16, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt16(u16::MAX));
             }
         }
@@ -390,16 +598,12 @@ mod tests {
         #[test]
         fn deserialize_u32() {
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                0u32.serialize(&mut serializer).unwrap();
+                let buf = serialize(0u32);
                 assert_eq!(Body::deserialize(&Header::UInt32, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt32(0));
             }
 
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                u32::MAX.serialize(&mut serializer).unwrap();
+                let buf = serialize(u32::MAX);
                 assert_eq!(Body::deserialize(&Header::UInt32, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt32(u32::MAX));
             }
         }
@@ -407,16 +611,12 @@ mod tests {
         #[test]
         fn deserialize_u64() {
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                0u64.serialize(&mut serializer).unwrap();
+                let buf = serialize(0u64);
                 assert_eq!(Body::deserialize(&Header::UInt64, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt64(0));
             }
 
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                u64::MAX.serialize(&mut serializer).unwrap();
+                let buf = serialize(u64::MAX);
                 assert_eq!(Body::deserialize(&Header::UInt64, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt64(u64::MAX));
             }
         }
@@ -424,16 +624,17 @@ mod tests {
         #[test]
         fn deserialize_i8() {
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                i8::MIN.serialize(&mut serializer).unwrap();
+                let buf = serialize(i8::MIN);
                 assert_eq!(Body::deserialize(&Header::Int8, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int8(i8::MIN));
             }
 
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                i8::MAX.serialize(&mut serializer).unwrap();
+                let buf = serialize(0i8);
+                assert_eq!(Body::deserialize(&Header::Int8, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int8(0i8));
+            }
+
+            {
+                let buf = serialize(i8::MAX);
                 assert_eq!(Body::deserialize(&Header::Int8, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int8(i8::MAX));
             }
         }
@@ -441,16 +642,17 @@ mod tests {
         #[test]
         fn deserialize_i16() {
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                i16::MIN.serialize(&mut serializer).unwrap();
+                let buf = serialize(i16::MIN);
                 assert_eq!(Body::deserialize(&Header::Int16, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int16(i16::MIN));
             }
 
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                i16::MAX.serialize(&mut serializer).unwrap();
+                let buf = serialize(0i16);
+                assert_eq!(Body::deserialize(&Header::Int16, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int16(0i16));
+            }
+
+            {
+                let buf = serialize(i16::MAX);
                 assert_eq!(Body::deserialize(&Header::Int16, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int16(i16::MAX));
             }
         }
@@ -458,16 +660,17 @@ mod tests {
         #[test]
         fn deserialize_i32() {
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                i32::MIN.serialize(&mut serializer).unwrap();
+                let buf = serialize(i32::MIN);
                 assert_eq!(Body::deserialize(&Header::Int32, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int32(i32::MIN));
             }
 
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                i32::MAX.serialize(&mut serializer).unwrap();
+                let buf = serialize(0i32);
+                assert_eq!(Body::deserialize(&Header::Int32, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int32(0i32));
+            }
+
+            {
+                let buf = serialize(i32::MAX);
                 assert_eq!(Body::deserialize(&Header::Int32, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int32(i32::MAX));
             }
         }
@@ -475,16 +678,17 @@ mod tests {
         #[test]
         fn deserialize_i64() {
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                i64::MIN.serialize(&mut serializer).unwrap();
+                let buf = serialize(i64::MIN);
                 assert_eq!(Body::deserialize(&Header::Int64, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int64(i64::MIN));
             }
 
             {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                i64::MAX.serialize(&mut serializer).unwrap();
+                let buf = serialize(0i64);
+                assert_eq!(Body::deserialize(&Header::Int64, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int64(0i64));
+            }
+
+            {
+                let buf = serialize(i64::MAX);
                 assert_eq!(Body::deserialize(&Header::Int64, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int64(i64::MAX));
             }
         }
@@ -492,9 +696,7 @@ mod tests {
         #[test]
         fn deserialize_f32() {
             IntoIter::new([-f32::INFINITY, f32::MIN, 0f32, f32::MAX, f32::INFINITY]).for_each(|v| {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                v.serialize(&mut serializer).unwrap();
+                let buf = serialize(v);
                 assert_eq!(Body::deserialize(&Header::Float32, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Float32(v));
             });
         }
@@ -502,9 +704,7 @@ mod tests {
         #[test]
         fn deserialize_f64() {
             IntoIter::new([-f64::INFINITY, f64::MIN, 0f64, f64::MAX, f64::INFINITY]).for_each(|v| {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                v.serialize(&mut serializer).unwrap();
+                let buf = serialize(v);
                 assert_eq!(Body::deserialize(&Header::Float64, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Float64(v));
             });
         }
@@ -523,9 +723,7 @@ mod tests {
                 BigUint::from(u128::MAX),
                 BigUint::from(u128::MAX) + 1u8,
             ]).for_each(|v| {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                Body::BigUInt(v.clone()).serialize(&mut serializer).unwrap();
+                let buf = serialize_body(Body::BigUInt(v.clone()));
                 assert_eq!(Body::deserialize(&Header::BigUInt, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::BigUInt(v));
             });
         }
@@ -555,9 +753,7 @@ mod tests {
                 BigInt::from(i128::MIN) - 1,
                 BigInt::from(i128::MAX) + 1,
             ]).for_each(|v| {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                Body::BigInt(v.clone()).serialize(&mut serializer).unwrap();
+                let buf = serialize_body(Body::BigInt(v.clone()));
                 assert_eq!(Body::deserialize(&Header::BigInt, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::BigInt(v));
             });
         }
@@ -576,62 +772,56 @@ mod tests {
                 BigDecimal::new(BigInt::from(i16::MIN), 0),
                 BigDecimal::new(BigInt::from(i16::MAX), 0),
             ]).for_each(|v| {
-                let mut buf = Vec::new();
-                let mut serializer = Serializer::new(&mut buf);
-                Body::BigDecimal(v.clone()).serialize(&mut serializer).unwrap();
+                let buf = serialize_body(Body::BigDecimal(v.clone()));
                 assert_eq!(Body::deserialize(&Header::BigDecimal, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::BigDecimal(v));
             });
         }
 
         #[test]
         fn deserialize_string() {
-            let mut buf = Vec::new();
-            let mut serializer = Serializer::new(&mut buf);
-            let body = Body::String("test".to_string());
-            body.serialize(&mut serializer).unwrap();
-            assert_eq!(Body::deserialize(&Header::String, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
+            {
+                let body = Body::String("test".to_string());
+                let buf = serialize_body(body.clone());
+                assert_eq!(Body::deserialize(&Header::String, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
+            }
+
+            {
+                let body = Body::String("テスト".to_string());
+                let buf = serialize_body(body.clone());
+                assert_eq!(Body::deserialize(&Header::String, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
+            }
         }
 
         #[test]
         fn deserialize_binary() {
-            let mut buf = Vec::new();
-            let mut serializer = Serializer::new(&mut buf);
             let body = Body::Binary(vec![0, 1, 2, 3]);
-            body.serialize(&mut serializer).unwrap();
+            let buf = serialize_body(body.clone());
             assert_eq!(Body::deserialize(&Header::Binary, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
         }
 
         #[test]
         fn deserialize_array() {
-            let mut buf = Vec::new();
-            let mut serializer = Serializer::new(&mut buf);
             let body = Body::Array(vec![Body::Boolean(true), Body::Boolean(false), Body::Boolean(true)]);
-            body.serialize(&mut serializer).unwrap();
+            let buf = serialize_body(body.clone());
             assert_eq!(Body::deserialize(&Header::Array(Box::new(Header::Boolean)), &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
         }
 
         #[test]
         fn deserialize_tuple() {
-            let mut buf = Vec::new();
-            let mut serializer = Serializer::new(&mut buf);
             let body = Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123), Body::String("test".to_string())]);
-            body.serialize(&mut serializer).unwrap();
+            let buf = serialize_body(body.clone());
             assert_eq!(Body::deserialize(&Header::Tuple(vec![Header::Boolean, Header::UInt8, Header::String]), &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
         }
 
         #[test]
         fn deserialize_struct() {
-            let mut buf = Vec::new();
-            let mut serializer = Serializer::new(&mut buf);
             let body = Body::Struct(vec![Body::Boolean(true), Body::UInt8(123), Body::String("test".to_string())]);
-            body.serialize(&mut serializer).unwrap();
+            let buf = serialize_body(body.clone());
             assert_eq!(Body::deserialize(&Header::Struct(vec![Header::Boolean, Header::UInt8, Header::String]), &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
         }
 
         #[test]
         fn deserialize_map() {
-            let mut buf = Vec::new();
-            let mut serializer = Serializer::new(&mut buf);
             let body = Body::Map({
                 let mut buf = BTreeMap::new();
                 buf.insert("a".to_string(), Body::Boolean(true));
@@ -639,34 +829,28 @@ mod tests {
                 buf.insert("c".to_string(), Body::Boolean(true));
                 buf
             });
-            body.serialize(&mut serializer).unwrap();
+            let buf = serialize_body(body.clone());
             assert_eq!(Body::deserialize(&Header::Map(Box::new(Header::Boolean)), &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
         }
 
         #[test]
         fn deserialize_enum() {
-            let mut buf = Vec::new();
-            let mut serializer = Serializer::new(&mut buf);
             let body = Body::Enum(1, Box::new(Body::UInt8(123)));
-            body.serialize(&mut serializer).unwrap();
+            let buf = serialize_body(body.clone());
             assert_eq!(Body::deserialize(&Header::Enum(vec![Header::Boolean, Header::UInt8]), &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
         }
 
         #[test]
         fn deserialize_date() {
-            let mut buf = Vec::new();
-            let mut serializer = Serializer::new(&mut buf);
             let body = Body::Date(Date::try_from_ymd(1970, 1, 1).unwrap());
-            body.serialize(&mut serializer).unwrap();
+            let buf = serialize_body(body.clone());
             assert_eq!(Body::deserialize(&Header::Date, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
         }
 
         #[test]
         fn deserialize_date_time() {
-            let mut buf = Vec::new();
-            let mut serializer = Serializer::new(&mut buf);
             let body = Body::DateTime(OffsetDateTime::unix_epoch());
-            body.serialize(&mut serializer).unwrap();
+            let buf = serialize_body(body.clone());
             assert_eq!(Body::deserialize(&Header::DateTime, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
         }
     }
