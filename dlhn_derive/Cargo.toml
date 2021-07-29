@@ -1,5 +1,5 @@
 [package]
-name = "dullahan_serde_derive"
+name = "dlhn_derive"
 version = "0.1.0"
 authors = ["Shogo Otake <shogo.otake@gmail.com>"]
 edition = "2018"

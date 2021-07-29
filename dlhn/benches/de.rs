@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use dullahan_serde::{de::Deserializer, ser::Serializer};
+use dlhn::{de::Deserializer, ser::Serializer};
 use iai::main;
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;

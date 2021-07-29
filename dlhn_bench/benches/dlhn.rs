@@ -1,5 +1,5 @@
-use dullahan_bench::Test;
-use dullahan_serde::{de::Deserializer, ser::Serializer};
+use dlhn_bench::Test;
+use dlhn::{de::Deserializer, ser::Serializer};
 use iai::main;
 use serde::{Deserialize, Serialize};
 

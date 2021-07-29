@@ -2,18 +2,18 @@ use std::{fmt::{self, Display}, io::Write};
 use serde::{serde_if_integer128, Serialize, de, ser::{self, Impossible}};
 use crate::{leb128::Leb128, zigzag::ZigZag};
 
-trait SerializeDullahan<W: Write> {
-    fn serialize_dullahan(self, writer: W) -> std::io::Result<()>;
+trait SerializeDlhn<W: Write> {
+    fn serialize_dlhn(self, writer: W) -> std::io::Result<()>;
 }
 
-impl<W: Write> SerializeDullahan<W> for () {
-    fn serialize_dullahan(self, _writer: W) -> std::io::Result<()> {
+impl<W: Write> SerializeDlhn<W> for () {
+    fn serialize_dlhn(self, _writer: W) -> std::io::Result<()> {
         Ok(())
     }
 }
 
-impl<W: Write> SerializeDullahan<W> for bool {
-    fn serialize_dullahan(self, mut writer: W) -> std::io::Result<()> {
+impl<W: Write> SerializeDlhn<W> for bool {
+    fn serialize_dlhn(self, mut writer: W) -> std::io::Result<()> {
         if self {
             writer.write_all(&[1])
         } else {
@@ -22,86 +22,86 @@ impl<W: Write> SerializeDullahan<W> for bool {
     }
 }
 
-impl<W: Write> SerializeDullahan<W> for i8 {
-    fn serialize_dullahan(self, mut writer: W) -> std::io::Result<()> {
+impl<W: Write> SerializeDlhn<W> for i8 {
+    fn serialize_dlhn(self, mut writer: W) -> std::io::Result<()> {
         writer.write_all(&self.to_le_bytes())
     }
 }
 
-impl<W: Write> SerializeDullahan<W> for i16 {
-    fn serialize_dullahan(self, mut writer: W) -> std::io::Result<()> {
+impl<W: Write> SerializeDlhn<W> for i16 {
+    fn serialize_dlhn(self, mut writer: W) -> std::io::Result<()> {
         let mut buf = [0u8; u16::LEB128_BUF_SIZE];
         let size = self.encode_zigzag().encode_leb128(&mut buf);
         writer.write_all(&buf[..size])
     }
 }
 
-impl<W: Write> SerializeDullahan<W> for i32 {
-    fn serialize_dullahan(self, mut writer: W) -> std::io::Result<()> {
+impl<W: Write> SerializeDlhn<W> for i32 {
+    fn serialize_dlhn(self, mut writer: W) -> std::io::Result<()> {
         let mut buf = [0u8; u32::LEB128_BUF_SIZE];
         let size = self.encode_zigzag().encode_leb128(&mut buf);
         writer.write_all(&buf[..size])
     }
 }
 
-impl<W: Write> SerializeDullahan<W> for i64 {
-    fn serialize_dullahan(self, mut writer: W) -> std::io::Result<()> {
+impl<W: Write> SerializeDlhn<W> for i64 {
+    fn serialize_dlhn(self, mut writer: W) -> std::io::Result<()> {
         let mut buf = [0u8; u64::LEB128_BUF_SIZE];
         let size = self.encode_zigzag().encode_leb128(&mut buf);
         writer.write_all(&buf[..size])
     }
 }
 
-impl<W: Write> SerializeDullahan<W> for u8 {
-    fn serialize_dullahan(self, mut writer: W) -> std::io::Result<()> {
+impl<W: Write> SerializeDlhn<W> for u8 {
+    fn serialize_dlhn(self, mut writer: W) -> std::io::Result<()> {
         writer.write_all(&self.to_le_bytes())
     }
 }
 
-impl<W: Write> SerializeDullahan<W> for u16 {
-    fn serialize_dullahan(self, mut writer: W) -> std::io::Result<()> {
+impl<W: Write> SerializeDlhn<W> for u16 {
+    fn serialize_dlhn(self, mut writer: W) -> std::io::Result<()> {
         let mut buf = [0u8; u16::LEB128_BUF_SIZE];
         let size = self.encode_leb128(&mut buf);
         writer.write_all(&buf[..size])
     }
 }
 
-impl<W: Write> SerializeDullahan<W> for u32 {
-    fn serialize_dullahan(self, mut writer: W) -> std::io::Result<()> {
+impl<W: Write> SerializeDlhn<W> for u32 {
+    fn serialize_dlhn(self, mut writer: W) -> std::io::Result<()> {
         let mut buf = [0u8; u32::LEB128_BUF_SIZE];
         let size = self.encode_leb128(&mut buf);
         writer.write_all(&buf[..size])
     }
 }
 
-impl<W: Write> SerializeDullahan<W> for u64 {
-    fn serialize_dullahan(self, mut writer: W) -> std::io::Result<()> {
+impl<W: Write> SerializeDlhn<W> for u64 {
+    fn serialize_dlhn(self, mut writer: W) -> std::io::Result<()> {
         let mut buf = [0u8; u64::LEB128_BUF_SIZE];
         let size = self.encode_leb128(&mut buf);
         writer.write_all(&buf[..size])
     }
 }
 
-impl<W: Write> SerializeDullahan<W> for f32 {
-    fn serialize_dullahan(self, mut writer: W) -> std::io::Result<()> {
+impl<W: Write> SerializeDlhn<W> for f32 {
+    fn serialize_dlhn(self, mut writer: W) -> std::io::Result<()> {
         writer.write_all(&self.to_le_bytes())
     }
 }
 
-impl<W: Write> SerializeDullahan<W> for f64 {
-    fn serialize_dullahan(self, mut writer: W) -> std::io::Result<()> {
+impl<W: Write> SerializeDlhn<W> for f64 {
+    fn serialize_dlhn(self, mut writer: W) -> std::io::Result<()> {
         writer.write_all(&self.to_le_bytes())
     }
 }
 
-impl<W: Write> SerializeDullahan<W> for char {
-    fn serialize_dullahan(self, writer: W) -> std::io::Result<()> {
-        self.to_string().as_str().serialize_dullahan(writer)
+impl<W: Write> SerializeDlhn<W> for char {
+    fn serialize_dlhn(self, writer: W) -> std::io::Result<()> {
+        self.to_string().as_str().serialize_dlhn(writer)
     }
 }
 
-impl<W: Write> SerializeDullahan<W> for &str {
-    fn serialize_dullahan(self, mut writer: W) -> std::io::Result<()> {
+impl<W: Write> SerializeDlhn<W> for &str {
+    fn serialize_dlhn(self, mut writer: W) -> std::io::Result<()> {
         let bytes = self.as_bytes();
         let mut buf = [0u8; usize::LEB128_BUF_SIZE];
         let size = bytes.len().encode_leb128(&mut buf);
@@ -110,8 +110,8 @@ impl<W: Write> SerializeDullahan<W> for &str {
     }
 }
 
-impl<W: Write> SerializeDullahan<W> for &[u8] {
-    fn serialize_dullahan(self, mut writer: W) -> std::io::Result<()> {
+impl<W: Write> SerializeDlhn<W> for &[u8] {
+    fn serialize_dlhn(self, mut writer: W) -> std::io::Result<()> {
         let mut buf = [0u8; usize::LEB128_BUF_SIZE];
         let size = self.len().encode_leb128(&mut buf);
         writer.write_all(&buf[..size])?;
@@ -119,11 +119,11 @@ impl<W: Write> SerializeDullahan<W> for &[u8] {
     }
 }
 
-impl<W: Write, T: SerializeDullahan<W>> SerializeDullahan<W> for Option<T> {
-    fn serialize_dullahan(self, mut writer: W) -> std::io::Result<()> {
+impl<W: Write, T: SerializeDlhn<W>> SerializeDlhn<W> for Option<T> {
+    fn serialize_dlhn(self, mut writer: W) -> std::io::Result<()> {
         if let Some(v) = self {
             writer.write_all(&[1u8])?;
-            v.serialize_dullahan(writer)
+            v.serialize_dlhn(writer)
         } else {
             writer.write_all(&[0u8])
         }
@@ -187,23 +187,23 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     type SerializeStructVariant = Self;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
-        v.serialize_dullahan(&mut self.output).or(Err(Error::Write))
+        v.serialize_dlhn(&mut self.output).or(Err(Error::Write))
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
-        v.serialize_dullahan(&mut self.output).or(Err(Error::Write))
+        v.serialize_dlhn(&mut self.output).or(Err(Error::Write))
     }
 
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
-        v.serialize_dullahan(&mut self.output).or(Err(Error::Write))
+        v.serialize_dlhn(&mut self.output).or(Err(Error::Write))
     }
 
     fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
-        v.serialize_dullahan(&mut self.output).or(Err(Error::Write))
+        v.serialize_dlhn(&mut self.output).or(Err(Error::Write))
     }
 
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
-        v.serialize_dullahan(&mut self.output).or(Err(Error::Write))
+        v.serialize_dlhn(&mut self.output).or(Err(Error::Write))
     }
 
     serde_if_integer128! {
@@ -213,19 +213,19 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
-        v.serialize_dullahan(&mut self.output).or(Err(Error::Write))
+        v.serialize_dlhn(&mut self.output).or(Err(Error::Write))
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
-        v.serialize_dullahan(&mut self.output).or(Err(Error::Write))
+        v.serialize_dlhn(&mut self.output).or(Err(Error::Write))
     }
 
     fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
-        v.serialize_dullahan(&mut self.output).or(Err(Error::Write))
+        v.serialize_dlhn(&mut self.output).or(Err(Error::Write))
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-        v.serialize_dullahan(&mut self.output).or(Err(Error::Write))
+        v.serialize_dlhn(&mut self.output).or(Err(Error::Write))
     }
 
     serde_if_integer128! {
@@ -235,23 +235,23 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
-        v.serialize_dullahan(&mut self.output).or(Err(Error::Write))
+        v.serialize_dlhn(&mut self.output).or(Err(Error::Write))
     }
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
-        v.serialize_dullahan(&mut self.output).or(Err(Error::Write))
+        v.serialize_dlhn(&mut self.output).or(Err(Error::Write))
     }
 
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
-        v.serialize_dullahan(&mut self.output).or(Err(Error::Write))
+        v.serialize_dlhn(&mut self.output).or(Err(Error::Write))
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
-        v.serialize_dullahan(&mut self.output).or(Err(Error::Write))
+        v.serialize_dlhn(&mut self.output).or(Err(Error::Write))
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        v.serialize_dullahan(&mut self.output).or(Err(Error::Write))
+        v.serialize_dlhn(&mut self.output).or(Err(Error::Write))
     }
 
     fn serialize_none(self) -> Result<Self::Ok, Self::Error> {

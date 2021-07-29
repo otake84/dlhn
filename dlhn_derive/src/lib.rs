@@ -36,7 +36,7 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
             let fields_count = types.len().encode_leb128_vec().iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>();
 
             let gen = quote! {
-                impl dullahan_serde::header::ser::SerializeHeader for #type_name {
+                impl dlhn::header::ser::SerializeHeader for #type_name {
                     fn serialize_header<W: std::io::Write>(writer: &mut W) -> std::io::Result<()> {
                         writer.write_all(&[
                             #STRUCT_CODE,
@@ -107,7 +107,7 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
             let variants_count = outers.len().encode_leb128_vec().iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>();
 
             let gen = quote! {
-                impl dullahan_serde::header::ser::SerializeHeader for #type_name {
+                impl dlhn::header::ser::SerializeHeader for #type_name {
                     fn serialize_header<W: std::io::Write>(writer: &mut W) -> std::io::Result<()> {
                         writer.write_all(&[
                             #ENUM_CODE,

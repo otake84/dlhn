@@ -1,11 +1,11 @@
-use dullahan_serde::ser::Serializer;
+use dlhn::ser::Serializer;
 use iai::main;
 use serde::{Serialize, Deserialize};
 use time::OffsetDateTime;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct Test {
-    #[serde(with = "dullahan_serde::format::date_time")]
+    #[serde(with = "dlhn::format::date_time")]
     date_time: OffsetDateTime,
 }
 

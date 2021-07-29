@@ -1,6 +1,6 @@
 use std::io::Cursor;
-use dullahan_serde::header::{Header, ser::SerializeHeader, de::DeserializeHeader};
-use dullahan_serde_derive::*;
+use dlhn::header::{Header, ser::SerializeHeader, de::DeserializeHeader};
+use dlhn_derive::*;
 
 #[test]
 fn derive_serialize_header() {

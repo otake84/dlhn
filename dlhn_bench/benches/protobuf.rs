@@ -1,8 +1,7 @@
 use std::collections::BTreeMap;
-
 use iai::main;
 use prost::Message;
-use dullahan_bench::ProtoTest;
+use dlhn_bench::ProtoTest;
 
 fn serialize_protobuf() {
     let mut buf = Vec::new();

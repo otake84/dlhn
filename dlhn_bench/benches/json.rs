@@ -1,4 +1,4 @@
-use dullahan_bench::Test;
+use dlhn_bench::Test;
 use iai::main;
 
 fn serialize_json() {

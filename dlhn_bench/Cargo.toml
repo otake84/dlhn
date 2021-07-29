@@ -1,5 +1,5 @@
 [package]
-name = "dullahan_bench"
+name = "dlhn_bench"
 version = "0.1.0"
 authors = ["Shogo Otake <shogo.otake@gmail.com>"]
 edition = "2018"
@@ -8,8 +8,8 @@ edition = "2018"
 
 [dependencies]
 serde = "1.0.126"
-dullahan_serde = { path = "../dullahan_serde" }
-dullahan_serde_derive = { path = "../dullahan_serde_derive" }
+dlhn = { path = "../dlhn" }
+dlhn_derive = { path = "../dlhn_derive" }
 serde_json = "1.0.64"
 rmp-serde = "0.15.5"
 prost = "0.8.0"
@@ -20,7 +20,7 @@ iai = "0.1.1"
 prost-build = "0.8.0"
 
 [[bench]]
-name = "dullahan"
+name = "dlhn"
 harness = false
 
 [[bench]]

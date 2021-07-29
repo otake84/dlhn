@@ -1,4 +1,4 @@
-use dullahan_bench::Test;
+use dlhn_bench::Test;
 use rmp_serde::{Deserializer, Serializer};
 use serde::{Deserialize, Serialize};
 use iai::main;

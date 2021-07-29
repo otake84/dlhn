@@ -1,11 +1,11 @@
-use dullahan_serde::ser::Serializer;
+use dlhn::ser::Serializer;
 use iai::main;
 use time::Date;
 use serde::Serialize;
 
 #[derive(Serialize)]
 struct Test {
-    #[serde(with = "dullahan_serde::format::date")]
+    #[serde(with = "dlhn::format::date")]
     date: Date,
 }
 

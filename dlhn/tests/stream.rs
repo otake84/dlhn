@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use dullahan_serde::{de::Deserializer, ser::Serializer};
+use dlhn::{de::Deserializer, ser::Serializer};
 
 #[test]
 fn seriaize() {
