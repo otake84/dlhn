@@ -1,0 +1,41 @@
+[package]
+name = "dlhn"
+version = "0.1.0"
+authors = ["Shogo Otake <shogo.otake@gmail.com>"]
+edition = "2018"
+resolver = "2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = "1.0.126"
+time = "0.2.26"
+num-traits = "0.2.14"
+num-bigint = "0.3.2"
+bigdecimal = "0.2.0"
+serde_bytes = "0.11.5"
+dlhn_derive = { path = "../dlhn_derive" }
+
+[dev-dependencies]
+serde = { version = "1.0.125", features = ["derive"] }
+iai = "0.1.1"
+
+[[bench]]
+name = "ser"
+harness = false
+
+[[bench]]
+name = "de"
+harness = false
+
+[[bench]]
+name = "date"
+harness = false
+
+[[bench]]
+name = "date_time"
+harness = false
+
+[[bench]]
+name = "derive_serialize_header"
+harness = false
