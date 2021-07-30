@@ -9,7 +9,7 @@ resolver = "2"
 
 [dependencies]
 serde = "1.0.126"
-time = "0.2.26"
+time = "0.3.0"
 num-traits = "0.2.14"
 num-bigint = "0.3.2"
 bigdecimal = "0.2.0"

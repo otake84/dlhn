@@ -13,7 +13,7 @@ fn serialize() -> Vec<u8> {
     let mut buf = Vec::new();
     let mut serializer = Serializer::new(&mut buf);
     let body = Test {
-        date_time: OffsetDateTime::unix_epoch(),
+        date_time: OffsetDateTime::UNIX_EPOCH,
     };
     body.serialize(&mut serializer).unwrap();
     buf

@@ -1,5 +1,5 @@
 use serde::{Deserializer, Serializer, de::{self, SeqAccess, Unexpected, Visitor}, ser::SerializeSeq};
-use time::{NumericalDuration, OffsetDateTime};
+use time::{OffsetDateTime, ext::NumericalDuration};
 use crate::de::Error;
 
 struct OffsetDateTimeVisitor;
@@ -16,7 +16,7 @@ impl<'de> Visitor<'de> for OffsetDateTimeVisitor {
             A: SeqAccess<'de>, {
                 let unix_timestamp = seq.next_element::<i64>()?.ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?;
                 let nanosecond = seq.next_element::<u32>()?.ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?;
-                Ok(OffsetDateTime::from_unix_timestamp(unix_timestamp) + nanosecond.nanoseconds())
+                Ok(OffsetDateTime::from_unix_timestamp(unix_timestamp).or(Err(de::Error::invalid_value(Unexpected::Seq, &Error::Read)))? + (nanosecond as i64).nanoseconds())
     }
 }
 
@@ -35,7 +35,7 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<OffsetD
 mod tests {
     use std::array::IntoIter;
     use serde::{Serialize, Deserialize};
-    use time::{NumericalDuration, OffsetDateTime};
+    use time::{OffsetDateTime, ext::NumericalDuration};
     use crate::{de::Deserializer, leb128::Leb128, ser::Serializer, zigzag::ZigZag};
 
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -51,17 +51,17 @@ mod tests {
         }
 
         IntoIter::new([
-            OffsetDateTime::unix_epoch(),
-            OffsetDateTime::unix_epoch() + 1.nanoseconds(),
-            OffsetDateTime::unix_epoch() + 999999999.nanoseconds(),
-            OffsetDateTime::unix_epoch() + 1000000000.nanoseconds(),
-            OffsetDateTime::unix_epoch() - 100000.days(),
-            OffsetDateTime::unix_epoch() + 100000.days(),
-            OffsetDateTime::unix_epoch() - 100000.days() - 999999999.nanoseconds(),
-            OffsetDateTime::unix_epoch() + 100000.days() + 1.nanoseconds(),
+            OffsetDateTime::UNIX_EPOCH,
+            OffsetDateTime::UNIX_EPOCH + 1.nanoseconds(),
+            OffsetDateTime::UNIX_EPOCH + 999999999.nanoseconds(),
+            OffsetDateTime::UNIX_EPOCH + 1000000000.nanoseconds(),
+            OffsetDateTime::UNIX_EPOCH - 100000.days(),
+            OffsetDateTime::UNIX_EPOCH + 100000.days(),
+            OffsetDateTime::UNIX_EPOCH - 100000.days() - 999999999.nanoseconds(),
+            OffsetDateTime::UNIX_EPOCH + 100000.days() + 1.nanoseconds(),
         ]).for_each(assert_date_time);
 
-        assert_eq!(encode_date_time(OffsetDateTime::unix_epoch() + 1000000000.nanoseconds()), encode_date_time(OffsetDateTime::unix_epoch() + 1.seconds()));
+        assert_eq!(encode_date_time(OffsetDateTime::UNIX_EPOCH + 1000000000.nanoseconds()), encode_date_time(OffsetDateTime::UNIX_EPOCH + 1.seconds()));
     }
 
     #[test]
@@ -75,14 +75,14 @@ mod tests {
         }
 
         IntoIter::new([
-            OffsetDateTime::unix_epoch(),
-            OffsetDateTime::unix_epoch() + 1.nanoseconds(),
-            OffsetDateTime::unix_epoch() + 999999999.nanoseconds(),
-            OffsetDateTime::unix_epoch() + 1000000000.nanoseconds(),
-            OffsetDateTime::unix_epoch() - 100000.days(),
-            OffsetDateTime::unix_epoch() + 100000.days(),
-            OffsetDateTime::unix_epoch() - 100000.days() - 999999999.nanoseconds(),
-            OffsetDateTime::unix_epoch() + 100000.days() + 1.nanoseconds(),
+            OffsetDateTime::UNIX_EPOCH,
+            OffsetDateTime::UNIX_EPOCH + 1.nanoseconds(),
+            OffsetDateTime::UNIX_EPOCH + 999999999.nanoseconds(),
+            OffsetDateTime::UNIX_EPOCH + 1000000000.nanoseconds(),
+            OffsetDateTime::UNIX_EPOCH - 100000.days(),
+            OffsetDateTime::UNIX_EPOCH + 100000.days(),
+            OffsetDateTime::UNIX_EPOCH - 100000.days() - 999999999.nanoseconds(),
+            OffsetDateTime::UNIX_EPOCH + 100000.days() + 1.nanoseconds(),
         ]).for_each(assert_date_time);
     }
 
