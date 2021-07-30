@@ -298,7 +298,7 @@ mod tests {
         use bigdecimal::BigDecimal;
         use num_bigint::{BigInt, BigUint};
         use serde_bytes::ByteBuf;
-        use time::{Date, OffsetDateTime};
+        use time::{Date, OffsetDateTime, Month};
         use super::*;
 
         #[test]
@@ -509,7 +509,7 @@ mod tests {
 
         #[test]
         fn serialize_date() {
-            let v = Date::try_from_ymd(1970, 1, 1).unwrap();
+            let v = Date::from_calendar_date(1970, Month::January, 1).unwrap();
             let mut buf = Vec::new();
             let mut serializer = Serializer::new(&mut buf);
             crate::format::date::serialize(&v, &mut serializer).unwrap();
@@ -518,7 +518,7 @@ mod tests {
 
         #[test]
         fn serialize_date_time() {
-            let v = OffsetDateTime::unix_epoch();
+            let v = OffsetDateTime::UNIX_EPOCH;
             let mut buf = Vec::new();
             let mut serializer = Serializer::new(&mut buf);
             crate::format::date_time::serialize(&v, &mut serializer).unwrap();
@@ -532,7 +532,7 @@ mod tests {
         use bigdecimal::BigDecimal;
         use num_bigint::{BigInt, BigUint};
         use serde::Serialize;
-        use time::{Date, OffsetDateTime};
+        use time::{Date, Month, OffsetDateTime};
         use crate::{body::Body, de::Deserializer, header::Header, ser::Serializer};
 
         #[test]
@@ -842,14 +842,14 @@ mod tests {
 
         #[test]
         fn deserialize_date() {
-            let body = Body::Date(Date::try_from_ymd(1970, 1, 1).unwrap());
+            let body = Body::Date(Date::from_calendar_date(1970, Month::January, 1).unwrap());
             let buf = serialize_body(body.clone());
             assert_eq!(Body::deserialize(&Header::Date, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
         }
 
         #[test]
         fn deserialize_date_time() {
-            let body = Body::DateTime(OffsetDateTime::unix_epoch());
+            let body = Body::DateTime(OffsetDateTime::UNIX_EPOCH);
             let buf = serialize_body(body.clone());
             assert_eq!(Body::deserialize(&Header::DateTime, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
         }
@@ -859,7 +859,7 @@ mod tests {
         use std::collections::BTreeMap;
         use bigdecimal::BigDecimal;
         use num_bigint::{BigInt, BigUint};
-        use time::{Date, OffsetDateTime};
+        use time::{Date, Month, OffsetDateTime};
         use crate::header::Header;
         use super::*;
 
@@ -1059,14 +1059,14 @@ mod tests {
         #[test]
         fn validate_date() {
             let header = Header::Date;
-            assert!(Body::Date(Date::try_from_ymd(1970, 1, 1).unwrap()).validate(&header));
+            assert!(Body::Date(Date::from_calendar_date(1970, Month::January, 1).unwrap()).validate(&header));
             assert!(!Body::Unit.validate(&header));
         }
 
         #[test]
         fn validate_date_time() {
             let header = Header::DateTime;
-            assert!(Body::DateTime(OffsetDateTime::unix_epoch()).validate(&header));
+            assert!(Body::DateTime(OffsetDateTime::UNIX_EPOCH).validate(&header));
             assert!(!Body::Unit.validate(&header));
         }
     }
