@@ -7,8 +7,9 @@ use quote::{ToTokens, quote};
 use syn::{Attribute, DeriveInput, Meta, NestedMeta, parse_macro_input};
 use crate::leb128::Leb128;
 
-const STRUCT_CODE: u8 = 20;
-const ENUM_CODE: u8 = 22;
+const TUPLE_CODE: u8 = 21;
+const STRUCT_CODE: u8 = 22;
+const ENUM_CODE: u8 = 24;
 const SERDE_ATTRIBUTE: &str = "serde";
 const SKIP_ATTRIBUTE: &str = "skip";
 const SKIP_SERIALIZING_ATTRIBUTE: &str = "skip_serializing";
@@ -71,7 +72,7 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                         if variant.fields.len() > 1 {
                             match &variant.fields {
                                 syn::Fields::Named(fields) => {
-                                    let mut buf = vec![20];
+                                    let mut buf = vec![STRUCT_CODE];
                                     buf.append(&mut variant.fields.len().encode_leb128_vec());
                                     outers.push(proc_macro2::TokenStream::from_str(format!("{:?}", buf).as_str()).unwrap());
 
@@ -82,7 +83,7 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                                     inners.push(field_types);
                                 }
                                 syn::Fields::Unnamed(fields) => {
-                                    let mut buf = vec![19];
+                                    let mut buf = vec![TUPLE_CODE];
                                     buf.append(&mut variant.fields.len().encode_leb128_vec());
                                     outers.push(proc_macro2::TokenStream::from_str(format!("{:?}", buf).as_str()).unwrap());
 

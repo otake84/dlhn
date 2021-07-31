@@ -52,6 +52,12 @@ impl SerializeHeader for u64 {
     }
 }
 
+impl SerializeHeader for u128 {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::UINT128_CODE])
+    }
+}
+
 impl SerializeHeader for i8 {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::INT8_CODE])
@@ -73,6 +79,12 @@ impl SerializeHeader for i32 {
 impl SerializeHeader for i64 {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::INT64_CODE])
+    }
+}
+
+impl SerializeHeader for i128 {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::INT128_CODE])
     }
 }
 
@@ -263,80 +275,94 @@ mod tests {
     }
 
     #[test]
+    fn serialize_header_u128() {
+        let mut buf = Vec::new();
+        u128::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [7]);
+    }
+
+    #[test]
     fn serialize_header_i8() {
         let mut buf = Vec::new();
         i8::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [7]);
+        assert_eq!(buf, [8]);
     }
 
     #[test]
     fn serialize_header_i16() {
         let mut buf = Vec::new();
         i16::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [8]);
+        assert_eq!(buf, [9]);
     }
 
     #[test]
     fn serialize_header_i32() {
         let mut buf = Vec::new();
         i32::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [9]);
+        assert_eq!(buf, [10]);
     }
 
     #[test]
     fn serialize_header_i64() {
         let mut buf = Vec::new();
         i64::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [10]);
+        assert_eq!(buf, [11]);
+    }
+
+    #[test]
+    fn serialize_header_i128() {
+        let mut buf = Vec::new();
+        i128::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [12]);
     }
 
     #[test]
     fn serialize_header_f32() {
         let mut buf = Vec::new();
         f32::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [11]);
+        assert_eq!(buf, [13]);
     }
 
     #[test]
     fn serialize_header_f64() {
         let mut buf = Vec::new();
         f64::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [12]);
+        assert_eq!(buf, [14]);
     }
 
     #[test]
     fn serialize_header_big_uint() {
         let mut buf = Vec::new();
         BigUint::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [13]);
+        assert_eq!(buf, [15]);
     }
 
     #[test]
     fn serialize_header_big_int() {
         let mut buf = Vec::new();
         BigInt::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [14]);
+        assert_eq!(buf, [16]);
     }
 
     #[test]
     fn serialize_header_big_decimal() {
         let mut buf = Vec::new();
         BigDecimal::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [15]);
+        assert_eq!(buf, [17]);
     }
 
     #[test]
     fn serialize_header_str() {
         let mut buf = Vec::new();
         <&str>::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [16]);
+        assert_eq!(buf, [18]);
     }
 
     #[test]
     fn serialize_header_string() {
         let mut buf = Vec::new();
         String::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [16]);
+        assert_eq!(buf, [18]);
     }
 
     #[test]
@@ -344,13 +370,13 @@ mod tests {
         {
             let mut buf = Vec::new();
             Bytes::serialize_header(&mut buf).unwrap();
-            assert_eq!(buf, [17]);
+            assert_eq!(buf, [19]);
         }
 
         {
             let mut buf = Vec::new();
             ByteBuf::serialize_header(&mut buf).unwrap();
-            assert_eq!(buf, [17]);
+            assert_eq!(buf, [19]);
         }
     }
 
@@ -358,14 +384,14 @@ mod tests {
     fn serialize_header_vec() {
         let mut buf = Vec::new();
         Vec::<bool>::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [18, 2]);
+        assert_eq!(buf, [20, 2]);
     }
 
     #[test]
     fn serialize_header_tuple() {
         let mut buf = Vec::new();
         <((), Option<()>, bool, u8)>::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [19, 4, 0, 1, 0, 2, 3]);
+        assert_eq!(buf, [21, 4, 0, 1, 0, 2, 3]);
     }
 
     #[test]
@@ -373,13 +399,13 @@ mod tests {
         {
             let mut buf = Vec::new();
             BTreeMap::<String, bool>::serialize_header(&mut buf).unwrap();
-            assert_eq!(buf, [21, 2]);
+            assert_eq!(buf, [23, 2]);
         }
 
         {
             let mut buf = Vec::new();
             HashMap::<String, bool>::serialize_header(&mut buf).unwrap();
-            assert_eq!(buf, [21, 2]);
+            assert_eq!(buf, [23, 2]);
         }
     }
 
@@ -387,13 +413,13 @@ mod tests {
     fn serialize_header_date() {
         let mut buf = Vec::new();
         Date::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [23]);
+        assert_eq!(buf, [25]);
     }
 
     #[test]
     fn serialize_header_date_time() {
         let mut buf = Vec::new();
         OffsetDateTime::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [24]);
+        assert_eq!(buf, [26]);
     }
 }

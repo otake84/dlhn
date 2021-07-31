@@ -15,10 +15,12 @@ pub enum Body {
     UInt16(u16),
     UInt32(u32),
     UInt64(u64),
+    UInt128(u128),
     Int8(i8),
     Int16(i16),
     Int32(i32),
     Int64(i64),
+    Int128(i128),
     Float32(f32),
     Float64(f64),
     BigUInt(BigUint),
@@ -58,10 +60,12 @@ impl Serialize for Body {
             Body::UInt16(v) => serializer.serialize_u16(*v),
             Body::UInt32(v) => serializer.serialize_u32(*v),
             Body::UInt64(v) => serializer.serialize_u64(*v),
+            Body::UInt128(v) => serializer.serialize_u128(*v),
             Body::Int8(v) => serializer.serialize_i8(*v),
             Body::Int16(v) => serializer.serialize_i16(*v),
             Body::Int32(v) => serializer.serialize_i32(*v),
             Body::Int64(v) => serializer.serialize_i64(*v),
+            Body::Int128(v) => serializer.serialize_i128(*v),
             Body::Float32(v) => serializer.serialize_f32(*v),
             Body::Float64(v) => serializer.serialize_f64(*v),
             Body::BigUInt(v) => format::big_uint::serialize(v, serializer),
@@ -152,10 +156,12 @@ impl Body {
             Header::UInt16 => u16::deserialize(deserializer).map(Self::UInt16),
             Header::UInt32 => u32::deserialize(deserializer).map(Self::UInt32),
             Header::UInt64 => u64::deserialize(deserializer).map(Self::UInt64),
+            Header::UInt128 => u128::deserialize(deserializer).map(Self::UInt128),
             Header::Int8 => i8::deserialize(deserializer).map(Self::Int8),
             Header::Int16 => i16::deserialize(deserializer).map(Self::Int16),
             Header::Int32 => i32::deserialize(deserializer).map(Self::Int32),
             Header::Int64 => i64::deserialize(deserializer).map(Self::Int64),
+            Header::Int128 => i128::deserialize(deserializer).map(Self::Int128),
             Header::Float32 => f32::deserialize(deserializer).map(Self::Float32),
             Header::Float64 => f64::deserialize(deserializer).map(Self::Float64),
             Header::BigUInt => format::big_uint::deserialize(deserializer).map(Self::BigUInt),
@@ -346,6 +352,54 @@ mod tests {
             assert_eq!(serialize_body(Body::UInt64(u64::MAX)), serialize(u64::MAX));
             assert_ne!(serialize_body(Body::UInt64(u64::MAX)), serialize(true));
         }
+
+        #[test]
+        fn serialize_uint128() {
+            assert_eq!(serialize_body(Body::UInt128(0)), serialize(0u128));
+            assert_eq!(serialize_body(Body::UInt128(u128::MAX)), serialize(u128::MAX));
+            assert_ne!(serialize_body(Body::UInt128(u128::MAX)), serialize(true));
+        }
+
+        #[test]
+        fn serialize_int8() {
+            assert_eq!(serialize_body(Body::Int8(i8::MIN)), serialize(i8::MIN));
+            assert_eq!(serialize_body(Body::Int8(0)), serialize(0i8));
+            assert_eq!(serialize_body(Body::Int8(i8::MAX)), serialize(i8::MAX));
+            assert_ne!(serialize_body(Body::Int8(i8::MAX)), serialize(true));
+        }
+
+        #[test]
+        fn serialize_int16() {
+            assert_eq!(serialize_body(Body::Int16(i16::MIN)), serialize(i16::MIN));
+            assert_eq!(serialize_body(Body::Int16(0)), serialize(0i16));
+            assert_eq!(serialize_body(Body::Int16(i16::MAX)), serialize(i16::MAX));
+            assert_ne!(serialize_body(Body::Int16(i16::MAX)), serialize(true));
+        }
+
+        #[test]
+        fn serialize_int32() {
+            assert_eq!(serialize_body(Body::Int32(i32::MIN)), serialize(i32::MIN));
+            assert_eq!(serialize_body(Body::Int32(0)), serialize(0i32));
+            assert_eq!(serialize_body(Body::Int32(i32::MAX)), serialize(i32::MAX));
+            assert_ne!(serialize_body(Body::Int32(i32::MAX)), serialize(true));
+        }
+
+        #[test]
+        fn serialize_int64() {
+            assert_eq!(serialize_body(Body::Int64(i64::MIN)), serialize(i64::MIN));
+            assert_eq!(serialize_body(Body::Int64(0)), serialize(0i64));
+            assert_eq!(serialize_body(Body::Int64(i64::MAX)), serialize(i64::MAX));
+            assert_ne!(serialize_body(Body::Int64(i64::MAX)), serialize(true));
+        }
+
+        #[test]
+        fn serialize_int128() {
+            assert_eq!(serialize_body(Body::Int128(i128::MIN)), serialize(i128::MIN));
+            assert_eq!(serialize_body(Body::Int128(0)), serialize(0i128));
+            assert_eq!(serialize_body(Body::Int128(i128::MAX)), serialize(i128::MAX));
+            assert_ne!(serialize_body(Body::Int128(i128::MAX)), serialize(true));
+        }
+
 
         #[test]
         fn serialize_f32() {
@@ -622,6 +676,19 @@ mod tests {
         }
 
         #[test]
+        fn deserialize_u128() {
+            {
+                let buf = serialize(0u128);
+                assert_eq!(Body::deserialize(&Header::UInt128, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt128(0));
+            }
+
+            {
+                let buf = serialize(u128::MAX);
+                assert_eq!(Body::deserialize(&Header::UInt128, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt128(u128::MAX));
+            }
+        }
+
+        #[test]
         fn deserialize_i8() {
             {
                 let buf = serialize(i8::MIN);
@@ -690,6 +757,24 @@ mod tests {
             {
                 let buf = serialize(i64::MAX);
                 assert_eq!(Body::deserialize(&Header::Int64, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int64(i64::MAX));
+            }
+        }
+
+        #[test]
+        fn deserialize_i128() {
+            {
+                let buf = serialize(i128::MIN);
+                assert_eq!(Body::deserialize(&Header::Int128, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int128(i128::MIN));
+            }
+
+            {
+                let buf = serialize(0i128);
+                assert_eq!(Body::deserialize(&Header::Int128, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int128(0i128));
+            }
+
+            {
+                let buf = serialize(i128::MAX);
+                assert_eq!(Body::deserialize(&Header::Int128, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int128(i128::MAX));
             }
         }
 

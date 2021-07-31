@@ -22,10 +22,12 @@ impl<R: Read> DeserializeHeader<R> for R {
             super::UINT16_CODE => Ok(Header::UInt16),
             super::UINT32_CODE => Ok(Header::UInt32),
             super::UINT64_CODE => Ok(Header::UInt64),
+            super::UINT128_CODE => Ok(Header::UInt128),
             super::INT8_CODE => Ok(Header::Int8),
             super::INT16_CODE => Ok(Header::Int16),
             super::INT32_CODE => Ok(Header::Int32),
             super::INT64_CODE => Ok(Header::Int64),
+            super::INT128_CODE => Ok(Header::Int128),
             super::FLOAT32_CODE => Ok(Header::Float32),
             super::FLOAT64_CODE => Ok(Header::Float64),
             super::BIG_UINT_CODE => Ok(Header::BigUInt),
@@ -137,6 +139,13 @@ mod tests {
     }
 
     #[test]
+    fn deserialize_header_uint128() {
+        let mut buf = Vec::new();
+        u128::serialize_header(&mut buf).unwrap();
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::UInt128);
+    }
+
+    #[test]
     fn deserialize_header_int8() {
         let mut buf = Vec::new();
         i8::serialize_header(&mut buf).unwrap();
@@ -162,6 +171,13 @@ mod tests {
         let mut buf = Vec::new();
         i64::serialize_header(&mut buf).unwrap();
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Int64);
+    }
+
+    #[test]
+    fn deserialize_header_int128() {
+        let mut buf = Vec::new();
+        i128::serialize_header(&mut buf).unwrap();
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Int128);
     }
 
     #[test]
@@ -258,31 +274,31 @@ mod tests {
 
     #[test]
     fn deserialize_header_extension8() {
-        let buf = vec![25u8, 123];
+        let buf = vec![27u8, 123];
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension8(123));
     }
 
     #[test]
     fn deserialize_header_extension16() {
-        let buf = vec![26u8, 123];
+        let buf = vec![28u8, 123];
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension16(123));
     }
 
     #[test]
     fn deserialize_header_extension32() {
-        let buf = vec![27u8, 123];
+        let buf = vec![29u8, 123];
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension32(123));
     }
 
     #[test]
     fn deserialize_header_extension64() {
-        let buf = vec![28u8, 123];
+        let buf = vec![30u8, 123];
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension64(123));
     }
 
     #[test]
     fn deserialize_header_extension() {
-        let buf = vec![29u8, 123];
+        let buf = vec![31u8, 123];
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension(123));
     }
 }
