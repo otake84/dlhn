@@ -1,7 +1,7 @@
 use dlhn::ser::Serializer;
 use iai::main;
-use time::Date;
 use serde::Serialize;
+use time::Date;
 
 #[derive(Serialize)]
 struct Test {
@@ -19,6 +19,4 @@ fn serialize() -> Vec<u8> {
     buf
 }
 
-main!(
-    serialize,
-);
+main!(serialize,);

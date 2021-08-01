@@ -1,7 +1,7 @@
-use std::io::{Read, Result, Error, ErrorKind};
-
 // https://en.wikipedia.org/wiki/LEB128
 // https://github.com/stoklund/varint/blob/master/leb128.cpp
+
+use std::io::{Error, ErrorKind, Read, Result};
 
 pub(crate) trait Leb128<const N: usize>: Sized {
     const LEB128_BUF_SIZE: usize = N;
@@ -342,14 +342,20 @@ mod tests {
         fn decode_leb128_u8_min() {
             let mut buf = [0u8; u8::LEB128_BUF_SIZE];
             let size = u8::MIN.encode_leb128(&mut buf);
-            assert_eq!(u8::MIN, u8::decode_leb128(&mut buf[..size].as_ref()).unwrap());
+            assert_eq!(
+                u8::MIN,
+                u8::decode_leb128(&mut buf[..size].as_ref()).unwrap()
+            );
         }
 
         #[test]
         fn decode_leb128_u8_max() {
             let mut buf = [0u8; u8::LEB128_BUF_SIZE];
             let size = u8::MAX.encode_leb128(&mut buf);
-            assert_eq!(u8::MAX, u8::decode_leb128(&mut buf[..size].as_ref()).unwrap());
+            assert_eq!(
+                u8::MAX,
+                u8::decode_leb128(&mut buf[..size].as_ref()).unwrap()
+            );
         }
 
         #[test]
@@ -373,14 +379,20 @@ mod tests {
         fn decode_leb128_u16_min() {
             let mut buf = [0u8; u16::LEB128_BUF_SIZE];
             let size = u16::MIN.encode_leb128(&mut buf);
-            assert_eq!(u16::MIN, u16::decode_leb128(&mut buf[..size].as_ref()).unwrap());
+            assert_eq!(
+                u16::MIN,
+                u16::decode_leb128(&mut buf[..size].as_ref()).unwrap()
+            );
         }
 
         #[test]
         fn decode_leb128_u16_max() {
             let mut buf = [0u8; u16::LEB128_BUF_SIZE];
             let size = u16::MAX.encode_leb128(&mut buf);
-            assert_eq!(u16::MAX, u16::decode_leb128(&mut buf[..size].as_ref()).unwrap());
+            assert_eq!(
+                u16::MAX,
+                u16::decode_leb128(&mut buf[..size].as_ref()).unwrap()
+            );
         }
 
         #[test]
@@ -404,14 +416,20 @@ mod tests {
         fn decode_leb128_u32_min() {
             let mut buf = [0u8; u32::LEB128_BUF_SIZE];
             let size = u32::MIN.encode_leb128(&mut buf);
-            assert_eq!(u32::MIN, u32::decode_leb128(&mut buf[..size].as_ref()).unwrap());
+            assert_eq!(
+                u32::MIN,
+                u32::decode_leb128(&mut buf[..size].as_ref()).unwrap()
+            );
         }
 
         #[test]
         fn decode_leb128_u32_max() {
             let mut buf = [0u8; u32::LEB128_BUF_SIZE];
             let size = u32::MAX.encode_leb128(&mut buf);
-            assert_eq!(u32::MAX, u32::decode_leb128(&mut buf[..size].as_ref()).unwrap());
+            assert_eq!(
+                u32::MAX,
+                u32::decode_leb128(&mut buf[..size].as_ref()).unwrap()
+            );
         }
 
         #[test]
@@ -435,14 +453,20 @@ mod tests {
         fn decode_leb128_u64_min() {
             let mut buf = [0u8; u64::LEB128_BUF_SIZE];
             let size = u64::MIN.encode_leb128(&mut buf);
-            assert_eq!(u64::MIN, u64::decode_leb128(&mut buf[..size].as_ref()).unwrap());
+            assert_eq!(
+                u64::MIN,
+                u64::decode_leb128(&mut buf[..size].as_ref()).unwrap()
+            );
         }
 
         #[test]
         fn decode_leb128_u64_max() {
             let mut buf = [0u8; u64::LEB128_BUF_SIZE];
             let size = u64::MAX.encode_leb128(&mut buf);
-            assert_eq!(u64::MAX, u64::decode_leb128(&mut buf[..size].as_ref()).unwrap());
+            assert_eq!(
+                u64::MAX,
+                u64::decode_leb128(&mut buf[..size].as_ref()).unwrap()
+            );
         }
 
         #[test]

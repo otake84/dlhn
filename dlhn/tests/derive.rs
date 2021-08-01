@@ -1,6 +1,6 @@
-use std::io::Cursor;
-use dlhn::header::{Header, ser::SerializeHeader, de::DeserializeHeader};
+use dlhn::header::{de::DeserializeHeader, ser::SerializeHeader, Header};
 use dlhn_derive::*;
+use std::io::Cursor;
 
 #[test]
 fn derive_serialize_header() {
@@ -40,11 +40,7 @@ fn derive_serialize_header() {
             A(bool),
             B,
             C(u32),
-            D {
-                a: bool,
-                b: u8,
-                c: u32
-            },
+            D { a: bool, b: u8, c: u32 },
         }
 
         let mut buf = Vec::new();
@@ -135,7 +131,10 @@ fn deserialize_header() {
         let mut buf = Vec::new();
         Test::serialize_header(&mut buf).unwrap();
         let mut cursor = Cursor::new(buf);
-        assert_eq!(cursor.deserialize_header().unwrap(), Header::Struct(vec![Header::Unit, Header::Boolean, Header::UInt8]));
+        assert_eq!(
+            cursor.deserialize_header().unwrap(),
+            Header::Struct(vec![Header::Unit, Header::Boolean, Header::UInt8])
+        );
     }
 
     {
@@ -151,6 +150,14 @@ fn deserialize_header() {
         let mut buf = Vec::new();
         Test::serialize_header(&mut buf).unwrap();
         let mut cursor = Cursor::new(buf);
-        assert_eq!(cursor.deserialize_header().unwrap(), Header::Enum(vec![Header::Boolean, Header::Unit, Header::UInt32, Header::Tuple(vec![Header::Boolean, Header::UInt8, Header::UInt32])]));
+        assert_eq!(
+            cursor.deserialize_header().unwrap(),
+            Header::Enum(vec![
+                Header::Boolean,
+                Header::Unit,
+                Header::UInt32,
+                Header::Tuple(vec![Header::Boolean, Header::UInt8, Header::UInt32])
+            ])
+        );
     }
 }

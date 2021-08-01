@@ -1,8 +1,8 @@
-use std::collections::BTreeMap;
 use dlhn::{de::Deserializer, ser::Serializer};
 use iai::main;
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
+use std::collections::BTreeMap;
 
 fn deserialize_u8() -> u8 {
     let buf = serialize(u8::MAX);

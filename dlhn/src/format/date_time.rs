@@ -1,6 +1,10 @@
-use serde::{Deserializer, Serializer, de::{self, SeqAccess, Unexpected, Visitor}, ser::SerializeSeq};
-use time::{OffsetDateTime, ext::NumericalDuration};
 use crate::de::Error;
+use serde::{
+    de::{self, SeqAccess, Unexpected, Visitor},
+    ser::SerializeSeq,
+    Deserializer, Serializer,
+};
+use time::{ext::NumericalDuration, OffsetDateTime};
 
 struct OffsetDateTimeVisitor;
 
@@ -13,14 +17,24 @@ impl<'de> Visitor<'de> for OffsetDateTimeVisitor {
 
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
     where
-            A: SeqAccess<'de>, {
-                let unix_timestamp = seq.next_element::<i64>()?.ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?;
-                let nanosecond = seq.next_element::<u32>()?.ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?;
-                Ok(OffsetDateTime::from_unix_timestamp(unix_timestamp).or(Err(de::Error::invalid_value(Unexpected::Seq, &Error::Read)))? + (nanosecond as i64).nanoseconds())
+        A: SeqAccess<'de>,
+    {
+        let unix_timestamp = seq
+            .next_element::<i64>()?
+            .ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?;
+        let nanosecond = seq
+            .next_element::<u32>()?
+            .ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?;
+        Ok(OffsetDateTime::from_unix_timestamp(unix_timestamp)
+            .or(Err(de::Error::invalid_value(Unexpected::Seq, &Error::Read)))?
+            + (nanosecond as i64).nanoseconds())
     }
 }
 
-pub fn serialize<T: Serializer>(date_time: &OffsetDateTime, serializer: T) -> Result<T::Ok, T::Error> {
+pub fn serialize<T: Serializer>(
+    date_time: &OffsetDateTime,
+    serializer: T,
+) -> Result<T::Ok, T::Error> {
     let mut seq = serializer.serialize_seq(None)?;
     seq.serialize_element(&date_time.unix_timestamp())?;
     seq.serialize_element(&date_time.time().nanosecond())?;
@@ -33,10 +47,10 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<OffsetD
 
 #[cfg(test)]
 mod tests {
-    use std::array::IntoIter;
-    use serde::{Serialize, Deserialize};
-    use time::{OffsetDateTime, ext::NumericalDuration};
     use crate::{de::Deserializer, leb128::Leb128, ser::Serializer, zigzag::ZigZag};
+    use serde::{Deserialize, Serialize};
+    use std::array::IntoIter;
+    use time::{ext::NumericalDuration, OffsetDateTime};
 
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
     struct Test {
@@ -47,7 +61,17 @@ mod tests {
     #[test]
     fn serialize_date_time() {
         fn assert_date_time(date_time: OffsetDateTime) {
-            assert_eq!(encode_date_time(date_time), [date_time.unix_timestamp().encode_zigzag().encode_leb128_vec(), date_time.nanosecond().encode_leb128_vec()].concat());
+            assert_eq!(
+                encode_date_time(date_time),
+                [
+                    date_time
+                        .unix_timestamp()
+                        .encode_zigzag()
+                        .encode_leb128_vec(),
+                    date_time.nanosecond().encode_leb128_vec()
+                ]
+                .concat()
+            );
         }
 
         IntoIter::new([
@@ -59,9 +83,13 @@ mod tests {
             OffsetDateTime::UNIX_EPOCH + 100000.days(),
             OffsetDateTime::UNIX_EPOCH - 100000.days() - 999999999.nanoseconds(),
             OffsetDateTime::UNIX_EPOCH + 100000.days() + 1.nanoseconds(),
-        ]).for_each(assert_date_time);
+        ])
+        .for_each(assert_date_time);
 
-        assert_eq!(encode_date_time(OffsetDateTime::UNIX_EPOCH + 1000000000.nanoseconds()), encode_date_time(OffsetDateTime::UNIX_EPOCH + 1.seconds()));
+        assert_eq!(
+            encode_date_time(OffsetDateTime::UNIX_EPOCH + 1000000000.nanoseconds()),
+            encode_date_time(OffsetDateTime::UNIX_EPOCH + 1.seconds())
+        );
     }
 
     #[test]
@@ -83,15 +111,14 @@ mod tests {
             OffsetDateTime::UNIX_EPOCH + 100000.days(),
             OffsetDateTime::UNIX_EPOCH - 100000.days() - 999999999.nanoseconds(),
             OffsetDateTime::UNIX_EPOCH + 100000.days() + 1.nanoseconds(),
-        ]).for_each(assert_date_time);
+        ])
+        .for_each(assert_date_time);
     }
 
     fn encode_date_time(date_time: OffsetDateTime) -> Vec<u8> {
         let mut buf = Vec::new();
         let mut serializer = Serializer::new(&mut buf);
-        let body = Test {
-            date_time,
-        };
+        let body = Test { date_time };
         body.serialize(&mut serializer).unwrap();
         buf
     }

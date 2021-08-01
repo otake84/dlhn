@@ -1,6 +1,6 @@
 use dlhn::ser::Serializer;
 use iai::main;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -19,6 +19,4 @@ fn serialize() -> Vec<u8> {
     buf
 }
 
-main!(
-    serialize,
-);
+main!(serialize,);

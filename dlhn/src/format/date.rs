@@ -1,6 +1,10 @@
-use serde::{Deserializer, Serializer, de::{self, SeqAccess, Unexpected, Visitor}, ser::SerializeSeq};
-use time::Date;
 use crate::{de::Error, leb128::Leb128, zigzag::ZigZag};
+use serde::{
+    de::{self, SeqAccess, Unexpected, Visitor},
+    ser::SerializeSeq,
+    Deserializer, Serializer,
+};
+use time::Date;
 
 const DATE_YEAR_OFFSET: i32 = 2000;
 const DATE_ORDINAL_OFFSET: u16 = 1;
@@ -16,11 +20,19 @@ impl<'de> Visitor<'de> for DateVisitor {
 
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
     where
-            A: SeqAccess<'de>, {
-                let year = seq.next_element::<i32>()?.ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))? + DATE_YEAR_OFFSET;
-                let ordinal = seq.next_element::<u16>()?.ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))? + DATE_ORDINAL_OFFSET;
-                let date = Date::from_ordinal_date(year, ordinal).or(Err(de::Error::invalid_value(Unexpected::Seq, &Error::Read)))?;
-                Ok(date)
+        A: SeqAccess<'de>,
+    {
+        let year = seq
+            .next_element::<i32>()?
+            .ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?
+            + DATE_YEAR_OFFSET;
+        let ordinal = seq
+            .next_element::<u16>()?
+            .ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?
+            + DATE_ORDINAL_OFFSET;
+        let date = Date::from_ordinal_date(year, ordinal)
+            .or(Err(de::Error::invalid_value(Unexpected::Seq, &Error::Read)))?;
+        Ok(date)
     }
 }
 
@@ -47,9 +59,9 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<Date, T
 
 #[cfg(test)]
 mod tests {
+    use crate::{de::Deserializer, ser::Serializer};
     use serde::{Deserialize, Serialize};
     use time::{Date, Month};
-    use crate::{de::Deserializer, ser::Serializer};
 
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
     struct Test {
@@ -59,12 +71,42 @@ mod tests {
 
     #[test]
     fn serialize_date() {
-        assert_eq!(serialize(Test { date: Date::from_ordinal_date(2000, 1).unwrap()}), [0, 0]);
-        assert_eq!(serialize(Test { date: Date::from_ordinal_date(1936, 1).unwrap()}), [127, 0]);
-        assert_eq!(serialize(Test { date: Date::from_ordinal_date(1935, 1).unwrap()}), [129, 1, 0]);
-        assert_eq!(serialize(Test { date: Date::from_ordinal_date(2063, 128).unwrap()}), [126, 127]);
-        assert_eq!(serialize(Test { date: Date::from_ordinal_date(2064, 129).unwrap()}), [128, 1, 128, 1]);
-        assert_eq!(serialize(Test { date: Date::from_ordinal_date(2000, 366).unwrap()}), [0, 237, 2]);
+        assert_eq!(
+            serialize(Test {
+                date: Date::from_ordinal_date(2000, 1).unwrap()
+            }),
+            [0, 0]
+        );
+        assert_eq!(
+            serialize(Test {
+                date: Date::from_ordinal_date(1936, 1).unwrap()
+            }),
+            [127, 0]
+        );
+        assert_eq!(
+            serialize(Test {
+                date: Date::from_ordinal_date(1935, 1).unwrap()
+            }),
+            [129, 1, 0]
+        );
+        assert_eq!(
+            serialize(Test {
+                date: Date::from_ordinal_date(2063, 128).unwrap()
+            }),
+            [126, 127]
+        );
+        assert_eq!(
+            serialize(Test {
+                date: Date::from_ordinal_date(2064, 129).unwrap()
+            }),
+            [128, 1, 128, 1]
+        );
+        assert_eq!(
+            serialize(Test {
+                date: Date::from_ordinal_date(2000, 366).unwrap()
+            }),
+            [0, 237, 2]
+        );
     }
 
     #[test]
@@ -75,7 +117,12 @@ mod tests {
         let mut reader = buf.as_slice();
         let mut deserializer = Deserializer::new(&mut reader);
         let result = Test::deserialize(&mut deserializer).unwrap();
-        assert_eq!(result, Test { date: Date::from_calendar_date(1970, Month::January, 11).unwrap()})
+        assert_eq!(
+            result,
+            Test {
+                date: Date::from_calendar_date(1970, Month::January, 11).unwrap()
+            }
+        )
     }
 
     fn serialize<T: Serialize>(v: T) -> Vec<u8> {

@@ -1,6 +1,13 @@
-use std::{fmt::{self, Display}, io::Write};
-use serde::{serde_if_integer128, Serialize, de, ser::{self, Impossible}};
 use crate::{leb128::Leb128, zigzag::ZigZag};
+use serde::{
+    de,
+    ser::{self, Impossible},
+    serde_if_integer128, Serialize,
+};
+use std::{
+    fmt::{self, Display},
+    io::Write,
+};
 
 trait SerializeDlhn<W: Write> {
     fn serialize_dlhn(self, writer: W) -> std::io::Result<()>;
@@ -171,9 +178,7 @@ pub struct Serializer<W: Write> {
 
 impl<W: Write> Serializer<W> {
     pub fn new(output: W) -> Self {
-        Self {
-            output,
-        }
+        Self { output }
     }
 }
 
@@ -262,9 +267,10 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok, Self::Error>
     where
-        T: serde::Serialize {
-            self.output.write_all(&[1u8]).or(Err(Error::Write))?;
-            value.serialize(self)
+        T: serde::Serialize,
+    {
+        self.output.write_all(&[1u8]).or(Err(Error::Write))?;
+        value.serialize(self)
     }
 
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
@@ -290,7 +296,8 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: serde::Serialize {
+        T: serde::Serialize,
+    {
         value.serialize(self)
     }
 
@@ -302,7 +309,8 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: serde::Serialize {
+        T: serde::Serialize,
+    {
         self.serialize_u32(variant_index)?;
         value.serialize(self)
     }
@@ -380,7 +388,8 @@ impl<'a, W: Write> ser::SerializeSeq for &'a mut Serializer<W> {
 
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: serde::Serialize {
+        T: serde::Serialize,
+    {
         value.serialize(&mut **self)
     }
 
@@ -396,7 +405,8 @@ impl<'a, W: Write> ser::SerializeTuple for &'a mut Serializer<W> {
 
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: serde::Serialize {
+        T: serde::Serialize,
+    {
         value.serialize(&mut **self)
     }
 
@@ -412,7 +422,8 @@ impl<'a, W: Write> ser::SerializeTupleStruct for &'a mut Serializer<W> {
 
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: serde::Serialize {
+        T: serde::Serialize,
+    {
         value.serialize(&mut **self)
     }
 
@@ -428,7 +439,8 @@ impl<'a, W: Write> ser::SerializeTupleVariant for &'a mut Serializer<W> {
 
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: serde::Serialize {
+        T: serde::Serialize,
+    {
         value.serialize(&mut **self)
     }
 
@@ -443,14 +455,16 @@ impl<'a, W: Write> ser::SerializeMap for &'a mut Serializer<W> {
 
     fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<(), Self::Error>
     where
-        T: serde::Serialize {
+        T: serde::Serialize,
+    {
         key.serialize(MapKeySerializer::new(self))
     }
 
     fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: serde::Serialize {
-            value.serialize(&mut **self)
+        T: serde::Serialize,
+    {
+        value.serialize(&mut **self)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
@@ -468,7 +482,8 @@ impl<'a, W: Write> ser::SerializeStruct for &'a mut Serializer<W> {
         value: &T,
     ) -> Result<(), Self::Error>
     where
-        T: Serialize {
+        T: Serialize,
+    {
         value.serialize(&mut **self)
     }
 
@@ -487,7 +502,8 @@ impl<'a, W: Write> ser::SerializeStructVariant for &'a mut Serializer<W> {
         value: &T,
     ) -> Result<(), Self::Error>
     where
-        T: serde::Serialize {
+        T: serde::Serialize,
+    {
         value.serialize(&mut **self)
     }
 
@@ -502,9 +518,7 @@ struct MapKeySerializer<'a, W: Write> {
 
 impl<'a, W: 'a + Write> MapKeySerializer<'a, W> {
     fn new(ser: &'a mut Serializer<W>) -> Self {
-        Self {
-            ser
-        }
+        Self { ser }
     }
 }
 
@@ -581,7 +595,8 @@ impl<'a, W: Write> ser::Serializer for MapKeySerializer<'a, W> {
 
     fn serialize_some<T: ?Sized>(self, _: &T) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize {
+        T: Serialize,
+    {
         Err(Error::UnsupportedKeyType)
     }
 
@@ -608,7 +623,8 @@ impl<'a, W: Write> ser::Serializer for MapKeySerializer<'a, W> {
         _: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize {
+        T: Serialize,
+    {
         Err(Error::UnsupportedKeyType)
     }
 
@@ -620,7 +636,8 @@ impl<'a, W: Write> ser::Serializer for MapKeySerializer<'a, W> {
         _: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: Serialize {
+        T: Serialize,
+    {
         Err(Error::UnsupportedKeyType)
     }
 
@@ -675,11 +692,11 @@ impl<'a, W: Write> ser::Serializer for MapKeySerializer<'a, W> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
+    use super::Serializer;
+    use crate::{leb128::Leb128, ser::Error, zigzag::ZigZag};
     use serde::Serialize;
     use serde_bytes::Bytes;
-    use crate::{leb128::Leb128, ser::Error, zigzag::ZigZag};
-    use super::Serializer;
+    use std::collections::BTreeMap;
 
     #[test]
     fn serialize_bool() {
@@ -966,7 +983,6 @@ mod tests {
             assert_eq!(buf, (-f32::INFINITY).to_le_bytes());
         }
 
-
         {
             let mut buf = Vec::new();
             let mut serializer = Serializer::new(&mut buf);
@@ -1034,7 +1050,14 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = 'a';
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, ["a".as_bytes().len().encode_leb128_vec().as_slice(), "a".as_bytes()].concat());
+            assert_eq!(
+                buf,
+                [
+                    "a".as_bytes().len().encode_leb128_vec().as_slice(),
+                    "a".as_bytes()
+                ]
+                .concat()
+            );
         }
 
         {
@@ -1042,7 +1065,14 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = 'あ';
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, ["あ".as_bytes().len().encode_leb128_vec().as_slice(), "あ".as_bytes()].concat());
+            assert_eq!(
+                buf,
+                [
+                    "あ".as_bytes().len().encode_leb128_vec().as_slice(),
+                    "あ".as_bytes()
+                ]
+                .concat()
+            );
         }
     }
 
@@ -1053,7 +1083,10 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = "";
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, ["".len().encode_leb128_vec().as_slice(), "".as_bytes()].concat());
+            assert_eq!(
+                buf,
+                ["".len().encode_leb128_vec().as_slice(), "".as_bytes()].concat()
+            );
         }
 
         {
@@ -1061,7 +1094,14 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = "test";
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, ["test".as_bytes().len().encode_leb128_vec().as_slice(), "test".as_bytes()].concat());
+            assert_eq!(
+                buf,
+                [
+                    "test".as_bytes().len().encode_leb128_vec().as_slice(),
+                    "test".as_bytes()
+                ]
+                .concat()
+            );
         }
     }
 
@@ -1136,9 +1176,20 @@ mod tests {
                 c: "test".to_string(),
                 a: true,
                 b: 123,
-            }).serialize(&mut serializer).unwrap();
+            })
+            .serialize(&mut serializer)
+            .unwrap();
 
-            assert_eq!(buf, [[4].as_ref(), "test".as_bytes(), [1].as_ref(), [123].as_ref()].concat());
+            assert_eq!(
+                buf,
+                [
+                    [4].as_ref(),
+                    "test".as_bytes(),
+                    [1].as_ref(),
+                    [123].as_ref()
+                ]
+                .concat()
+            );
         }
 
         {
@@ -1157,9 +1208,20 @@ mod tests {
                 c: "test".to_string(),
                 a: true,
                 b: Inner(123),
-            }.serialize(&mut serializer).unwrap();
+            }
+            .serialize(&mut serializer)
+            .unwrap();
 
-            assert_eq!(buf, [[4].as_ref(), "test".as_bytes(), [1].as_ref(), [123].as_ref()].concat());
+            assert_eq!(
+                buf,
+                [
+                    [4].as_ref(),
+                    "test".as_bytes(),
+                    [1].as_ref(),
+                    [123].as_ref()
+                ]
+                .concat()
+            );
         }
     }
 
@@ -1177,7 +1239,10 @@ mod tests {
         let mut serializer = Serializer::new(&mut buf);
         let body = Test::B("test".to_string());
         body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, [[1u8].as_ref(), [4u8].as_ref(), "test".as_bytes()].concat());
+        assert_eq!(
+            buf,
+            [[1u8].as_ref(), [4u8].as_ref(), "test".as_bytes()].concat()
+        );
     }
 
     #[test]
@@ -1203,7 +1268,10 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             let body = [1u8].repeat(128);
             body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, [128usize.encode_leb128_vec(), [1u8].repeat(128)].concat());
+            assert_eq!(
+                buf,
+                [128usize.encode_leb128_vec(), [1u8].repeat(128)].concat()
+            );
         }
 
         {
@@ -1221,7 +1289,16 @@ mod tests {
         let mut serializer = Serializer::new(&mut buf);
         let body = (true, 123u8, "test");
         body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, [&[1], &[123], "test".len().encode_leb128_vec().as_slice(), "test".as_bytes()].concat());
+        assert_eq!(
+            buf,
+            [
+                &[1],
+                &[123],
+                "test".len().encode_leb128_vec().as_slice(),
+                "test".as_bytes()
+            ]
+            .concat()
+        );
     }
 
     #[test]
@@ -1233,7 +1310,16 @@ mod tests {
         let mut serializer = Serializer::new(&mut buf);
         let body = Test(true, 123u8, "test".to_string());
         body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, [&[1], &[123], "test".len().encode_leb128_vec().as_slice(), "test".as_bytes()].concat());
+        assert_eq!(
+            buf,
+            [
+                &[1],
+                &[123],
+                "test".len().encode_leb128_vec().as_slice(),
+                "test".as_bytes()
+            ]
+            .concat()
+        );
     }
 
     #[test]
@@ -1250,7 +1336,17 @@ mod tests {
         let mut serializer = Serializer::new(&mut buf);
         let body = Test::B(true, 123, "test".to_string());
         body.serialize(&mut serializer).unwrap();
-        assert_eq!(buf, [[1u8].as_ref(), [1].as_ref(), [123].as_ref(), [4u8].as_ref(), "test".as_bytes()].concat());
+        assert_eq!(
+            buf,
+            [
+                [1u8].as_ref(),
+                [1].as_ref(),
+                [123].as_ref(),
+                [4u8].as_ref(),
+                "test".as_bytes()
+            ]
+            .concat()
+        );
     }
 
     #[test]
@@ -1271,7 +1367,16 @@ mod tests {
         };
         body.serialize(&mut serializer).unwrap();
 
-        assert_eq!(buf, [[4].as_ref(), "test".as_bytes(), [1].as_ref(), [123].as_ref()].concat());
+        assert_eq!(
+            buf,
+            [
+                [4].as_ref(),
+                "test".as_bytes(),
+                [1].as_ref(),
+                [123].as_ref()
+            ]
+            .concat()
+        );
     }
 
     #[test]
@@ -1280,11 +1385,7 @@ mod tests {
         #[derive(Serialize)]
         enum Test {
             A,
-            B {
-                a: bool,
-                b: u8,
-                c: String,
-            },
+            B { a: bool, b: u8, c: String },
             C,
         }
 
@@ -1293,7 +1394,7 @@ mod tests {
         let body = Test::B {
             a: true,
             b: 123,
-            c: "test".to_string()
+            c: "test".to_string(),
         };
         body.serialize(&mut serializer).unwrap();
 
@@ -1314,7 +1415,22 @@ mod tests {
             };
             body.serialize(&mut serializer).unwrap();
 
-            assert_eq!(buf, [&[3], &[1], "a".as_bytes(), &[0], &[1], "b".as_bytes(), &[123], &[1], "c".as_bytes(), &[255]].concat());
+            assert_eq!(
+                buf,
+                [
+                    &[3],
+                    &[1],
+                    "a".as_bytes(),
+                    &[0],
+                    &[1],
+                    "b".as_bytes(),
+                    &[123],
+                    &[1],
+                    "c".as_bytes(),
+                    &[255]
+                ]
+                .concat()
+            );
         }
 
         {
@@ -1328,7 +1444,10 @@ mod tests {
                 map
             };
 
-            assert_eq!(body.serialize(&mut serializer), Err(Error::UnsupportedKeyType));
+            assert_eq!(
+                body.serialize(&mut serializer),
+                Err(Error::UnsupportedKeyType)
+            );
         }
     }
 

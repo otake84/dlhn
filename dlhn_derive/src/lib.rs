@@ -1,11 +1,11 @@
 mod leb128;
 
-use std::{slice::Iter, str::FromStr};
+use crate::leb128::Leb128;
 use proc_macro::TokenStream;
 use proc_macro2::{Delimiter, Group, Span};
-use quote::{ToTokens, quote};
-use syn::{Attribute, DeriveInput, Meta, NestedMeta, parse_macro_input};
-use crate::leb128::Leb128;
+use quote::{quote, ToTokens};
+use std::{slice::Iter, str::FromStr};
+use syn::{parse_macro_input, Attribute, DeriveInput, Meta, NestedMeta};
 
 const TUPLE_CODE: u8 = 21;
 const STRUCT_CODE: u8 = 22;
@@ -26,7 +26,12 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
 
             for field in data.fields.iter() {
                 if has_skip_serializing_if(field.attrs.iter()) {
-                    return syn::Error::new(Span::call_site(), "skip_serializing_if is not supported").to_compile_error().into()
+                    return syn::Error::new(
+                        Span::call_site(),
+                        "skip_serializing_if is not supported",
+                    )
+                    .to_compile_error()
+                    .into();
                 }
 
                 if !is_skip_field(field.attrs.iter()) {
@@ -34,7 +39,12 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                 }
             }
 
-            let fields_count = types.len().encode_leb128_vec().iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>();
+            let fields_count = types
+                .len()
+                .encode_leb128_vec()
+                .iter()
+                .map(ToTokens::to_token_stream)
+                .collect::<Vec<proc_macro2::TokenStream>>();
 
             let gen = quote! {
                 impl dlhn::header::ser::SerializeHeader for #type_name {
@@ -61,20 +71,37 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
 
             for variant in data.variants.iter() {
                 if has_skip_serializing_if(variant.attrs.iter()) {
-                    return syn::Error::new(Span::call_site(), "skip_serializing_if is not supported").to_compile_error().into()
+                    return syn::Error::new(
+                        Span::call_site(),
+                        "skip_serializing_if is not supported",
+                    )
+                    .to_compile_error()
+                    .into();
                 }
 
                 if !is_skip_field(variant.attrs.iter()) {
                     if variant.fields.is_empty() {
-                        outers.push(Group::new(Delimiter::Bracket, proc_macro2::TokenStream::new()).into_token_stream());
-                        inners.push(vec![Group::new(Delimiter::Parenthesis, proc_macro2::TokenStream::new()).into_token_stream()]);
+                        outers.push(
+                            Group::new(Delimiter::Bracket, proc_macro2::TokenStream::new())
+                                .into_token_stream(),
+                        );
+                        inners.push(vec![Group::new(
+                            Delimiter::Parenthesis,
+                            proc_macro2::TokenStream::new(),
+                        )
+                        .into_token_stream()]);
                     } else {
                         if variant.fields.len() > 1 {
                             match &variant.fields {
                                 syn::Fields::Named(fields) => {
                                     let mut buf = vec![STRUCT_CODE];
                                     buf.append(&mut variant.fields.len().encode_leb128_vec());
-                                    outers.push(proc_macro2::TokenStream::from_str(format!("{:?}", buf).as_str()).unwrap());
+                                    outers.push(
+                                        proc_macro2::TokenStream::from_str(
+                                            format!("{:?}", buf).as_str(),
+                                        )
+                                        .unwrap(),
+                                    );
 
                                     let mut field_types = Vec::new();
                                     fields.named.iter().for_each(|field| {
@@ -85,16 +112,28 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                                 syn::Fields::Unnamed(fields) => {
                                     let mut buf = vec![TUPLE_CODE];
                                     buf.append(&mut variant.fields.len().encode_leb128_vec());
-                                    outers.push(proc_macro2::TokenStream::from_str(format!("{:?}", buf).as_str()).unwrap());
+                                    outers.push(
+                                        proc_macro2::TokenStream::from_str(
+                                            format!("{:?}", buf).as_str(),
+                                        )
+                                        .unwrap(),
+                                    );
 
-                                    inners.push(fields.unnamed.iter().map(|field| {
-                                        field.ty.to_token_stream()
-                                    }).collect());
+                                    inners.push(
+                                        fields
+                                            .unnamed
+                                            .iter()
+                                            .map(|field| field.ty.to_token_stream())
+                                            .collect(),
+                                    );
                                 }
                                 syn::Fields::Unit => todo!(),
                             }
                         } else {
-                            outers.push(Group::new(Delimiter::Bracket, proc_macro2::TokenStream::new()).into_token_stream());
+                            outers.push(
+                                Group::new(Delimiter::Bracket, proc_macro2::TokenStream::new())
+                                    .into_token_stream(),
+                            );
                             let mut field_types = Vec::new();
                             variant.fields.iter().for_each(|field| {
                                 field_types.push(field.ty.to_token_stream());
@@ -105,7 +144,12 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                 }
             }
 
-            let variants_count = outers.len().encode_leb128_vec().iter().map(ToTokens::to_token_stream).collect::<Vec<proc_macro2::TokenStream>>();
+            let variants_count = outers
+                .len()
+                .encode_leb128_vec()
+                .iter()
+                .map(ToTokens::to_token_stream)
+                .collect::<Vec<proc_macro2::TokenStream>>();
 
             let gen = quote! {
                 impl dlhn::header::ser::SerializeHeader for #type_name {
@@ -129,48 +173,41 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
 
             gen.into()
         }
-        syn::Data::Union(_) => {
-            syn::Error::new(Span::call_site(), "union is not supported").to_compile_error().into()
-        }
+        syn::Data::Union(_) => syn::Error::new(Span::call_site(), "union is not supported")
+            .to_compile_error()
+            .into(),
     }
 }
 
 fn is_skip_field(mut attributes: Iter<Attribute>) -> bool {
     attributes.any(|attribute| {
-        attribute.path.get_ident().map(ToString::to_string) == Some(SERDE_ATTRIBUTE.to_string()) &&
-            match attribute.parse_meta() {
-                Ok(Meta::List(v)) => {
-                    v.nested.iter().any(|v| {
-                        match v {
-                            NestedMeta::Meta(v) => {
-                                let ident = v.path().get_ident().map(ToString::to_string);
-                                ident == Some(SKIP_ATTRIBUTE.to_string()) || ident == Some(SKIP_SERIALIZING_ATTRIBUTE.to_string())
-                            }
-                            _ => false
-                        }
-                    })
-                },
-                _ => false
+        attribute.path.get_ident().map(ToString::to_string) == Some(SERDE_ATTRIBUTE.to_string())
+            && match attribute.parse_meta() {
+                Ok(Meta::List(v)) => v.nested.iter().any(|v| match v {
+                    NestedMeta::Meta(v) => {
+                        let ident = v.path().get_ident().map(ToString::to_string);
+                        ident == Some(SKIP_ATTRIBUTE.to_string())
+                            || ident == Some(SKIP_SERIALIZING_ATTRIBUTE.to_string())
+                    }
+                    _ => false,
+                }),
+                _ => false,
             }
     })
 }
 
 fn has_skip_serializing_if(mut attributes: Iter<Attribute>) -> bool {
     attributes.any(|attribute| {
-        attribute.path.get_ident().map(ToString::to_string) == Some(SERDE_ATTRIBUTE.to_string()) &&
-            match attribute.parse_meta() {
-                Ok(Meta::List(v)) => {
-                    v.nested.iter().any(|v| {
-                        match v {
-                            NestedMeta::Meta(v) => {
-                                let ident = v.path().get_ident().map(ToString::to_string);
-                                ident == Some(SKIP_SERIALIZING_IF_ATTRIBUTE.to_string())
-                            }
-                            _ => false
-                        }
-                    })
-                },
-                _ => false
+        attribute.path.get_ident().map(ToString::to_string) == Some(SERDE_ATTRIBUTE.to_string())
+            && match attribute.parse_meta() {
+                Ok(Meta::List(v)) => v.nested.iter().any(|v| match v {
+                    NestedMeta::Meta(v) => {
+                        let ident = v.path().get_ident().map(ToString::to_string);
+                        ident == Some(SKIP_SERIALIZING_IF_ATTRIBUTE.to_string())
+                    }
+                    _ => false,
+                }),
+                _ => false,
             }
     })
 }

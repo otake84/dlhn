@@ -1,9 +1,12 @@
-use std::{collections::{BTreeMap, HashMap}, io::{Result, Write}};
+use crate::leb128::Leb128;
 use bigdecimal::BigDecimal;
 use num_bigint::{BigInt, BigUint};
 use serde_bytes::{ByteBuf, Bytes};
+use std::{
+    collections::{BTreeMap, HashMap},
+    io::{Result, Write},
+};
 use time::{Date, OffsetDateTime};
-use crate::leb128::Leb128;
 
 pub trait SerializeHeader {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()>;
@@ -218,12 +221,12 @@ tuple_impls! {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{BTreeMap, HashMap};
+    use super::SerializeHeader;
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
     use serde_bytes::{ByteBuf, Bytes};
+    use std::collections::{BTreeMap, HashMap};
     use time::{Date, OffsetDateTime};
-    use super::SerializeHeader;
 
     #[test]
     fn serialize_header_unit() {

@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use dlhn::{de::Deserializer, ser::Serializer};
+use serde::{Deserialize, Serialize};
 
 #[test]
 fn seriaize() {
@@ -21,10 +21,20 @@ fn seriaize() {
     body.serialize(&mut serializer).unwrap();
     body.serialize(&mut serializer).unwrap();
 
-    assert_eq!(buf, [
-        [4].as_ref(), "test".as_bytes(), [1].as_ref(), [123].as_ref(),
-        [4].as_ref(), "test".as_bytes(), [1].as_ref(), [123].as_ref(),
-    ].concat());
+    assert_eq!(
+        buf,
+        [
+            [4].as_ref(),
+            "test".as_bytes(),
+            [1].as_ref(),
+            [123].as_ref(),
+            [4].as_ref(),
+            "test".as_bytes(),
+            [1].as_ref(),
+            [123].as_ref(),
+        ]
+        .concat()
+    );
 }
 
 #[test]

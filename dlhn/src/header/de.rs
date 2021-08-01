@@ -1,6 +1,6 @@
-use std::io::{ErrorKind, Read, Result};
-use crate::leb128::Leb128;
 use super::Header;
+use crate::leb128::Leb128;
+use std::io::{ErrorKind, Read, Result};
 
 pub trait DeserializeHeader<R: Read> {
     fn deserialize_header(&mut self) -> Result<Header>;
@@ -74,20 +74,23 @@ impl<R: Read> DeserializeHeader<R> for R {
             super::EXTENSION32_CODE => Ok(Header::Extension32(u64::decode_leb128(self)?)),
             super::EXTENSION64_CODE => Ok(Header::Extension64(u64::decode_leb128(self)?)),
             super::EXTENSION_CODE => Ok(Header::Extension(u64::decode_leb128(self)?)),
-            code => Err(std::io::Error::new(ErrorKind::InvalidData, format!("invalid header code: {}", code))),
+            code => Err(std::io::Error::new(
+                ErrorKind::InvalidData,
+                format!("invalid header code: {}", code),
+            )),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::BTreeMap, io::Cursor};
+    use super::DeserializeHeader;
+    use crate::header::{ser::SerializeHeader, Header};
     use bigdecimal::BigDecimal;
     use num_bigint::{BigInt, BigUint};
     use serde_bytes::Bytes;
+    use std::{collections::BTreeMap, io::Cursor};
     use time::{Date, OffsetDateTime};
-    use crate::header::{Header, ser::SerializeHeader};
-    use super::DeserializeHeader;
 
     #[test]
     fn deserialize_header_unit() {
@@ -100,49 +103,70 @@ mod tests {
     fn deserialize_header_optional() {
         let mut buf = Vec::new();
         Option::<()>::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Optional(Box::new(Header::Unit)));
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Optional(Box::new(Header::Unit))
+        );
     }
 
     #[test]
     fn deserialize_header_boolean() {
         let mut buf = Vec::new();
         bool::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Boolean);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Boolean
+        );
     }
 
     #[test]
     fn deserialize_header_uint8() {
         let mut buf = Vec::new();
         u8::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::UInt8);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::UInt8
+        );
     }
 
     #[test]
     fn deserialize_header_uint16() {
         let mut buf = Vec::new();
         u16::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::UInt16);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::UInt16
+        );
     }
 
     #[test]
     fn deserialize_header_uint32() {
         let mut buf = Vec::new();
         u32::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::UInt32);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::UInt32
+        );
     }
 
     #[test]
     fn deserialize_header_uint64() {
         let mut buf = Vec::new();
         u64::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::UInt64);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::UInt64
+        );
     }
 
     #[test]
     fn deserialize_header_uint128() {
         let mut buf = Vec::new();
         u128::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::UInt128);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::UInt128
+        );
     }
 
     #[test]
@@ -156,63 +180,90 @@ mod tests {
     fn deserialize_header_int16() {
         let mut buf = Vec::new();
         i16::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Int16);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Int16
+        );
     }
 
     #[test]
     fn deserialize_header_int32() {
         let mut buf = Vec::new();
         i32::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Int32);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Int32
+        );
     }
 
     #[test]
     fn deserialize_header_int64() {
         let mut buf = Vec::new();
         i64::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Int64);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Int64
+        );
     }
 
     #[test]
     fn deserialize_header_int128() {
         let mut buf = Vec::new();
         i128::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Int128);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Int128
+        );
     }
 
     #[test]
     fn deserialize_header_float32() {
         let mut buf = Vec::new();
         f32::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Float32);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Float32
+        );
     }
 
     #[test]
     fn deserialize_header_float64() {
         let mut buf = Vec::new();
         f64::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Float64);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Float64
+        );
     }
 
     #[test]
     fn deserialize_header_big_uint() {
         let mut buf = Vec::new();
         BigUint::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::BigUInt);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::BigUInt
+        );
     }
 
     #[test]
     fn deserialize_header_big_int() {
         let mut buf = Vec::new();
         BigInt::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::BigInt);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::BigInt
+        );
     }
 
     #[test]
     fn deserialize_header_big_decimal() {
         let mut buf = Vec::new();
         BigDecimal::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::BigDecimal);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::BigDecimal
+        );
     }
 
     #[test]
@@ -220,13 +271,19 @@ mod tests {
         {
             let mut buf = Vec::new();
             String::serialize_header(&mut buf).unwrap();
-            assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::String);
+            assert_eq!(
+                Cursor::new(buf).deserialize_header().unwrap(),
+                Header::String
+            );
         }
 
         {
             let mut buf = Vec::new();
             <&str>::serialize_header(&mut buf).unwrap();
-            assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::String);
+            assert_eq!(
+                Cursor::new(buf).deserialize_header().unwrap(),
+                Header::String
+            );
         }
     }
 
@@ -234,28 +291,40 @@ mod tests {
     fn deserialize_header_binary() {
         let mut buf = Vec::new();
         Bytes::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Binary);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Binary
+        );
     }
 
     #[test]
     fn deserialize_header_array() {
         let mut buf = Vec::new();
         Vec::<()>::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Array(Box::new(Header::Unit)));
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Array(Box::new(Header::Unit))
+        );
     }
 
     #[test]
     fn deserialize_header_tuple() {
         let mut buf = Vec::new();
         <((), bool, u8)>::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Tuple(vec![Header::Unit, Header::Boolean, Header::UInt8]));
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Tuple(vec![Header::Unit, Header::Boolean, Header::UInt8])
+        );
     }
 
     #[test]
     fn deserialize_header_map() {
         let mut buf = Vec::new();
         BTreeMap::<String, bool>::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Map(Box::new(Header::Boolean)));
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Map(Box::new(Header::Boolean))
+        );
     }
 
     #[test]
@@ -269,36 +338,54 @@ mod tests {
     fn deserialize_header_date_time() {
         let mut buf = Vec::new();
         OffsetDateTime::serialize_header(&mut buf).unwrap();
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::DateTime);
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::DateTime
+        );
     }
 
     #[test]
     fn deserialize_header_extension8() {
         let buf = vec![27u8, 123];
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension8(123));
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Extension8(123)
+        );
     }
 
     #[test]
     fn deserialize_header_extension16() {
         let buf = vec![28u8, 123];
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension16(123));
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Extension16(123)
+        );
     }
 
     #[test]
     fn deserialize_header_extension32() {
         let buf = vec![29u8, 123];
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension32(123));
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Extension32(123)
+        );
     }
 
     #[test]
     fn deserialize_header_extension64() {
         let buf = vec![30u8, 123];
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension64(123));
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Extension64(123)
+        );
     }
 
     #[test]
     fn deserialize_header_extension() {
         let buf = vec![31u8, 123];
-        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Extension(123));
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Extension(123)
+        );
     }
 }

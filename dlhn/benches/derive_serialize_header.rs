@@ -1,6 +1,6 @@
-use iai::main;
 use dlhn::header::ser::SerializeHeader;
 use dlhn_derive::*;
+use iai::main;
 
 fn serialize_header_struct() {
     #[allow(dead_code)]
@@ -29,7 +29,4 @@ fn serialize_header_enum() {
     Test::serialize_header(&mut buf).unwrap();
 }
 
-main!(
-    serialize_header_struct,
-    serialize_header_enum,
-);
+main!(serialize_header_struct, serialize_header_enum,);

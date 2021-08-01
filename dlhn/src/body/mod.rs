@@ -1,10 +1,17 @@
-use std::{collections::BTreeMap, io::Read};
+use crate::{
+    de::{Deserializer, Error},
+    format,
+    header::Header,
+};
 use bigdecimal::BigDecimal;
 use num_bigint::{BigInt, BigUint};
-use serde::{Deserialize, Serialize, ser::{SerializeMap, SerializeSeq, SerializeTuple}};
+use serde::{
+    ser::{SerializeMap, SerializeSeq, SerializeTuple},
+    Deserialize, Serialize,
+};
 use serde_bytes::ByteBuf;
+use std::{collections::BTreeMap, io::Read};
 use time::{Date, OffsetDateTime};
-use crate::{de::{Deserializer, Error}, format, header::Header};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Body {
@@ -45,7 +52,8 @@ pub enum Body {
 impl Serialize for Body {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer {
+        S: serde::Serializer,
+    {
         match self {
             Body::Unit => serializer.serialize_unit(),
             Body::Optional(v) => {
@@ -101,9 +109,7 @@ impl Serialize for Body {
                 }
                 map.end()
             }
-            Body::Enum(i, v) => {
-                serializer.serialize_newtype_variant("", *i, "", v)
-            }
+            Body::Enum(i, v) => serializer.serialize_newtype_variant("", *i, "", v),
             Body::Date(v) => format::date::serialize(v, serializer),
             Body::DateTime(v) => format::date_time::serialize(v, serializer),
             Body::Extension8((i, v)) => {
@@ -141,12 +147,18 @@ impl Serialize for Body {
 }
 
 impl Body {
-    pub fn deserialize<R: Read>(header: &Header, deserializer: &mut Deserializer<R>) -> Result<Self, crate::de::Error> {
+    pub fn deserialize<R: Read>(
+        header: &Header,
+        deserializer: &mut Deserializer<R>,
+    ) -> Result<Self, crate::de::Error> {
         match header {
             Header::Unit => Ok(Self::Unit),
             Header::Optional(inner) => {
                 if bool::deserialize(&mut *deserializer)? {
-                    Ok(Self::Optional(Some(Box::new(Self::deserialize(inner, deserializer)?))))
+                    Ok(Self::Optional(Some(Box::new(Self::deserialize(
+                        inner,
+                        deserializer,
+                    )?))))
                 } else {
                     Ok(Self::Optional(None))
                 }
@@ -166,9 +178,13 @@ impl Body {
             Header::Float64 => f64::deserialize(deserializer).map(Self::Float64),
             Header::BigUInt => format::big_uint::deserialize(deserializer).map(Self::BigUInt),
             Header::BigInt => format::big_int::deserialize(deserializer).map(Self::BigInt),
-            Header::BigDecimal => format::big_decimal::deserialize(deserializer).map(Self::BigDecimal),
+            Header::BigDecimal => {
+                format::big_decimal::deserialize(deserializer).map(Self::BigDecimal)
+            }
             Header::String => String::deserialize(deserializer).map(Self::String),
-            Header::Binary => ByteBuf::deserialize(deserializer).map(|v| Self::Binary(v.into_vec())),
+            Header::Binary => {
+                ByteBuf::deserialize(deserializer).map(|v| Self::Binary(v.into_vec()))
+            }
             Header::Array(inner) => {
                 let len = u64::deserialize(&mut *deserializer)?;
                 let mut buf = Vec::with_capacity(len as usize);
@@ -195,14 +211,20 @@ impl Body {
                 let len = u64::deserialize(&mut *deserializer)?;
                 let mut buf = BTreeMap::new();
                 for _ in 0..len {
-                    buf.insert(String::deserialize(&mut *deserializer)?, Self::deserialize(inner, deserializer)?);
+                    buf.insert(
+                        String::deserialize(&mut *deserializer)?,
+                        Self::deserialize(inner, deserializer)?,
+                    );
                 }
                 Ok(Self::Map(buf))
             }
             Header::Enum(inner) => {
                 let i = u32::deserialize(&mut *deserializer)?;
                 let inner = inner.get(i as usize).ok_or(Error::Read)?;
-                Ok(Self::Enum(i, Box::new(Self::deserialize(inner, deserializer)?)))
+                Ok(Self::Enum(
+                    i,
+                    Box::new(Self::deserialize(inner, deserializer)?),
+                ))
             }
             Header::Date => format::date::deserialize(deserializer).map(Self::Date),
             Header::DateTime => format::date_time::deserialize(deserializer).map(Self::DateTime),
@@ -252,15 +274,14 @@ impl Body {
             }
             (Header::Struct(inner_header), Body::Struct(inner_body)) => {
                 inner_header.len() == inner_body.len()
-                    && inner_header.iter().zip(inner_body).all(|(header, body)| {
-                        body.validate(header)
-                    })
+                    && inner_header
+                        .iter()
+                        .zip(inner_body)
+                        .all(|(header, body)| body.validate(header))
             }
-            (Header::Map(inner_header), Body::Map(inner_body)) => {
-                inner_body
-                    .values()
-                    .all(|value| value.validate(inner_header))
-            }
+            (Header::Map(inner_header), Body::Map(inner_body)) => inner_body
+                .values()
+                .all(|value| value.validate(inner_header)),
             (Header::Enum(inner_header), Body::Enum(i, v)) => {
                 if let Some(header) = inner_header.get(*i as usize) {
                     v.validate(header)
@@ -282,8 +303,8 @@ impl Body {
 
 #[cfg(test)]
 mod tests {
-    use serde::Serialize;
     use crate::{body::Body, ser::Serializer};
+    use serde::Serialize;
 
     fn serialize<T: Serialize>(v: T) -> Vec<u8> {
         let mut buf = Vec::new();
@@ -300,12 +321,12 @@ mod tests {
     }
 
     mod serialize {
-        use std::{array::IntoIter, collections::BTreeMap};
+        use super::*;
         use bigdecimal::BigDecimal;
         use num_bigint::{BigInt, BigUint};
         use serde_bytes::ByteBuf;
-        use time::{Date, OffsetDateTime, Month};
-        use super::*;
+        use std::{array::IntoIter, collections::BTreeMap};
+        use time::{Date, Month, OffsetDateTime};
 
         #[test]
         fn serialize_unit() {
@@ -314,8 +335,14 @@ mod tests {
 
         #[test]
         fn serialize_optional() {
-            assert_eq!(serialize_body(Body::Optional(Some(Box::new(Body::Boolean(true))))), serialize(Some(true)));
-            assert_eq!(serialize_body(Body::Optional(None)), serialize(None::<Option<bool>>));
+            assert_eq!(
+                serialize_body(Body::Optional(Some(Box::new(Body::Boolean(true))))),
+                serialize(Some(true))
+            );
+            assert_eq!(
+                serialize_body(Body::Optional(None)),
+                serialize(None::<Option<bool>>)
+            );
         }
 
         #[test]
@@ -356,7 +383,10 @@ mod tests {
         #[test]
         fn serialize_uint128() {
             assert_eq!(serialize_body(Body::UInt128(0)), serialize(0u128));
-            assert_eq!(serialize_body(Body::UInt128(u128::MAX)), serialize(u128::MAX));
+            assert_eq!(
+                serialize_body(Body::UInt128(u128::MAX)),
+                serialize(u128::MAX)
+            );
             assert_ne!(serialize_body(Body::UInt128(u128::MAX)), serialize(true));
         }
 
@@ -394,22 +424,36 @@ mod tests {
 
         #[test]
         fn serialize_int128() {
-            assert_eq!(serialize_body(Body::Int128(i128::MIN)), serialize(i128::MIN));
+            assert_eq!(
+                serialize_body(Body::Int128(i128::MIN)),
+                serialize(i128::MIN)
+            );
             assert_eq!(serialize_body(Body::Int128(0)), serialize(0i128));
-            assert_eq!(serialize_body(Body::Int128(i128::MAX)), serialize(i128::MAX));
+            assert_eq!(
+                serialize_body(Body::Int128(i128::MAX)),
+                serialize(i128::MAX)
+            );
             assert_ne!(serialize_body(Body::Int128(i128::MAX)), serialize(true));
         }
-
 
         #[test]
         fn serialize_f32() {
             assert_eq!(serialize_body(Body::Float32(0f32)), serialize(0f32));
             assert_eq!(serialize_body(Body::Float32(1.1f32)), serialize(1.1f32));
             assert_eq!(serialize_body(Body::Float32(-1.1f32)), serialize(-1.1f32));
-            assert_eq!(serialize_body(Body::Float32(f32::INFINITY)), serialize(f32::INFINITY));
-            assert_eq!(serialize_body(Body::Float32(-f32::INFINITY)), serialize(-f32::INFINITY));
+            assert_eq!(
+                serialize_body(Body::Float32(f32::INFINITY)),
+                serialize(f32::INFINITY)
+            );
+            assert_eq!(
+                serialize_body(Body::Float32(-f32::INFINITY)),
+                serialize(-f32::INFINITY)
+            );
             assert_eq!(serialize_body(Body::Float32(f32::NAN)), serialize(f32::NAN));
-            assert_eq!(serialize_body(Body::Float32(-f32::NAN)), serialize(-f32::NAN));
+            assert_eq!(
+                serialize_body(Body::Float32(-f32::NAN)),
+                serialize(-f32::NAN)
+            );
         }
 
         #[test]
@@ -417,10 +461,19 @@ mod tests {
             assert_eq!(serialize_body(Body::Float64(0f64)), serialize(0f64));
             assert_eq!(serialize_body(Body::Float64(1.1f64)), serialize(1.1f64));
             assert_eq!(serialize_body(Body::Float64(-1.1f64)), serialize(-1.1f64));
-            assert_eq!(serialize_body(Body::Float64(f64::INFINITY)), serialize(f64::INFINITY));
-            assert_eq!(serialize_body(Body::Float64(-f64::INFINITY)), serialize(-f64::INFINITY));
+            assert_eq!(
+                serialize_body(Body::Float64(f64::INFINITY)),
+                serialize(f64::INFINITY)
+            );
+            assert_eq!(
+                serialize_body(Body::Float64(-f64::INFINITY)),
+                serialize(-f64::INFINITY)
+            );
             assert_eq!(serialize_body(Body::Float64(f64::NAN)), serialize(f64::NAN));
-            assert_eq!(serialize_body(Body::Float64(-f64::NAN)), serialize(-f64::NAN));
+            assert_eq!(
+                serialize_body(Body::Float64(-f64::NAN)),
+                serialize(-f64::NAN)
+            );
         }
 
         #[test]
@@ -436,7 +489,8 @@ mod tests {
                 BigUint::from(u64::MAX) + 1u8,
                 BigUint::from(u128::MAX),
                 BigUint::from(u128::MAX) + 1u8,
-            ]).for_each(|v| {
+            ])
+            .for_each(|v| {
                 let mut buf = Vec::new();
                 let mut serializer = Serializer::new(&mut buf);
                 crate::format::big_uint::serialize(&v, &mut serializer).unwrap();
@@ -468,7 +522,8 @@ mod tests {
                 BigInt::from(i128::MAX),
                 BigInt::from(i128::MIN) - 1,
                 BigInt::from(i128::MAX) + 1,
-            ]).for_each(|v| {
+            ])
+            .for_each(|v| {
                 let mut buf = Vec::new();
                 let mut serializer = Serializer::new(&mut buf);
                 crate::format::big_int::serialize(&v, &mut serializer).unwrap();
@@ -489,7 +544,8 @@ mod tests {
                 BigDecimal::new(BigInt::from(1), -65),
                 BigDecimal::new(BigInt::from(i16::MIN), 0),
                 BigDecimal::new(BigInt::from(i16::MAX), 0),
-            ]).for_each(|v| {
+            ])
+            .for_each(|v| {
                 let mut buf = Vec::new();
                 let mut serializer = Serializer::new(&mut buf);
                 crate::format::big_decimal::serialize(&v, &mut serializer).unwrap();
@@ -499,27 +555,33 @@ mod tests {
 
         #[test]
         fn serialize_string() {
-            IntoIter::new([
-                "test",
-                "テスト",
-            ]).for_each(|v| {
+            IntoIter::new(["test", "テスト"]).for_each(|v| {
                 assert_eq!(serialize_body(Body::String(v.to_string())), serialize(v));
             });
         }
 
         #[test]
         fn serialize_binary() {
-            assert_eq!(serialize_body(Body::Binary(vec![0, 1, 2, 3])), serialize(ByteBuf::from(vec![0 , 1, 2, 3])));
+            assert_eq!(
+                serialize_body(Body::Binary(vec![0, 1, 2, 3])),
+                serialize(ByteBuf::from(vec![0, 1, 2, 3]))
+            );
         }
 
         #[test]
         fn serialize_array() {
-            assert_eq!(serialize_body(Body::Array(vec![Body::Boolean(true), Body::Boolean(false)])), serialize(vec![true, false]));
+            assert_eq!(
+                serialize_body(Body::Array(vec![Body::Boolean(true), Body::Boolean(false)])),
+                serialize(vec![true, false])
+            );
         }
 
         #[test]
         fn serialize_tuple() {
-            assert_eq!(serialize_body(Body::Tuple(vec![Body::Unit, Body::Boolean(false)])), serialize(((), false)));
+            assert_eq!(
+                serialize_body(Body::Tuple(vec![Body::Unit, Body::Boolean(false)])),
+                serialize(((), false))
+            );
         }
 
         #[test]
@@ -529,24 +591,30 @@ mod tests {
                 a: (),
                 b: bool,
             }
-            assert_eq!(serialize_body(Body::Struct(vec![Body::Unit, Body::Boolean(false)])), serialize(Test { a: (), b: false }));
+            assert_eq!(
+                serialize_body(Body::Struct(vec![Body::Unit, Body::Boolean(false)])),
+                serialize(Test { a: (), b: false })
+            );
         }
 
         #[test]
         fn serialize_map() {
-            assert_eq!(serialize_body(Body::Map({
-                let mut v = BTreeMap::new();
-                v.insert("a".to_string(), Body::Boolean(true));
-                v.insert("b".to_string(), Body::Boolean(false));
-                v.insert("c".to_string(), Body::Boolean(true));
-                v
-            })), serialize({
-                let mut v = BTreeMap::new();
-                v.insert("a".to_string(), Body::Boolean(true));
-                v.insert("b".to_string(), Body::Boolean(false));
-                v.insert("c".to_string(), Body::Boolean(true));
-                v
-            }));
+            assert_eq!(
+                serialize_body(Body::Map({
+                    let mut v = BTreeMap::new();
+                    v.insert("a".to_string(), Body::Boolean(true));
+                    v.insert("b".to_string(), Body::Boolean(false));
+                    v.insert("c".to_string(), Body::Boolean(true));
+                    v
+                })),
+                serialize({
+                    let mut v = BTreeMap::new();
+                    v.insert("a".to_string(), Body::Boolean(true));
+                    v.insert("b".to_string(), Body::Boolean(false));
+                    v.insert("c".to_string(), Body::Boolean(true));
+                    v
+                })
+            );
         }
 
         #[test]
@@ -558,7 +626,13 @@ mod tests {
                 B(bool),
                 C(bool, u8),
             }
-            assert_eq!(serialize_body(Body::Enum(2, Box::new(Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123)])))), serialize(Test::C(true, 123)));
+            assert_eq!(
+                serialize_body(Body::Enum(
+                    2,
+                    Box::new(Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123)]))
+                )),
+                serialize(Test::C(true, 123))
+            );
         }
 
         #[test]
@@ -582,17 +656,24 @@ mod tests {
 
     mod deserialize {
         use super::*;
-        use std::{array::IntoIter, collections::BTreeMap};
+        use crate::{body::Body, de::Deserializer, header::Header, ser::Serializer};
         use bigdecimal::BigDecimal;
         use num_bigint::{BigInt, BigUint};
         use serde::Serialize;
+        use std::{array::IntoIter, collections::BTreeMap};
         use time::{Date, Month, OffsetDateTime};
-        use crate::{body::Body, de::Deserializer, header::Header, ser::Serializer};
 
         #[test]
         fn deserialize_unit() {
             let buf = serialize(());
-            assert_eq!(Body::deserialize(&Header::Unit, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Unit);
+            assert_eq!(
+                Body::deserialize(
+                    &Header::Unit,
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                Body::Unit
+            );
         }
 
         #[test]
@@ -601,12 +682,26 @@ mod tests {
                 let mut buf = Vec::new();
                 let mut serializer = Serializer::new(&mut buf);
                 Some(true).serialize(&mut serializer).unwrap();
-                assert_eq!(Body::deserialize(&Header::Optional(Box::new(Header::Boolean)), &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Optional(Some(Box::new(Body::Boolean(true)))));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Optional(Box::new(Header::Boolean)),
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Optional(Some(Box::new(Body::Boolean(true))))
+                );
             }
 
             {
                 let buf = serialize(None::<Option<bool>>);
-                assert_eq!(Body::deserialize(&Header::Optional(Box::new(Header::Boolean)), &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Optional(None));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Optional(Box::new(Header::Boolean)),
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Optional(None)
+                );
             }
         }
 
@@ -614,12 +709,26 @@ mod tests {
         fn deserialize_bool() {
             {
                 let buf = serialize(true);
-                assert_eq!(Body::deserialize(&Header::Boolean, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Boolean(true));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Boolean,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Boolean(true)
+                );
             }
 
             {
                 let buf = serialize(false);
-                assert_eq!(Body::deserialize(&Header::Boolean, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Boolean(false));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Boolean,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Boolean(false)
+                );
             }
         }
 
@@ -627,12 +736,26 @@ mod tests {
         fn deserialize_u8() {
             {
                 let buf = serialize(0u8);
-                assert_eq!(Body::deserialize(&Header::UInt8, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt8(0));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::UInt8,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::UInt8(0)
+                );
             }
 
             {
                 let buf = serialize(u8::MAX);
-                assert_eq!(Body::deserialize(&Header::UInt8, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt8(u8::MAX));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::UInt8,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::UInt8(u8::MAX)
+                );
             }
         }
 
@@ -640,12 +763,26 @@ mod tests {
         fn deserialize_u16() {
             {
                 let buf = serialize(0u16);
-                assert_eq!(Body::deserialize(&Header::UInt16, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt16(0));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::UInt16,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::UInt16(0)
+                );
             }
 
             {
                 let buf = serialize(u16::MAX);
-                assert_eq!(Body::deserialize(&Header::UInt16, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt16(u16::MAX));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::UInt16,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::UInt16(u16::MAX)
+                );
             }
         }
 
@@ -653,12 +790,26 @@ mod tests {
         fn deserialize_u32() {
             {
                 let buf = serialize(0u32);
-                assert_eq!(Body::deserialize(&Header::UInt32, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt32(0));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::UInt32,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::UInt32(0)
+                );
             }
 
             {
                 let buf = serialize(u32::MAX);
-                assert_eq!(Body::deserialize(&Header::UInt32, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt32(u32::MAX));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::UInt32,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::UInt32(u32::MAX)
+                );
             }
         }
 
@@ -666,12 +817,26 @@ mod tests {
         fn deserialize_u64() {
             {
                 let buf = serialize(0u64);
-                assert_eq!(Body::deserialize(&Header::UInt64, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt64(0));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::UInt64,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::UInt64(0)
+                );
             }
 
             {
                 let buf = serialize(u64::MAX);
-                assert_eq!(Body::deserialize(&Header::UInt64, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt64(u64::MAX));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::UInt64,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::UInt64(u64::MAX)
+                );
             }
         }
 
@@ -679,12 +844,26 @@ mod tests {
         fn deserialize_u128() {
             {
                 let buf = serialize(0u128);
-                assert_eq!(Body::deserialize(&Header::UInt128, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt128(0));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::UInt128,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::UInt128(0)
+                );
             }
 
             {
                 let buf = serialize(u128::MAX);
-                assert_eq!(Body::deserialize(&Header::UInt128, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::UInt128(u128::MAX));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::UInt128,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::UInt128(u128::MAX)
+                );
             }
         }
 
@@ -692,17 +871,38 @@ mod tests {
         fn deserialize_i8() {
             {
                 let buf = serialize(i8::MIN);
-                assert_eq!(Body::deserialize(&Header::Int8, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int8(i8::MIN));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int8,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int8(i8::MIN)
+                );
             }
 
             {
                 let buf = serialize(0i8);
-                assert_eq!(Body::deserialize(&Header::Int8, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int8(0i8));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int8,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int8(0i8)
+                );
             }
 
             {
                 let buf = serialize(i8::MAX);
-                assert_eq!(Body::deserialize(&Header::Int8, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int8(i8::MAX));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int8,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int8(i8::MAX)
+                );
             }
         }
 
@@ -710,17 +910,38 @@ mod tests {
         fn deserialize_i16() {
             {
                 let buf = serialize(i16::MIN);
-                assert_eq!(Body::deserialize(&Header::Int16, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int16(i16::MIN));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int16,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int16(i16::MIN)
+                );
             }
 
             {
                 let buf = serialize(0i16);
-                assert_eq!(Body::deserialize(&Header::Int16, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int16(0i16));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int16,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int16(0i16)
+                );
             }
 
             {
                 let buf = serialize(i16::MAX);
-                assert_eq!(Body::deserialize(&Header::Int16, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int16(i16::MAX));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int16,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int16(i16::MAX)
+                );
             }
         }
 
@@ -728,17 +949,38 @@ mod tests {
         fn deserialize_i32() {
             {
                 let buf = serialize(i32::MIN);
-                assert_eq!(Body::deserialize(&Header::Int32, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int32(i32::MIN));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int32,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int32(i32::MIN)
+                );
             }
 
             {
                 let buf = serialize(0i32);
-                assert_eq!(Body::deserialize(&Header::Int32, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int32(0i32));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int32,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int32(0i32)
+                );
             }
 
             {
                 let buf = serialize(i32::MAX);
-                assert_eq!(Body::deserialize(&Header::Int32, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int32(i32::MAX));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int32,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int32(i32::MAX)
+                );
             }
         }
 
@@ -746,17 +988,38 @@ mod tests {
         fn deserialize_i64() {
             {
                 let buf = serialize(i64::MIN);
-                assert_eq!(Body::deserialize(&Header::Int64, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int64(i64::MIN));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int64,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int64(i64::MIN)
+                );
             }
 
             {
                 let buf = serialize(0i64);
-                assert_eq!(Body::deserialize(&Header::Int64, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int64(0i64));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int64,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int64(0i64)
+                );
             }
 
             {
                 let buf = serialize(i64::MAX);
-                assert_eq!(Body::deserialize(&Header::Int64, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int64(i64::MAX));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int64,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int64(i64::MAX)
+                );
             }
         }
 
@@ -764,34 +1027,73 @@ mod tests {
         fn deserialize_i128() {
             {
                 let buf = serialize(i128::MIN);
-                assert_eq!(Body::deserialize(&Header::Int128, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int128(i128::MIN));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int128,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int128(i128::MIN)
+                );
             }
 
             {
                 let buf = serialize(0i128);
-                assert_eq!(Body::deserialize(&Header::Int128, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int128(0i128));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int128,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int128(0i128)
+                );
             }
 
             {
                 let buf = serialize(i128::MAX);
-                assert_eq!(Body::deserialize(&Header::Int128, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Int128(i128::MAX));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::Int128,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::Int128(i128::MAX)
+                );
             }
         }
 
         #[test]
         fn deserialize_f32() {
-            IntoIter::new([-f32::INFINITY, f32::MIN, 0f32, f32::MAX, f32::INFINITY]).for_each(|v| {
-                let buf = serialize(v);
-                assert_eq!(Body::deserialize(&Header::Float32, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Float32(v));
-            });
+            IntoIter::new([-f32::INFINITY, f32::MIN, 0f32, f32::MAX, f32::INFINITY]).for_each(
+                |v| {
+                    let buf = serialize(v);
+                    assert_eq!(
+                        Body::deserialize(
+                            &Header::Float32,
+                            &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                        )
+                        .unwrap(),
+                        Body::Float32(v)
+                    );
+                },
+            );
         }
 
         #[test]
         fn deserialize_f64() {
-            IntoIter::new([-f64::INFINITY, f64::MIN, 0f64, f64::MAX, f64::INFINITY]).for_each(|v| {
-                let buf = serialize(v);
-                assert_eq!(Body::deserialize(&Header::Float64, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::Float64(v));
-            });
+            IntoIter::new([-f64::INFINITY, f64::MIN, 0f64, f64::MAX, f64::INFINITY]).for_each(
+                |v| {
+                    let buf = serialize(v);
+                    assert_eq!(
+                        Body::deserialize(
+                            &Header::Float64,
+                            &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                        )
+                        .unwrap(),
+                        Body::Float64(v)
+                    );
+                },
+            );
         }
 
         #[test]
@@ -807,9 +1109,17 @@ mod tests {
                 BigUint::from(u64::MAX) + 1u8,
                 BigUint::from(u128::MAX),
                 BigUint::from(u128::MAX) + 1u8,
-            ]).for_each(|v| {
+            ])
+            .for_each(|v| {
                 let buf = serialize_body(Body::BigUInt(v.clone()));
-                assert_eq!(Body::deserialize(&Header::BigUInt, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::BigUInt(v));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::BigUInt,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::BigUInt(v)
+                );
             });
         }
 
@@ -837,9 +1147,17 @@ mod tests {
                 BigInt::from(i128::MAX),
                 BigInt::from(i128::MIN) - 1,
                 BigInt::from(i128::MAX) + 1,
-            ]).for_each(|v| {
+            ])
+            .for_each(|v| {
                 let buf = serialize_body(Body::BigInt(v.clone()));
-                assert_eq!(Body::deserialize(&Header::BigInt, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::BigInt(v));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::BigInt,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::BigInt(v)
+                );
             });
         }
 
@@ -856,9 +1174,17 @@ mod tests {
                 BigDecimal::new(BigInt::from(1), -65),
                 BigDecimal::new(BigInt::from(i16::MIN), 0),
                 BigDecimal::new(BigInt::from(i16::MAX), 0),
-            ]).for_each(|v| {
+            ])
+            .for_each(|v| {
                 let buf = serialize_body(Body::BigDecimal(v.clone()));
-                assert_eq!(Body::deserialize(&Header::BigDecimal, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), Body::BigDecimal(v));
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::BigDecimal,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    Body::BigDecimal(v)
+                );
             });
         }
 
@@ -867,13 +1193,27 @@ mod tests {
             {
                 let body = Body::String("test".to_string());
                 let buf = serialize_body(body.clone());
-                assert_eq!(Body::deserialize(&Header::String, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::String,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    body
+                );
             }
 
             {
                 let body = Body::String("テスト".to_string());
                 let buf = serialize_body(body.clone());
-                assert_eq!(Body::deserialize(&Header::String, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
+                assert_eq!(
+                    Body::deserialize(
+                        &Header::String,
+                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                    )
+                    .unwrap(),
+                    body
+                );
             }
         }
 
@@ -881,28 +1221,68 @@ mod tests {
         fn deserialize_binary() {
             let body = Body::Binary(vec![0, 1, 2, 3]);
             let buf = serialize_body(body.clone());
-            assert_eq!(Body::deserialize(&Header::Binary, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
+            assert_eq!(
+                Body::deserialize(
+                    &Header::Binary,
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                body
+            );
         }
 
         #[test]
         fn deserialize_array() {
-            let body = Body::Array(vec![Body::Boolean(true), Body::Boolean(false), Body::Boolean(true)]);
+            let body = Body::Array(vec![
+                Body::Boolean(true),
+                Body::Boolean(false),
+                Body::Boolean(true),
+            ]);
             let buf = serialize_body(body.clone());
-            assert_eq!(Body::deserialize(&Header::Array(Box::new(Header::Boolean)), &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
+            assert_eq!(
+                Body::deserialize(
+                    &Header::Array(Box::new(Header::Boolean)),
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                body
+            );
         }
 
         #[test]
         fn deserialize_tuple() {
-            let body = Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123), Body::String("test".to_string())]);
+            let body = Body::Tuple(vec![
+                Body::Boolean(true),
+                Body::UInt8(123),
+                Body::String("test".to_string()),
+            ]);
             let buf = serialize_body(body.clone());
-            assert_eq!(Body::deserialize(&Header::Tuple(vec![Header::Boolean, Header::UInt8, Header::String]), &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
+            assert_eq!(
+                Body::deserialize(
+                    &Header::Tuple(vec![Header::Boolean, Header::UInt8, Header::String]),
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                body
+            );
         }
 
         #[test]
         fn deserialize_struct() {
-            let body = Body::Struct(vec![Body::Boolean(true), Body::UInt8(123), Body::String("test".to_string())]);
+            let body = Body::Struct(vec![
+                Body::Boolean(true),
+                Body::UInt8(123),
+                Body::String("test".to_string()),
+            ]);
             let buf = serialize_body(body.clone());
-            assert_eq!(Body::deserialize(&Header::Struct(vec![Header::Boolean, Header::UInt8, Header::String]), &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
+            assert_eq!(
+                Body::deserialize(
+                    &Header::Struct(vec![Header::Boolean, Header::UInt8, Header::String]),
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                body
+            );
         }
 
         #[test]
@@ -915,38 +1295,66 @@ mod tests {
                 buf
             });
             let buf = serialize_body(body.clone());
-            assert_eq!(Body::deserialize(&Header::Map(Box::new(Header::Boolean)), &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
+            assert_eq!(
+                Body::deserialize(
+                    &Header::Map(Box::new(Header::Boolean)),
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                body
+            );
         }
 
         #[test]
         fn deserialize_enum() {
             let body = Body::Enum(1, Box::new(Body::UInt8(123)));
             let buf = serialize_body(body.clone());
-            assert_eq!(Body::deserialize(&Header::Enum(vec![Header::Boolean, Header::UInt8]), &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
+            assert_eq!(
+                Body::deserialize(
+                    &Header::Enum(vec![Header::Boolean, Header::UInt8]),
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                body
+            );
         }
 
         #[test]
         fn deserialize_date() {
             let body = Body::Date(Date::from_calendar_date(1970, Month::January, 1).unwrap());
             let buf = serialize_body(body.clone());
-            assert_eq!(Body::deserialize(&Header::Date, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
+            assert_eq!(
+                Body::deserialize(
+                    &Header::Date,
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                body
+            );
         }
 
         #[test]
         fn deserialize_date_time() {
             let body = Body::DateTime(OffsetDateTime::UNIX_EPOCH);
             let buf = serialize_body(body.clone());
-            assert_eq!(Body::deserialize(&Header::DateTime, &mut Deserializer::new(&mut buf.as_slice().as_ref())).unwrap(), body);
+            assert_eq!(
+                Body::deserialize(
+                    &Header::DateTime,
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                body
+            );
         }
     }
 
     mod validate {
-        use std::collections::BTreeMap;
+        use super::*;
+        use crate::header::Header;
         use bigdecimal::BigDecimal;
         use num_bigint::{BigInt, BigUint};
+        use std::collections::BTreeMap;
         use time::{Date, Month, OffsetDateTime};
-        use crate::header::Header;
-        use super::*;
 
         #[test]
         fn validate_unit() {
@@ -1078,7 +1486,12 @@ mod tests {
         #[test]
         fn validate_array() {
             let header = Header::Array(Box::new(Header::Boolean));
-            assert!(Body::Array(vec![Body::Boolean(true), Body::Boolean(false), Body::Boolean(true)]).validate(&header));
+            assert!(Body::Array(vec![
+                Body::Boolean(true),
+                Body::Boolean(false),
+                Body::Boolean(true)
+            ])
+            .validate(&header));
             assert!(!Body::Array(vec![Body::Unit]).validate(&header));
             assert!(!Body::Unit.validate(&header));
         }
@@ -1088,7 +1501,12 @@ mod tests {
             let header = Header::Tuple(vec![Header::Boolean, Header::UInt8]);
             assert!(Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123)]).validate(&header));
             assert!(!Body::Tuple(vec![Body::Boolean(true), Body::Boolean(true)]).validate(&header));
-            assert!(!Body::Tuple(vec![Body::Boolean(true), Body::UInt8(123), Body::UInt8(123)]).validate(&header));
+            assert!(!Body::Tuple(vec![
+                Body::Boolean(true),
+                Body::UInt8(123),
+                Body::UInt8(123)
+            ])
+            .validate(&header));
             assert!(!Body::Unit.validate(&header));
         }
 
@@ -1096,8 +1514,15 @@ mod tests {
         fn validate_struct() {
             let header = Header::Struct(vec![Header::Boolean, Header::UInt8]);
             assert!(Body::Struct(vec![Body::Boolean(true), Body::UInt8(123)]).validate(&header));
-            assert!(!Body::Struct(vec![Body::Boolean(true), Body::Boolean(true)]).validate(&header));
-            assert!(!Body::Struct(vec![Body::Boolean(true), Body::UInt8(123), Body::UInt8(123)]).validate(&header));
+            assert!(
+                !Body::Struct(vec![Body::Boolean(true), Body::Boolean(true)]).validate(&header)
+            );
+            assert!(!Body::Struct(vec![
+                Body::Boolean(true),
+                Body::UInt8(123),
+                Body::UInt8(123)
+            ])
+            .validate(&header));
             assert!(!Body::Unit.validate(&header));
         }
 
@@ -1110,7 +1535,8 @@ mod tests {
                 buf.insert("b".to_string(), Body::Boolean(false));
                 buf.insert("c".to_string(), Body::Boolean(true));
                 buf
-            }).validate(&header));
+            })
+            .validate(&header));
 
             assert!(!Body::Map({
                 let mut buf = BTreeMap::new();
@@ -1118,7 +1544,8 @@ mod tests {
                 buf.insert("b".to_string(), Body::Unit);
                 buf.insert("c".to_string(), Body::Unit);
                 buf
-            }).validate(&header));
+            })
+            .validate(&header));
 
             assert!(!Body::Map({
                 let mut buf = BTreeMap::new();
@@ -1126,7 +1553,8 @@ mod tests {
                 buf.insert("b".to_string(), Body::Unit);
                 buf.insert("c".to_string(), Body::Unit);
                 buf
-            }).validate(&header));
+            })
+            .validate(&header));
 
             assert!(!Body::Unit.validate(&header));
         }
@@ -1144,7 +1572,10 @@ mod tests {
         #[test]
         fn validate_date() {
             let header = Header::Date;
-            assert!(Body::Date(Date::from_calendar_date(1970, Month::January, 1).unwrap()).validate(&header));
+            assert!(
+                Body::Date(Date::from_calendar_date(1970, Month::January, 1).unwrap())
+                    .validate(&header)
+            );
             assert!(!Body::Unit.validate(&header));
         }
 

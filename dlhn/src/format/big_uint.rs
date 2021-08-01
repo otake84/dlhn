@@ -1,7 +1,11 @@
+use crate::de::Error;
 use num_bigint::BigUint;
 use num_traits::Zero;
-use serde::{Deserializer, Serializer, de::{self, SeqAccess, Unexpected, Visitor}, ser::SerializeSeq};
-use crate::de::Error;
+use serde::{
+    de::{self, SeqAccess, Unexpected, Visitor},
+    ser::SerializeSeq,
+    Deserializer, Serializer,
+};
 
 struct BigUintVisitor;
 
@@ -14,9 +18,12 @@ impl<'de> Visitor<'de> for BigUintVisitor {
 
     fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
     where
-            A: SeqAccess<'de>, {
-                let v = seq.next_element::<Vec<u8>>()?.ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?;
-                Ok(BigUint::from_bytes_le(v.as_slice()))
+        A: SeqAccess<'de>,
+    {
+        let v = seq
+            .next_element::<Vec<u8>>()?
+            .ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?;
+        Ok(BigUint::from_bytes_le(v.as_slice()))
     }
 }
 
@@ -38,10 +45,10 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<BigUint
 
 #[cfg(test)]
 mod tests {
-    use std::array::IntoIter;
+    use crate::{de::Deserializer, ser::Serializer};
     use num_bigint::BigUint;
     use serde::{Deserialize, Serialize};
-    use crate::{de::Deserializer, ser::Serializer};
+    use std::array::IntoIter;
 
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
     struct Test {
@@ -53,14 +60,8 @@ mod tests {
     fn serilize() {
         assert_eq!(encode_big_uint(BigUint::from(0u8)), [0]);
         assert_eq!(encode_big_uint(BigUint::from(u8::MAX)), [1, 255]);
-        assert_eq!(
-            encode_big_uint(BigUint::from(u16::MAX)),
-            [2, 255, 255]
-        );
-        assert_eq!(
-            encode_big_uint(BigUint::from(u16::MAX) + 1u8),
-            [3, 0, 0, 1]
-        );
+        assert_eq!(encode_big_uint(BigUint::from(u16::MAX)), [2, 255, 255]);
+        assert_eq!(encode_big_uint(BigUint::from(u16::MAX) + 1u8), [3, 0, 0, 1]);
         assert_eq!(
             encode_big_uint(BigUint::from(u32::MAX)),
             [4, 255, 255, 255, 255]
@@ -108,15 +109,14 @@ mod tests {
             BigUint::from(u64::MAX) + 1u8,
             BigUint::from(u128::MAX),
             BigUint::from(u128::MAX) + 1u8,
-        ]).for_each(assert_big_uint);
+        ])
+        .for_each(assert_big_uint);
     }
 
     fn encode_big_uint(big_uint: BigUint) -> Vec<u8> {
         let mut buf = Vec::new();
         let mut serializer = Serializer::new(&mut buf);
-        let body = Test {
-            big_uint,
-        };
+        let body = Test { big_uint };
         body.serialize(&mut serializer).unwrap();
         buf
     }
