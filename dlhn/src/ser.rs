@@ -136,17 +136,18 @@ pub enum Error {
     Syntax,
     UnknownMapSize,
     UnsupportedKeyType,
+    Message(String),
 }
 
 impl ser::Error for Error {
     fn custom<T: Display>(msg: T) -> Self {
-        Error::Syntax
+        Error::Message(msg.to_string())
     }
 }
 
 impl de::Error for Error {
     fn custom<T: Display>(msg: T) -> Self {
-        Error::Syntax
+        Error::Message(msg.to_string())
     }
 }
 
@@ -157,6 +158,7 @@ impl Display for Error {
             Error::Write => formatter.write_str("write error"),
             Error::UnknownMapSize => formatter.write_str("unknown map size"),
             Error::UnsupportedKeyType => formatter.write_str("unsupported key type"),
+            Error::Message(message) => formatter.write_str(message),
         }
     }
 }

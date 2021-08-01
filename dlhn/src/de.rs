@@ -73,7 +73,7 @@ impl<'de, R: Read> Deserializer<'de, R> {
 impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     type Error = Error;
 
-    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_any<V>(self, _: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
         todo!()
@@ -188,7 +188,7 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
             visitor.visit_char(s.chars().into_iter().next().ok_or(Error::CharSize)?)
     }
 
-    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_str<V>(self, _: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
         todo!()
@@ -202,7 +202,7 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
             visitor.visit_string(String::from_utf8(body_buf).or(Err(Error::Read))?)
     }
 
-    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_bytes<V>(self, _: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
         todo!()
@@ -311,7 +311,7 @@ impl<'de , 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
         self.deserialize_u32(visitor)
     }
 
-    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    fn deserialize_ignored_any<V>(self, _: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'de> {
         todo!()
