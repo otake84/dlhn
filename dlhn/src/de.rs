@@ -1,9 +1,8 @@
 use crate::{leb128::Leb128, zigzag::ZigZag};
-use serde::{de, forward_to_deserialize_any, serde_if_integer128, Deserialize};
+use serde::{de, forward_to_deserialize_any, Deserialize};
 use std::{
     fmt::{self, Display},
     io::Read,
-    mem::MaybeUninit,
     slice::Iter,
 };
 
@@ -138,14 +137,15 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
         )
     }
 
-    serde_if_integer128! {
-        fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where
-            V: de::Visitor<'de> {
-                let mut buf: [u8; 16] = unsafe { MaybeUninit::uninit().assume_init() };
-                self.reader.read_exact(&mut buf).or(Err(Error::Read))?;
-                visitor.visit_i128(i128::from_le_bytes(buf))
-        }
+    fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de>,
+    {
+        visitor.visit_i128(
+            u128::decode_leb128(self.reader)
+                .map(i128::decode_zigzag)
+                .or(Err(Error::Read))?,
+        )
     }
 
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -178,14 +178,11 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
         visitor.visit_u64(u64::decode_leb128(self.reader).or(Err(Error::Read))?)
     }
 
-    serde_if_integer128! {
-        fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-        where
-            V: de::Visitor<'de> {
-                let mut buf: [u8; 16] = unsafe { MaybeUninit::uninit().assume_init() };
-                self.reader.read_exact(&mut buf).or(Err(Error::Read))?;
-                visitor.visit_u128(u128::from_le_bytes(buf))
-        }
+    fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'de>,
+    {
+        visitor.visit_u128(u128::decode_leb128(self.reader).or(Err(Error::Read))?)
     }
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
