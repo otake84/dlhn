@@ -139,13 +139,14 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
 
     fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: de::Visitor<'de> {
-            visitor.visit_i128(
-                u128::decode_leb128(self.reader)
-                    .map(i128::decode_zigzag)
-                    .or(Err(Error::Read))?,
-            )
-        }
+        V: de::Visitor<'de>,
+    {
+        visitor.visit_i128(
+            u128::decode_leb128(self.reader)
+                .map(i128::decode_zigzag)
+                .or(Err(Error::Read))?,
+        )
+    }
 
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
@@ -179,8 +180,9 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
 
     fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
-        V: de::Visitor<'de> {
-            visitor.visit_u128(u128::decode_leb128(self.reader).or(Err(Error::Read))?)
+        V: de::Visitor<'de>,
+    {
+        visitor.visit_u128(u128::decode_leb128(self.reader).or(Err(Error::Read))?)
     }
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
