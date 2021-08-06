@@ -64,11 +64,7 @@ impl<'de, R: Read> Deserializer<'de, R> {
 
     fn new_dynamic_buf(&mut self) -> Result<Vec<u8>, Error> {
         let len = usize::decode_leb128(self.reader).or(Err(Error::Read))?;
-        let mut buf = Vec::<u8>::with_capacity(len);
-        unsafe {
-            buf.set_len(len);
-        }
-        Ok(buf)
+        Ok(vec![0; len])
     }
 }
 
