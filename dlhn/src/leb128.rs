@@ -16,6 +16,40 @@ pub(crate) trait Leb128<const N: usize>: Sized {
     }
 }
 
+impl Leb128<19> for u128 {
+    fn encode_leb128(mut self, buf: &mut [u8; Self::LEB128_BUF_SIZE]) -> usize {
+        let mut bytes = 0;
+        while self > 127 {
+            buf[bytes] = ((self & 0x7F) | 0x80) as u8;
+            bytes += 1;
+            self >>= 7;
+        }
+        buf[bytes] = self as u8;
+
+        bytes + 1
+    }
+
+    fn decode_leb128<R: Read>(reader: &mut R) -> Result<Self> {
+        let mut buf = [0u8; 1];
+        let mut value: Self = 0;
+        let mut shift = 0;
+        let mut i = 0;
+
+        while {
+            if i >= Self::LEB128_BUF_SIZE {
+                Err(Error::new(ErrorKind::InvalidData, "Invalid data"))?;
+            }
+            reader.read_exact(&mut buf)?;
+            value |= (buf[0] as Self & 0x7f) << shift;
+            shift += 7;
+            i += 1;
+            buf[0] >= 128
+        } {}
+
+        Ok(value)
+    }
+}
+
 impl Leb128<10> for usize {
     fn encode_leb128(mut self, buf: &mut [u8; Self::LEB128_BUF_SIZE]) -> usize {
         let mut bytes = 0;
@@ -473,6 +507,36 @@ mod tests {
         fn decode_leb128_buf_0xff_10_is_err() {
             let buf = [0xffu8; 10];
             assert!(u64::decode_leb128(&mut buf.as_ref()).is_err());
+        }
+    }
+
+    mod u128 {
+        use super::*;
+
+        #[test]
+        fn decode_leb128_u128_min() {
+            let mut buf = [0u8; u128::LEB128_BUF_SIZE];
+            let size = u128::MIN.encode_leb128(&mut buf);
+            assert_eq!(
+                u128::MIN,
+                u128::decode_leb128(&mut buf[..size].as_ref()).unwrap()
+            );
+        }
+
+        #[test]
+        fn decode_leb128_u128_max() {
+            let mut buf = [0u8; u128::LEB128_BUF_SIZE];
+            let size = u128::MAX.encode_leb128(&mut buf);
+            assert_eq!(
+                u128::MAX,
+                u128::decode_leb128(&mut buf[..size].as_ref()).unwrap()
+            );
+        }
+
+        #[test]
+        fn decode_leb128_buf_0xff_10_is_err() {
+            let buf = [0xffu8; 19];
+            assert!(u128::decode_leb128(&mut buf.as_ref()).is_err());
         }
     }
 }

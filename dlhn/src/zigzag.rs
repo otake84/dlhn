@@ -16,6 +16,16 @@ impl ZigZag<u64> for isize {
     }
 }
 
+impl ZigZag<u128> for i128 {
+    fn encode_zigzag(self) -> u128 {
+        ((self << 1) ^ (self >> 127)) as u128
+    }
+
+    fn decode_zigzag(value: u128) -> Self {
+        (value >> 1) as i128 ^ (-(value as i128 & 1))
+    }
+}
+
 impl ZigZag<u64> for i64 {
     fn encode_zigzag(self) -> u64 {
         ((self << 1) ^ (self >> 63)) as u64
