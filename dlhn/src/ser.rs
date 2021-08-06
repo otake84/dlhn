@@ -12,7 +12,6 @@ use std::{
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
     Write,
-    Syntax,
     UnknownMapSize,
     UnsupportedKeyType,
     Message(String),
@@ -33,7 +32,6 @@ impl de::Error for Error {
 impl Display for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::Syntax => formatter.write_str("syntax error"),
             Error::Write => formatter.write_str("write error"),
             Error::UnknownMapSize => formatter.write_str("unknown map size"),
             Error::UnsupportedKeyType => formatter.write_str("unsupported key type"),
