@@ -1,7 +1,7 @@
-use crate::{de::Error, leb128::Leb128, zigzag::ZigZag};
+use crate::de::Error;
 use serde::{
     de::{self, SeqAccess, Unexpected, Visitor},
-    ser::SerializeSeq,
+    ser::SerializeTuple,
     Deserializer, Serializer,
 };
 use time::Date;
@@ -39,18 +39,10 @@ impl<'de> Visitor<'de> for DateVisitor {
 pub fn serialize<T: Serializer>(date: &Date, serializer: T) -> Result<T::Ok, T::Error> {
     let year = date.year() - DATE_YEAR_OFFSET;
     let ordinal = date.ordinal() - DATE_ORDINAL_OFFSET;
-    let mut seq = serializer.serialize_seq(None)?;
-    let mut buf = [0u8; u32::LEB128_BUF_SIZE];
-    let size = year.encode_zigzag().encode_leb128(&mut buf);
-    for e in buf[..size].iter() {
-        seq.serialize_element(e)?;
-    }
-    let mut buf = [0u8; u16::LEB128_BUF_SIZE];
-    let size = ordinal.encode_leb128(&mut buf);
-    for e in buf[..size].iter() {
-        seq.serialize_element(e)?;
-    }
-    seq.end()
+    let mut tuple = serializer.serialize_tuple(2)?;
+    tuple.serialize_element(&year)?;
+    tuple.serialize_element(&ordinal)?;
+    tuple.end()
 }
 
 pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<Date, T::Error> {
