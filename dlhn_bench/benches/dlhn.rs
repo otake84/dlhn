@@ -3,13 +3,13 @@ use dlhn_bench::Test;
 use iai::main;
 use serde::{Deserialize, Serialize};
 
-fn serialize_dullahan() {
+fn serialize_dlhn() {
     let mut buf = Vec::new();
     let mut serializer = Serializer::new(&mut buf);
     Test::default().serialize(&mut serializer).unwrap();
 }
 
-fn deserialize_dullahan() {
+fn deserialize_dlhn() {
     let buf = [
         1u8, 255, 255, 255, 3, 255, 255, 255, 255, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255,
         1, 128, 255, 255, 3, 255, 255, 255, 255, 15, 255, 255, 255, 255, 255, 255, 255, 255, 255,
@@ -21,4 +21,4 @@ fn deserialize_dullahan() {
     Test::deserialize(&mut deserializer).unwrap();
 }
 
-main!(serialize_dullahan, deserialize_dullahan,);
+main!(serialize_dlhn, deserialize_dlhn,);

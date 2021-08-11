@@ -200,10 +200,13 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     where
         V: de::Visitor<'de>,
     {
-        let mut body_buf = self.new_dynamic_buf()?;
-        self.reader.read_exact(&mut body_buf).or(Err(Error::Read))?;
-        let s = String::from_utf8(body_buf).or(Err(Error::CharCode))?;
-        visitor.visit_char(s.chars().into_iter().next().ok_or(Error::CharSize)?)
+        visitor.visit_char(
+            String::deserialize(self)?
+                .chars()
+                .into_iter()
+                .next()
+                .ok_or(Error::CharSize)?,
+        )
     }
 
     fn deserialize_str<V>(self, _: V) -> Result<V::Value, Self::Error>
