@@ -37,11 +37,9 @@ impl<'de> Visitor<'de> for DateVisitor {
 }
 
 pub fn serialize<T: Serializer>(date: &Date, serializer: T) -> Result<T::Ok, T::Error> {
-    let year = date.year() - DATE_YEAR_OFFSET;
-    let ordinal = date.ordinal() - DATE_ORDINAL_OFFSET;
     let mut tuple = serializer.serialize_tuple(2)?;
-    tuple.serialize_element(&year)?;
-    tuple.serialize_element(&ordinal)?;
+    tuple.serialize_element(&(date.year() - DATE_YEAR_OFFSET))?;
+    tuple.serialize_element(&(date.ordinal() - DATE_ORDINAL_OFFSET))?;
     tuple.end()
 }
 
