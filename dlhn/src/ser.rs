@@ -144,18 +144,16 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
-        self.serialize_str(v.to_string().as_str())
-            .or(Err(Error::Write))
+        v.to_string().serialize(self)
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
-        let bytes = v.as_bytes();
-        self.serialize_u64(bytes.len() as u64)?;
-        self.output.write_all(bytes).or(Err(Error::Write))
+        v.len().serialize(&mut *self)?;
+        self.output.write_all(v.as_bytes()).or(Err(Error::Write))
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        self.serialize_u64(v.len() as u64)?;
+        v.len().serialize(&mut *self)?;
         self.output.write_all(v).or(Err(Error::Write))
     }
 
@@ -185,7 +183,7 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
         variant_index: u32,
         _variant: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        self.serialize_u32(variant_index)
+        variant_index.serialize(self)
     }
 
     fn serialize_newtype_struct<T: ?Sized>(
@@ -209,13 +207,13 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     where
         T: serde::Serialize,
     {
-        self.serialize_u32(variant_index)?;
+        variant_index.serialize(&mut *self)?;
         value.serialize(self)
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
         if let Some(len) = len {
-            self.serialize_u64(len as u64)?;
+            len.serialize(&mut *self)?;
         }
         Ok(self)
     }
@@ -239,13 +237,13 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-        self.serialize_u32(variant_index)?;
+        variant_index.serialize(&mut *self)?;
         Ok(self)
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
         if let Some(len) = len {
-            self.serialize_u64(len as u64)?;
+            len.serialize(&mut *self)?;
             Ok(self)
         } else {
             Err(Error::UnknownMapSize)
@@ -267,7 +265,7 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
-        self.serialize_u32(variant_index)?;
+        variant_index.serialize(&mut *self)?;
         Ok(self)
     }
 

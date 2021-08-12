@@ -79,6 +79,10 @@ fn serialize_map() -> Vec<u8> {
     }))
 }
 
+fn serialize_enum() -> Vec<u8> {
+    serialize(Body::Enum(0, Box::new(Body::Boolean(true))))
+}
+
 fn serialize<T: Serialize>(v: T) -> Vec<u8> {
     let mut buf = Vec::new();
     let mut serializer = Serializer::new(&mut buf);
@@ -104,4 +108,5 @@ main!(
     serialize_tuple,
     serialize_struct,
     serialize_map,
+    serialize_enum,
 );
