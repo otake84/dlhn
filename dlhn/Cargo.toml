@@ -29,6 +29,10 @@ name = "de"
 harness = false
 
 [[bench]]
+name = "body"
+harness = false
+
+[[bench]]
 name = "date"
 harness = false
 
