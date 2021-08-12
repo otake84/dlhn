@@ -1,6 +1,5 @@
 use crate::{leb128::Leb128, zigzag::ZigZag};
 use serde::{
-    de,
     ser::{self, Impossible},
     Serialize,
 };
@@ -18,12 +17,6 @@ pub enum Error {
 }
 
 impl ser::Error for Error {
-    fn custom<T: Display>(msg: T) -> Self {
-        Error::Message(msg.to_string())
-    }
-}
-
-impl de::Error for Error {
     fn custom<T: Display>(msg: T) -> Self {
         Error::Message(msg.to_string())
     }
