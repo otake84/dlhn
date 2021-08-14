@@ -5,11 +5,8 @@ use crate::{
 };
 use bigdecimal::BigDecimal;
 use num_bigint::{BigInt, BigUint};
-use serde::{
-    ser::{SerializeSeq, SerializeTuple},
-    Deserialize, Serialize,
-};
-use serde_bytes::ByteBuf;
+use serde::{ser::SerializeTuple, Deserialize, Serialize};
+use serde_bytes::{ByteBuf, Bytes};
 use std::{collections::BTreeMap, io::Read};
 use time::{Date, OffsetDateTime};
 
@@ -42,11 +39,11 @@ pub enum Body {
     Enum(u32, Box<Body>),
     Date(Date),
     DateTime(OffsetDateTime),
-    Extension8((u64, u8)),
-    Extension16((u64, [u8; 2])),
-    Extension32((u64, [u8; 4])),
-    Extension64((u64, [u8; 8])),
-    Extension((u64, Vec<u8>)),
+    Extension8([u8; 1]),
+    Extension16([u8; 2]),
+    Extension32([u8; 4]),
+    Extension64([u8; 8]),
+    Extension(Vec<u8>),
 }
 
 impl Serialize for Body {
@@ -87,36 +84,11 @@ impl Serialize for Body {
             Body::Enum(i, v) => serializer.serialize_newtype_variant("", *i, "", v),
             Body::Date(v) => format::date::serialize(v, serializer),
             Body::DateTime(v) => format::date_time::serialize(v, serializer),
-            Body::Extension8((i, v)) => {
-                let mut seq = serializer.serialize_seq(None)?;
-                seq.serialize_element(i)?;
-                seq.serialize_element(v)?;
-                seq.end()
-            }
-            Body::Extension16((i, v)) => {
-                let mut seq = serializer.serialize_seq(None)?;
-                seq.serialize_element(i)?;
-                seq.serialize_element(v)?;
-                seq.end()
-            }
-            Body::Extension32((i, v)) => {
-                let mut seq = serializer.serialize_seq(None)?;
-                seq.serialize_element(i)?;
-                seq.serialize_element(v)?;
-                seq.end()
-            }
-            Body::Extension64((i, v)) => {
-                let mut seq = serializer.serialize_seq(None)?;
-                seq.serialize_element(i)?;
-                seq.serialize_element(v)?;
-                seq.end()
-            }
-            Body::Extension((i, v)) => {
-                let mut seq = serializer.serialize_seq(None)?;
-                seq.serialize_element(i)?;
-                seq.serialize_element(v)?;
-                seq.end()
-            }
+            Body::Extension8(v) => v.serialize(serializer),
+            Body::Extension16(v) => v.serialize(serializer),
+            Body::Extension32(v) => v.serialize(serializer),
+            Body::Extension64(v) => v.serialize(serializer),
+            Body::Extension(v) => Bytes::new(v).serialize(serializer),
         }
     }
 }
@@ -203,11 +175,13 @@ impl Body {
             }
             Header::Date => format::date::deserialize(deserializer).map(Self::Date),
             Header::DateTime => format::date_time::deserialize(deserializer).map(Self::DateTime),
-            Header::Extension8(i) => Ok(Body::Extension8((*i, u8::deserialize(deserializer)?))),
-            Header::Extension16(_) => todo!(),
-            Header::Extension32(_) => todo!(),
-            Header::Extension64(_) => todo!(),
-            Header::Extension(_) => todo!(),
+            Header::Extension8(_) => <[u8; 1]>::deserialize(deserializer).map(Body::Extension8),
+            Header::Extension16(_) => <[u8; 2]>::deserialize(deserializer).map(Body::Extension16),
+            Header::Extension32(_) => <[u8; 4]>::deserialize(deserializer).map(Body::Extension32),
+            Header::Extension64(_) => <[u8; 8]>::deserialize(deserializer).map(Body::Extension64),
+            Header::Extension(_) => {
+                ByteBuf::deserialize(deserializer).map(|v| Body::Extension(v.into_vec()))
+            }
         }
     }
 
@@ -266,11 +240,11 @@ impl Body {
             }
             (Header::Date, Body::Date(_)) => true,
             (Header::DateTime, Body::DateTime(_)) => true,
-            (Header::Extension8(_), Body::Extension8(_)) => todo!(),
-            (Header::Extension16(_), Body::Extension16(_)) => todo!(),
-            (Header::Extension32(_), Body::Extension32(_)) => todo!(),
-            (Header::Extension64(_), Body::Extension64(_)) => todo!(),
-            (Header::Extension(_), Body::Extension(_)) => todo!(),
+            (Header::Extension8(_), Body::Extension8(_)) => true,
+            (Header::Extension16(_), Body::Extension16(_)) => true,
+            (Header::Extension32(_), Body::Extension32(_)) => true,
+            (Header::Extension64(_), Body::Extension64(_)) => true,
+            (Header::Extension(_), Body::Extension(_)) => true,
             _ => false,
         }
     }
@@ -604,6 +578,37 @@ mod tests {
             let mut serializer = Serializer::new(&mut buf);
             crate::format::date_time::serialize(&v, &mut serializer).unwrap();
             assert_eq!(serialize(Body::DateTime(v)), buf);
+        }
+
+        #[test]
+        fn serialize_extension8() {
+            assert_eq!(serialize(Body::Extension8([123])), [123]);
+        }
+
+        #[test]
+        fn serialize_extension16() {
+            assert_eq!(serialize(Body::Extension16([0, 1])), [0, 1]);
+        }
+
+        #[test]
+        fn serialize_extension32() {
+            assert_eq!(serialize(Body::Extension32([0, 1, 2, 3])), [0, 1, 2, 3]);
+        }
+
+        #[test]
+        fn serialize_extension64() {
+            assert_eq!(
+                serialize(Body::Extension64([0, 1, 2, 3, 4, 5, 6, 7])),
+                [0, 1, 2, 3, 4, 5, 6, 7]
+            );
+        }
+
+        #[test]
+        fn serialize_extension() {
+            assert_eq!(
+                serialize(Body::Extension(vec![0, 1, 2, 3, 4, 5, 6, 7])),
+                [8, 0, 1, 2, 3, 4, 5, 6, 7]
+            );
         }
     }
 
@@ -1299,6 +1304,76 @@ mod tests {
                 body
             );
         }
+
+        #[test]
+        fn deserialize_extension8() {
+            let body = Body::Extension8([123]);
+            let buf = serialize(body.clone());
+            assert_eq!(
+                Body::deserialize(
+                    &Header::Extension8(0),
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                body
+            );
+        }
+
+        #[test]
+        fn deserialize_extension16() {
+            let body = Body::Extension16([0, 1]);
+            let buf = serialize(body.clone());
+            assert_eq!(
+                Body::deserialize(
+                    &Header::Extension16(0),
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                body
+            );
+        }
+
+        #[test]
+        fn deserialize_extension32() {
+            let body = Body::Extension32([0, 1, 2, 3]);
+            let buf = serialize(body.clone());
+            assert_eq!(
+                Body::deserialize(
+                    &Header::Extension32(0),
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                body
+            );
+        }
+
+        #[test]
+        fn deserialize_extension64() {
+            let body = Body::Extension64([0, 1, 2, 3, 4, 5, 6, 7]);
+            let buf = serialize(body.clone());
+            assert_eq!(
+                Body::deserialize(
+                    &Header::Extension64(0),
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                body
+            );
+        }
+
+        #[test]
+        fn deserialize_extension() {
+            let body = Body::Extension(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+            let buf = serialize(body.clone());
+            assert_eq!(
+                Body::deserialize(
+                    &Header::Extension(0),
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                body
+            );
+        }
     }
 
     mod validate {
@@ -1536,6 +1611,41 @@ mod tests {
         fn validate_date_time() {
             let header = Header::DateTime;
             assert!(Body::DateTime(OffsetDateTime::UNIX_EPOCH).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_extension8() {
+            let header = Header::Extension8(123);
+            assert!(Body::Extension8([0]).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_extension16() {
+            let header = Header::Extension16(123);
+            assert!(Body::Extension16([0, 1]).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_extension32() {
+            let header = Header::Extension32(123);
+            assert!(Body::Extension32([0, 1, 2, 3]).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_extension64() {
+            let header = Header::Extension64(123);
+            assert!(Body::Extension64([0, 1, 2, 3, 4, 5, 6, 7]).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_extension() {
+            let header = Header::Extension(123);
+            assert!(Body::Extension(vec![0, 1, 2, 3, 4, 5, 6, 7]).validate(&header));
             assert!(!Body::Unit.validate(&header));
         }
     }
