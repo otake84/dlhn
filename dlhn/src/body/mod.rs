@@ -43,6 +43,7 @@ pub enum Body {
     Extension16([u8; 2]),
     Extension32([u8; 4]),
     Extension64([u8; 8]),
+    Extension128([u8; 16]),
     Extension(Vec<u8>),
 }
 
@@ -88,6 +89,7 @@ impl Serialize for Body {
             Body::Extension16(v) => v.serialize(serializer),
             Body::Extension32(v) => v.serialize(serializer),
             Body::Extension64(v) => v.serialize(serializer),
+            Body::Extension128(v) => v.serialize(serializer),
             Body::Extension(v) => Bytes::new(v).serialize(serializer),
         }
     }
@@ -179,6 +181,9 @@ impl Body {
             Header::Extension16(_) => <[u8; 2]>::deserialize(deserializer).map(Body::Extension16),
             Header::Extension32(_) => <[u8; 4]>::deserialize(deserializer).map(Body::Extension32),
             Header::Extension64(_) => <[u8; 8]>::deserialize(deserializer).map(Body::Extension64),
+            Header::Extension128(_) => {
+                <[u8; 16]>::deserialize(deserializer).map(Body::Extension128)
+            }
             Header::Extension(_) => {
                 ByteBuf::deserialize(deserializer).map(|v| Body::Extension(v.into_vec()))
             }
@@ -244,6 +249,7 @@ impl Body {
             (Header::Extension16(_), Body::Extension16(_)) => true,
             (Header::Extension32(_), Body::Extension32(_)) => true,
             (Header::Extension64(_), Body::Extension64(_)) => true,
+            (Header::Extension128(_), Body::Extension128(_)) => true,
             (Header::Extension(_), Body::Extension(_)) => true,
             _ => false,
         }
@@ -600,6 +606,16 @@ mod tests {
             assert_eq!(
                 serialize(Body::Extension64([0, 1, 2, 3, 4, 5, 6, 7])),
                 [0, 1, 2, 3, 4, 5, 6, 7]
+            );
+        }
+
+        #[test]
+        fn serialize_extension128() {
+            assert_eq!(
+                serialize(Body::Extension128([
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+                ])),
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
             );
         }
 
@@ -1362,6 +1378,20 @@ mod tests {
         }
 
         #[test]
+        fn deserialize_extension128() {
+            let body = Body::Extension128([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+            let buf = serialize(body.clone());
+            assert_eq!(
+                Body::deserialize(
+                    &Header::Extension128(0),
+                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
+                )
+                .unwrap(),
+                body
+            );
+        }
+
+        #[test]
         fn deserialize_extension() {
             let body = Body::Extension(vec![0, 1, 2, 3, 4, 5, 6, 7]);
             let buf = serialize(body.clone());
@@ -1639,6 +1669,16 @@ mod tests {
         fn validate_extension64() {
             let header = Header::Extension64(123);
             assert!(Body::Extension64([0, 1, 2, 3, 4, 5, 6, 7]).validate(&header));
+            assert!(!Body::Unit.validate(&header));
+        }
+
+        #[test]
+        fn validate_extension128() {
+            let header = Header::Extension128(123);
+            assert!(
+                Body::Extension128([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+                    .validate(&header)
+            );
             assert!(!Body::Unit.validate(&header));
         }
 

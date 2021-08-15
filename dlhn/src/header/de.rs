@@ -69,11 +69,12 @@ impl<R: Read> DeserializeHeader<R> for R {
             }
             super::DATE_CODE => Ok(Header::Date),
             super::DATETIME_CODE => Ok(Header::DateTime),
-            super::EXTENSION8_CODE => Ok(Header::Extension8(u64::decode_leb128(self)?)),
-            super::EXTENSION16_CODE => Ok(Header::Extension16(u64::decode_leb128(self)?)),
-            super::EXTENSION32_CODE => Ok(Header::Extension32(u64::decode_leb128(self)?)),
-            super::EXTENSION64_CODE => Ok(Header::Extension64(u64::decode_leb128(self)?)),
-            super::EXTENSION_CODE => Ok(Header::Extension(u64::decode_leb128(self)?)),
+            super::EXTENSION8_CODE => u64::decode_leb128(self).map(Header::Extension8),
+            super::EXTENSION16_CODE => u64::decode_leb128(self).map(Header::Extension16),
+            super::EXTENSION32_CODE => u64::decode_leb128(self).map(Header::Extension32),
+            super::EXTENSION64_CODE => u64::decode_leb128(self).map(Header::Extension64),
+            super::EXTENSION128_CODE => u64::decode_leb128(self).map(Header::Extension128),
+            super::EXTENSION_CODE => u64::decode_leb128(self).map(Header::Extension),
             code => Err(std::io::Error::new(
                 ErrorKind::InvalidData,
                 format!("invalid header code: {}", code),
@@ -381,8 +382,17 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_header_extension() {
+    fn deserialize_header_extension128() {
         let buf = vec![31u8, 123];
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Extension128(123)
+        );
+    }
+
+    #[test]
+    fn deserialize_header_extension() {
+        let buf = vec![32u8, 123];
         assert_eq!(
             Cursor::new(buf).deserialize_header().unwrap(),
             Header::Extension(123)
