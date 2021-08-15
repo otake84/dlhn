@@ -181,7 +181,9 @@ impl Body {
             Header::Extension16(_) => <[u8; 2]>::deserialize(deserializer).map(Body::Extension16),
             Header::Extension32(_) => <[u8; 4]>::deserialize(deserializer).map(Body::Extension32),
             Header::Extension64(_) => <[u8; 8]>::deserialize(deserializer).map(Body::Extension64),
-            Header::Extension128(_) => <[u8; 16]>::deserialize(deserializer).map(Body::Extension128),
+            Header::Extension128(_) => {
+                <[u8; 16]>::deserialize(deserializer).map(Body::Extension128)
+            }
             Header::Extension(_) => {
                 ByteBuf::deserialize(deserializer).map(|v| Body::Extension(v.into_vec()))
             }
@@ -610,7 +612,9 @@ mod tests {
         #[test]
         fn serialize_extension128() {
             assert_eq!(
-                serialize(Body::Extension128([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])),
+                serialize(Body::Extension128([
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+                ])),
                 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
             );
         }
@@ -1671,7 +1675,10 @@ mod tests {
         #[test]
         fn validate_extension128() {
             let header = Header::Extension128(123);
-            assert!(Body::Extension128([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]).validate(&header));
+            assert!(
+                Body::Extension128([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+                    .validate(&header)
+            );
             assert!(!Body::Unit.validate(&header));
         }
 
