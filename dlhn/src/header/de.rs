@@ -73,6 +73,7 @@ impl<R: Read> DeserializeHeader<R> for R {
             super::EXTENSION16_CODE => Ok(Header::Extension16(u64::decode_leb128(self)?)),
             super::EXTENSION32_CODE => Ok(Header::Extension32(u64::decode_leb128(self)?)),
             super::EXTENSION64_CODE => Ok(Header::Extension64(u64::decode_leb128(self)?)),
+            super::EXTENSION128_CODE => Ok(Header::Extension128(u64::decode_leb128(self)?)),
             super::EXTENSION_CODE => Ok(Header::Extension(u64::decode_leb128(self)?)),
             code => Err(std::io::Error::new(
                 ErrorKind::InvalidData,
@@ -381,8 +382,17 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_header_extension() {
+    fn deserialize_header_extension128() {
         let buf = vec![31u8, 123];
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::Extension128(123)
+        );
+    }
+
+    #[test]
+    fn deserialize_header_extension() {
+        let buf = vec![32u8, 123];
         assert_eq!(
             Cursor::new(buf).deserialize_header().unwrap(),
             Header::Extension(123)

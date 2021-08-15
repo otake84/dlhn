@@ -32,7 +32,8 @@ const EXTENSION8_CODE: u8 = 27;
 const EXTENSION16_CODE: u8 = 28;
 const EXTENSION32_CODE: u8 = 29;
 const EXTENSION64_CODE: u8 = 30;
-const EXTENSION_CODE: u8 = 31;
+const EXTENSION128_CODE: u8 = 31;
+const EXTENSION_CODE: u8 = 32;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Header {
@@ -67,5 +68,6 @@ pub enum Header {
     Extension16(u64),
     Extension32(u64),
     Extension64(u64),
+    Extension128(u64),
     Extension(u64),
 }
