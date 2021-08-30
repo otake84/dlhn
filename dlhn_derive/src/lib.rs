@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 mod leb128;
 
 use crate::leb128::Leb128;
