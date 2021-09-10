@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 pub mod body;
+pub mod date;
 pub mod de;
 pub mod format;
 pub mod header;

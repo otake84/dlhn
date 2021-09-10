@@ -1,4 +1,5 @@
 use crate::{
+    date::Date,
     de::{Deserializer, Error},
     format,
     header::Header,
@@ -8,7 +9,7 @@ use num_bigint::{BigInt, BigUint};
 use serde::{ser::SerializeTuple, Deserialize, Serialize};
 use serde_bytes::{ByteBuf, Bytes};
 use std::{collections::BTreeMap, io::Read};
-use time::{Date, OffsetDateTime};
+use time::OffsetDateTime;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Body {
@@ -83,7 +84,7 @@ impl Serialize for Body {
             }
             Body::Map(v) => v.serialize(serializer),
             Body::Enum(i, v) => serializer.serialize_newtype_variant("", *i, "", v),
-            Body::Date(v) => format::date::serialize(v, serializer),
+            Body::Date(v) => v.serialize(serializer),
             Body::DateTime(v) => format::date_time::serialize(v, serializer),
             Body::Extension8(v) => v.serialize(serializer),
             Body::Extension16(v) => v.serialize(serializer),
@@ -175,7 +176,7 @@ impl Body {
                     Box::new(Self::deserialize(inner, deserializer)?),
                 ))
             }
-            Header::Date => format::date::deserialize(deserializer).map(Self::Date),
+            Header::Date => Date::deserialize(deserializer).map(Self::Date),
             Header::DateTime => format::date_time::deserialize(deserializer).map(Self::DateTime),
             Header::Extension8(_) => <[u8; 1]>::deserialize(deserializer).map(Body::Extension8),
             Header::Extension16(_) => <[u8; 2]>::deserialize(deserializer).map(Body::Extension16),
@@ -270,11 +271,12 @@ mod tests {
 
     mod serialize {
         use super::*;
+        use crate::date::Date;
         use bigdecimal::BigDecimal;
         use num_bigint::{BigInt, BigUint};
         use serde_bytes::ByteBuf;
         use std::{array::IntoIter, collections::BTreeMap};
-        use time::{Date, Month, OffsetDateTime};
+        use time::{Month, OffsetDateTime};
 
         #[test]
         fn serialize_unit() {
@@ -570,11 +572,11 @@ mod tests {
 
         #[test]
         fn serialize_date() {
-            let v = Date::from_calendar_date(1970, Month::January, 1).unwrap();
+            let v = time::Date::from_calendar_date(1970, Month::January, 1).unwrap();
             let mut buf = Vec::new();
             let mut serializer = Serializer::new(&mut buf);
             crate::format::date::serialize(&v, &mut serializer).unwrap();
-            assert_eq!(serialize(Body::Date(v)), buf);
+            assert_eq!(serialize(Body::Date(Date::from(v))), buf);
         }
 
         #[test]
@@ -630,12 +632,12 @@ mod tests {
 
     mod deserialize {
         use super::*;
-        use crate::{body::Body, de::Deserializer, header::Header, ser::Serializer};
+        use crate::{body::Body, date::Date, de::Deserializer, header::Header, ser::Serializer};
         use bigdecimal::BigDecimal;
         use num_bigint::{BigInt, BigUint};
         use serde::Serialize;
         use std::{array::IntoIter, collections::BTreeMap};
-        use time::{Date, Month, OffsetDateTime};
+        use time::{Month, OffsetDateTime};
 
         #[test]
         fn deserialize_unit() {
@@ -1295,7 +1297,9 @@ mod tests {
 
         #[test]
         fn deserialize_date() {
-            let body = Body::Date(Date::from_calendar_date(1970, Month::January, 1).unwrap());
+            let body = Body::Date(Date::from(
+                time::Date::from_calendar_date(1970, Month::January, 1).unwrap(),
+            ));
             let buf = serialize(body.clone());
             assert_eq!(
                 Body::deserialize(
@@ -1408,11 +1412,11 @@ mod tests {
 
     mod validate {
         use super::*;
-        use crate::header::Header;
+        use crate::{date::Date, header::Header};
         use bigdecimal::BigDecimal;
         use num_bigint::{BigInt, BigUint};
         use std::collections::BTreeMap;
-        use time::{Date, Month, OffsetDateTime};
+        use time::{Month, OffsetDateTime};
 
         #[test]
         fn validate_unit() {
@@ -1630,10 +1634,10 @@ mod tests {
         #[test]
         fn validate_date() {
             let header = Header::Date;
-            assert!(
-                Body::Date(Date::from_calendar_date(1970, Month::January, 1).unwrap())
-                    .validate(&header)
-            );
+            assert!(Body::Date(Date::from(
+                time::Date::from_calendar_date(1970, Month::January, 1).unwrap()
+            ))
+            .validate(&header));
             assert!(!Body::Unit.validate(&header));
         }
 
