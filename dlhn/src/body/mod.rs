@@ -1,4 +1,5 @@
 use crate::{
+    big_uint::BigUint,
     date::Date,
     date_time::DateTime,
     de::{Deserializer, Error},
@@ -6,7 +7,7 @@ use crate::{
     header::Header,
 };
 use bigdecimal::BigDecimal;
-use num_bigint::{BigInt, BigUint};
+use num_bigint::BigInt;
 use serde::{ser::SerializeTuple, Deserialize, Serialize};
 use serde_bytes::{ByteBuf, Bytes};
 use std::{collections::BTreeMap, io::Read};
@@ -69,7 +70,7 @@ impl Serialize for Body {
             Body::Int128(v) => v.serialize(serializer),
             Body::Float32(v) => v.serialize(serializer),
             Body::Float64(v) => v.serialize(serializer),
-            Body::BigUInt(v) => format::big_uint::serialize(v, serializer),
+            Body::BigUInt(v) => v.serialize(serializer),
             Body::BigInt(v) => format::big_int::serialize(v, serializer),
             Body::BigDecimal(v) => format::big_decimal::serialize(v, serializer),
             Body::String(v) => v.serialize(serializer),
@@ -126,7 +127,7 @@ impl Body {
             Header::Int128 => i128::deserialize(deserializer).map(Self::Int128),
             Header::Float32 => f32::deserialize(deserializer).map(Self::Float32),
             Header::Float64 => f64::deserialize(deserializer).map(Self::Float64),
-            Header::BigUInt => format::big_uint::deserialize(deserializer).map(Self::BigUInt),
+            Header::BigUInt => BigUint::deserialize(deserializer).map(Self::BigUInt),
             Header::BigInt => format::big_int::deserialize(deserializer).map(Self::BigInt),
             Header::BigDecimal => {
                 format::big_decimal::deserialize(deserializer).map(Self::BigDecimal)
@@ -271,9 +272,9 @@ mod tests {
 
     mod serialize {
         use super::*;
-        use crate::{date::Date, date_time::DateTime};
+        use crate::{big_uint::BigUint, date::Date, date_time::DateTime};
         use bigdecimal::BigDecimal;
-        use num_bigint::{BigInt, BigUint};
+        use num_bigint::BigInt;
         use serde_bytes::ByteBuf;
         use std::{array::IntoIter, collections::BTreeMap};
         use time::{Month, OffsetDateTime};
@@ -414,21 +415,21 @@ mod tests {
         #[test]
         fn serialize_big_uint() {
             IntoIter::new([
-                BigUint::from(0u8),
-                BigUint::from(u8::MAX),
-                BigUint::from(u16::MAX),
-                BigUint::from(u16::MAX) + 1u8,
-                BigUint::from(u32::MAX),
-                BigUint::from(u32::MAX) + 1u8,
-                BigUint::from(u64::MAX),
-                BigUint::from(u64::MAX) + 1u8,
-                BigUint::from(u128::MAX),
-                BigUint::from(u128::MAX) + 1u8,
+                BigUint::from(num_bigint::BigUint::from(0u8)),
+                BigUint::from(num_bigint::BigUint::from(u8::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u16::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u16::MAX) + 1u8),
+                BigUint::from(num_bigint::BigUint::from(u32::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u32::MAX) + 1u8),
+                BigUint::from(num_bigint::BigUint::from(u64::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u64::MAX) + 1u8),
+                BigUint::from(num_bigint::BigUint::from(u128::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u128::MAX) + 1u8),
             ])
             .for_each(|v| {
                 let mut buf = Vec::new();
                 let mut serializer = Serializer::new(&mut buf);
-                crate::format::big_uint::serialize(&v, &mut serializer).unwrap();
+                v.serialize(&mut serializer).unwrap();
                 assert_eq!(serialize(Body::BigUInt(v)), buf);
             });
         }
@@ -633,11 +634,11 @@ mod tests {
     mod deserialize {
         use super::*;
         use crate::{
-            body::Body, date::Date, date_time::DateTime, de::Deserializer, header::Header,
-            ser::Serializer,
+            big_uint::BigUint, body::Body, date::Date, date_time::DateTime, de::Deserializer,
+            header::Header, ser::Serializer,
         };
         use bigdecimal::BigDecimal;
-        use num_bigint::{BigInt, BigUint};
+        use num_bigint::BigInt;
         use serde::Serialize;
         use std::{array::IntoIter, collections::BTreeMap};
         use time::{Month, OffsetDateTime};
@@ -1078,16 +1079,16 @@ mod tests {
         #[test]
         fn deserialize_big_uint() {
             IntoIter::new([
-                BigUint::from(0u8),
-                BigUint::from(u8::MAX),
-                BigUint::from(u16::MAX),
-                BigUint::from(u16::MAX) + 1u8,
-                BigUint::from(u32::MAX),
-                BigUint::from(u32::MAX) + 1u8,
-                BigUint::from(u64::MAX),
-                BigUint::from(u64::MAX) + 1u8,
-                BigUint::from(u128::MAX),
-                BigUint::from(u128::MAX) + 1u8,
+                BigUint::from(num_bigint::BigUint::from(0u8)),
+                BigUint::from(num_bigint::BigUint::from(u8::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u16::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u16::MAX) + 1u8),
+                BigUint::from(num_bigint::BigUint::from(u32::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u32::MAX) + 1u8),
+                BigUint::from(num_bigint::BigUint::from(u64::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u64::MAX) + 1u8),
+                BigUint::from(num_bigint::BigUint::from(u128::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u128::MAX) + 1u8),
             ])
             .for_each(|v| {
                 let buf = serialize(Body::BigUInt(v.clone()));
@@ -1415,9 +1416,9 @@ mod tests {
 
     mod validate {
         use super::*;
-        use crate::{date::Date, date_time::DateTime, header::Header};
+        use crate::{big_uint::BigUint, date::Date, date_time::DateTime, header::Header};
         use bigdecimal::BigDecimal;
-        use num_bigint::{BigInt, BigUint};
+        use num_bigint::BigInt;
         use std::collections::BTreeMap;
         use time::{Month, OffsetDateTime};
 
@@ -1516,7 +1517,9 @@ mod tests {
         #[test]
         fn validate_big_uint() {
             let header = Header::BigUInt;
-            assert!(Body::BigUInt(BigUint::from(123u8)).validate(&header));
+            assert!(
+                Body::BigUInt(BigUint::from(num_bigint::BigUint::from(123u8))).validate(&header)
+            );
             assert!(!Body::Unit.validate(&header));
         }
 
