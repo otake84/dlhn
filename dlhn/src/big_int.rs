@@ -32,11 +32,7 @@ impl Serialize for BigInt {
     {
         let mut seq = serializer.serialize_seq(None)?;
 
-        if self.0 == [0] {
-            seq.serialize_element(&0u8)?;
-        } else {
-            seq.serialize_element(&self.0)?;
-        }
+        seq.serialize_element(&self.0)?;
 
         seq.end()
     }
