@@ -1,5 +1,6 @@
 use crate::{
     date::Date,
+    date_time::DateTime,
     de::{Deserializer, Error},
     format,
     header::Header,
@@ -9,7 +10,6 @@ use num_bigint::{BigInt, BigUint};
 use serde::{ser::SerializeTuple, Deserialize, Serialize};
 use serde_bytes::{ByteBuf, Bytes};
 use std::{collections::BTreeMap, io::Read};
-use time::OffsetDateTime;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Body {
@@ -39,7 +39,7 @@ pub enum Body {
     Map(BTreeMap<String, Body>),
     Enum(u32, Box<Body>),
     Date(Date),
-    DateTime(OffsetDateTime),
+    DateTime(DateTime),
     Extension8([u8; 1]),
     Extension16([u8; 2]),
     Extension32([u8; 4]),
@@ -85,7 +85,7 @@ impl Serialize for Body {
             Body::Map(v) => v.serialize(serializer),
             Body::Enum(i, v) => serializer.serialize_newtype_variant("", *i, "", v),
             Body::Date(v) => v.serialize(serializer),
-            Body::DateTime(v) => format::date_time::serialize(v, serializer),
+            Body::DateTime(v) => v.serialize(serializer),
             Body::Extension8(v) => v.serialize(serializer),
             Body::Extension16(v) => v.serialize(serializer),
             Body::Extension32(v) => v.serialize(serializer),
@@ -177,7 +177,7 @@ impl Body {
                 ))
             }
             Header::Date => Date::deserialize(deserializer).map(Self::Date),
-            Header::DateTime => format::date_time::deserialize(deserializer).map(Self::DateTime),
+            Header::DateTime => DateTime::deserialize(deserializer).map(Self::DateTime),
             Header::Extension8(_) => <[u8; 1]>::deserialize(deserializer).map(Body::Extension8),
             Header::Extension16(_) => <[u8; 2]>::deserialize(deserializer).map(Body::Extension16),
             Header::Extension32(_) => <[u8; 4]>::deserialize(deserializer).map(Body::Extension32),
@@ -271,7 +271,7 @@ mod tests {
 
     mod serialize {
         use super::*;
-        use crate::date::Date;
+        use crate::{date::Date, date_time::DateTime};
         use bigdecimal::BigDecimal;
         use num_bigint::{BigInt, BigUint};
         use serde_bytes::ByteBuf;
@@ -572,19 +572,19 @@ mod tests {
 
         #[test]
         fn serialize_date() {
-            let v = time::Date::from_calendar_date(1970, Month::January, 1).unwrap();
+            let v = Date::from(time::Date::from_calendar_date(1970, Month::January, 1).unwrap());
             let mut buf = Vec::new();
             let mut serializer = Serializer::new(&mut buf);
-            crate::format::date::serialize(&v, &mut serializer).unwrap();
-            assert_eq!(serialize(Body::Date(Date::from(v))), buf);
+            v.serialize(&mut serializer).unwrap();
+            assert_eq!(serialize(Body::Date(v)), buf);
         }
 
         #[test]
         fn serialize_date_time() {
-            let v = OffsetDateTime::UNIX_EPOCH;
+            let v = DateTime::from(OffsetDateTime::UNIX_EPOCH);
             let mut buf = Vec::new();
             let mut serializer = Serializer::new(&mut buf);
-            crate::format::date_time::serialize(&v, &mut serializer).unwrap();
+            v.serialize(&mut serializer).unwrap();
             assert_eq!(serialize(Body::DateTime(v)), buf);
         }
 
@@ -632,7 +632,10 @@ mod tests {
 
     mod deserialize {
         use super::*;
-        use crate::{body::Body, date::Date, de::Deserializer, header::Header, ser::Serializer};
+        use crate::{
+            body::Body, date::Date, date_time::DateTime, de::Deserializer, header::Header,
+            ser::Serializer,
+        };
         use bigdecimal::BigDecimal;
         use num_bigint::{BigInt, BigUint};
         use serde::Serialize;
@@ -1313,7 +1316,7 @@ mod tests {
 
         #[test]
         fn deserialize_date_time() {
-            let body = Body::DateTime(OffsetDateTime::UNIX_EPOCH);
+            let body = Body::DateTime(DateTime::from(OffsetDateTime::UNIX_EPOCH));
             let buf = serialize(body.clone());
             assert_eq!(
                 Body::deserialize(
@@ -1412,7 +1415,7 @@ mod tests {
 
     mod validate {
         use super::*;
-        use crate::{date::Date, header::Header};
+        use crate::{date::Date, date_time::DateTime, header::Header};
         use bigdecimal::BigDecimal;
         use num_bigint::{BigInt, BigUint};
         use std::collections::BTreeMap;
@@ -1644,7 +1647,7 @@ mod tests {
         #[test]
         fn validate_date_time() {
             let header = Header::DateTime;
-            assert!(Body::DateTime(OffsetDateTime::UNIX_EPOCH).validate(&header));
+            assert!(Body::DateTime(DateTime::from(OffsetDateTime::UNIX_EPOCH)).validate(&header));
             assert!(!Body::Unit.validate(&header));
         }
 
