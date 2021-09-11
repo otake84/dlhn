@@ -104,7 +104,7 @@ mod tests {
     }
 
     #[test]
-    fn into() {
+    fn try_into() {
         let date = Date::from(time::Date::from_ordinal_date(2020, 12).unwrap());
         let time_date: time::Date = date.try_into().unwrap();
         assert_eq!(time_date, time::Date::from_ordinal_date(2020, 12).unwrap());
