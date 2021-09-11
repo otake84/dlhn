@@ -1,6 +1,6 @@
 use super::Header;
+use crate::big_decimal::BigDecimal;
 use crate::leb128::Leb128;
-use bigdecimal::BigDecimal;
 use num_bigint::{BigInt, BigUint};
 use serde_bytes::{ByteBuf, Bytes};
 use std::{
@@ -117,6 +117,12 @@ impl SerializeHeader for BigInt {
 }
 
 impl SerializeHeader for BigDecimal {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::BIG_DECIMAL_CODE])
+    }
+}
+
+impl SerializeHeader for bigdecimal::BigDecimal {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::BIG_DECIMAL_CODE])
     }
@@ -429,6 +435,13 @@ mod tests {
     }
 
     #[test]
+    fn serialize_header_big_decimal2() {
+        let mut buf = Vec::new();
+        bigdecimal::BigDecimal::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [17]);
+    }
+
+    #[test]
     fn serialize_header_str() {
         let mut buf = Vec::new();
         <&str>::serialize_header(&mut buf).unwrap();
@@ -501,8 +514,10 @@ mod tests {
     }
 
     mod header {
-        use crate::header::{ser::SerializeHeader, Header};
-        use bigdecimal::BigDecimal;
+        use crate::{
+            big_decimal::BigDecimal,
+            header::{ser::SerializeHeader, Header},
+        };
         use num_bigint::{BigInt, BigUint};
         use serde_bytes::ByteBuf;
         use std::collections::BTreeMap;
@@ -601,6 +616,14 @@ mod tests {
             assert_eq!(
                 serialize(Header::BigDecimal),
                 serialize_header::<BigDecimal>()
+            );
+        }
+
+        #[test]
+        fn serialize_big_decimal2() {
+            assert_eq!(
+                serialize(Header::BigDecimal),
+                serialize_header::<bigdecimal::BigDecimal>()
             );
         }
 

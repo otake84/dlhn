@@ -1,4 +1,4 @@
-use bigdecimal::Zero;
+use num_traits::Zero;
 use serde::{
     de::{self, SeqAccess, Unexpected, Visitor},
     ser::SerializeSeq,
