@@ -1,25 +1,27 @@
 use crate::de::Error;
+use bigdecimal::Zero;
 use serde::{
     de::{self, SeqAccess, Unexpected, Visitor},
     ser::SerializeSeq,
     Deserialize, Serialize,
 };
-use std::convert::TryInto;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct BigUint(Vec<u8>);
 
 impl From<num_bigint::BigUint> for BigUint {
     fn from(v: num_bigint::BigUint) -> Self {
-        BigUint(v.to_bytes_le())
+        if v.is_zero() {
+            Self(Vec::new())
+        } else {
+            Self(v.to_bytes_le())
+        }
     }
 }
 
-impl TryInto<num_bigint::BigUint> for BigUint {
-    type Error = ();
-
-    fn try_into(self) -> Result<num_bigint::BigUint, Self::Error> {
-        Ok(num_bigint::BigUint::from_bytes_le(self.0.as_ref()))
+impl Into<num_bigint::BigUint> for BigUint {
+    fn into(self) -> num_bigint::BigUint {
+        num_bigint::BigUint::from_bytes_le(self.0.as_ref())
     }
 }
 
@@ -30,11 +32,7 @@ impl Serialize for BigUint {
     {
         let mut seq = serializer.serialize_seq(None)?;
 
-        if self.0 == [0] {
-            seq.serialize_element(&0u8)?;
-        } else {
-            seq.serialize_element(&self.0)?;
-        }
+        seq.serialize_element(&self.0)?;
 
         seq.end()
     }
@@ -56,9 +54,7 @@ impl<'de> Visitor<'de> for BigUintVisitor {
         let v = seq
             .next_element::<Vec<u8>>()?
             .ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?;
-        Ok(BigUint::from(num_bigint::BigUint::from_bytes_le(
-            v.as_slice(),
-        )))
+        Ok(BigUint(v))
     }
 }
 
@@ -76,7 +72,7 @@ mod tests {
     use super::BigUint;
     use crate::{de::Deserializer, ser::Serializer};
     use serde::{Deserialize, Serialize};
-    use std::{array::IntoIter, convert::TryInto};
+    use std::array::IntoIter;
 
     #[test]
     fn from() {
@@ -85,10 +81,8 @@ mod tests {
     }
 
     #[test]
-    fn try_into() {
-        let v: num_bigint::BigUint = BigUint::from(num_bigint::BigUint::from(123u8))
-            .try_into()
-            .unwrap();
+    fn into() {
+        let v: num_bigint::BigUint = BigUint::from(num_bigint::BigUint::from(123u8)).into();
         assert_eq!(v, num_bigint::BigUint::from(123u8));
     }
 

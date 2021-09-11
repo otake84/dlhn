@@ -1,4 +1,5 @@
 use crate::{
+    big_int::BigInt,
     big_uint::BigUint,
     date::Date,
     date_time::DateTime,
@@ -7,7 +8,6 @@ use crate::{
     header::Header,
 };
 use bigdecimal::BigDecimal;
-use num_bigint::BigInt;
 use serde::{ser::SerializeTuple, Deserialize, Serialize};
 use serde_bytes::{ByteBuf, Bytes};
 use std::{collections::BTreeMap, io::Read};
@@ -71,7 +71,7 @@ impl Serialize for Body {
             Body::Float32(v) => v.serialize(serializer),
             Body::Float64(v) => v.serialize(serializer),
             Body::BigUInt(v) => v.serialize(serializer),
-            Body::BigInt(v) => format::big_int::serialize(v, serializer),
+            Body::BigInt(v) => v.serialize(serializer),
             Body::BigDecimal(v) => format::big_decimal::serialize(v, serializer),
             Body::String(v) => v.serialize(serializer),
             Body::Binary(v) => v.serialize(serializer),
@@ -128,7 +128,7 @@ impl Body {
             Header::Float32 => f32::deserialize(deserializer).map(Self::Float32),
             Header::Float64 => f64::deserialize(deserializer).map(Self::Float64),
             Header::BigUInt => BigUint::deserialize(deserializer).map(Self::BigUInt),
-            Header::BigInt => format::big_int::deserialize(deserializer).map(Self::BigInt),
+            Header::BigInt => BigInt::deserialize(deserializer).map(Self::BigInt),
             Header::BigDecimal => {
                 format::big_decimal::deserialize(deserializer).map(Self::BigDecimal)
             }
@@ -272,9 +272,8 @@ mod tests {
 
     mod serialize {
         use super::*;
-        use crate::{big_uint::BigUint, date::Date, date_time::DateTime};
+        use crate::{big_int::BigInt, big_uint::BigUint, date::Date, date_time::DateTime};
         use bigdecimal::BigDecimal;
-        use num_bigint::BigInt;
         use serde_bytes::ByteBuf;
         use std::{array::IntoIter, collections::BTreeMap};
         use time::{Month, OffsetDateTime};
@@ -437,32 +436,32 @@ mod tests {
         #[test]
         fn serialize_big_int() {
             IntoIter::new([
-                BigInt::from(0),
-                BigInt::from(i8::MIN),
-                BigInt::from(i8::MAX),
-                BigInt::from(i8::MIN) - 1,
-                BigInt::from(i8::MAX) + 1,
-                BigInt::from(i16::MIN),
-                BigInt::from(i16::MAX),
-                BigInt::from(i16::MIN) - 1,
-                BigInt::from(i16::MAX) + 1,
-                BigInt::from(i32::MIN),
-                BigInt::from(i32::MAX),
-                BigInt::from(i32::MIN) - 1,
-                BigInt::from(i32::MAX) + 1,
-                BigInt::from(i64::MIN),
-                BigInt::from(i64::MAX),
-                BigInt::from(i64::MIN) - 1,
-                BigInt::from(i64::MAX) + 1,
-                BigInt::from(i128::MIN),
-                BigInt::from(i128::MAX),
-                BigInt::from(i128::MIN) - 1,
-                BigInt::from(i128::MAX) + 1,
+                BigInt::from(num_bigint::BigInt::from(0)),
+                BigInt::from(num_bigint::BigInt::from(i8::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i8::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i8::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i8::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i16::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i16::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i16::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i16::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i32::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i32::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i32::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i32::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i64::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i64::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i64::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i64::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i128::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i128::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i128::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i128::MAX) + 1),
             ])
             .for_each(|v| {
                 let mut buf = Vec::new();
                 let mut serializer = Serializer::new(&mut buf);
-                crate::format::big_int::serialize(&v, &mut serializer).unwrap();
+                v.serialize(&mut serializer).unwrap();
                 assert_eq!(serialize(Body::BigInt(v)), buf);
             });
         }
@@ -471,15 +470,15 @@ mod tests {
         fn serialize_big_decimal() {
             IntoIter::new([
                 BigDecimal::from(0),
-                BigDecimal::new(BigInt::from(1), 0),
-                BigDecimal::new(BigInt::from(1), -1),
-                BigDecimal::new(BigInt::from(1), 1),
-                BigDecimal::new(BigInt::from(1), 63),
-                BigDecimal::new(BigInt::from(1), 64),
-                BigDecimal::new(BigInt::from(1), -64),
-                BigDecimal::new(BigInt::from(1), -65),
-                BigDecimal::new(BigInt::from(i16::MIN), 0),
-                BigDecimal::new(BigInt::from(i16::MAX), 0),
+                BigDecimal::new(num_bigint::BigInt::from(1), 0),
+                BigDecimal::new(num_bigint::BigInt::from(1), -1),
+                BigDecimal::new(num_bigint::BigInt::from(1), 1),
+                BigDecimal::new(num_bigint::BigInt::from(1), 63),
+                BigDecimal::new(num_bigint::BigInt::from(1), 64),
+                BigDecimal::new(num_bigint::BigInt::from(1), -64),
+                BigDecimal::new(num_bigint::BigInt::from(1), -65),
+                BigDecimal::new(num_bigint::BigInt::from(i16::MIN), 0),
+                BigDecimal::new(num_bigint::BigInt::from(i16::MAX), 0),
             ])
             .for_each(|v| {
                 let mut buf = Vec::new();
@@ -634,11 +633,10 @@ mod tests {
     mod deserialize {
         use super::*;
         use crate::{
-            big_uint::BigUint, body::Body, date::Date, date_time::DateTime, de::Deserializer,
-            header::Header, ser::Serializer,
+            big_int::BigInt, big_uint::BigUint, body::Body, date::Date, date_time::DateTime,
+            de::Deserializer, header::Header, ser::Serializer,
         };
         use bigdecimal::BigDecimal;
-        use num_bigint::BigInt;
         use serde::Serialize;
         use std::{array::IntoIter, collections::BTreeMap};
         use time::{Month, OffsetDateTime};
@@ -1106,27 +1104,27 @@ mod tests {
         #[test]
         fn deserialize_big_int() {
             IntoIter::new([
-                BigInt::from(0),
-                BigInt::from(i8::MIN),
-                BigInt::from(i8::MAX),
-                BigInt::from(i8::MIN) - 1,
-                BigInt::from(i8::MAX) + 1,
-                BigInt::from(i16::MIN),
-                BigInt::from(i16::MAX),
-                BigInt::from(i16::MIN) - 1,
-                BigInt::from(i16::MAX) + 1,
-                BigInt::from(i32::MIN),
-                BigInt::from(i32::MAX),
-                BigInt::from(i32::MIN) - 1,
-                BigInt::from(i32::MAX) + 1,
-                BigInt::from(i64::MIN),
-                BigInt::from(i64::MAX),
-                BigInt::from(i64::MIN) - 1,
-                BigInt::from(i64::MAX) + 1,
-                BigInt::from(i128::MIN),
-                BigInt::from(i128::MAX),
-                BigInt::from(i128::MIN) - 1,
-                BigInt::from(i128::MAX) + 1,
+                BigInt::from(num_bigint::BigInt::from(0)),
+                BigInt::from(num_bigint::BigInt::from(i8::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i8::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i8::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i8::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i16::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i16::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i16::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i16::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i32::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i32::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i32::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i32::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i64::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i64::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i64::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i64::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i128::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i128::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i128::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i128::MAX) + 1),
             ])
             .for_each(|v| {
                 let buf = serialize(Body::BigInt(v.clone()));
@@ -1145,15 +1143,15 @@ mod tests {
         fn deserialize_big_decimal() {
             IntoIter::new([
                 BigDecimal::from(0),
-                BigDecimal::new(BigInt::from(1), 0),
-                BigDecimal::new(BigInt::from(1), -1),
-                BigDecimal::new(BigInt::from(1), 1),
-                BigDecimal::new(BigInt::from(1), 63),
-                BigDecimal::new(BigInt::from(1), 64),
-                BigDecimal::new(BigInt::from(1), -64),
-                BigDecimal::new(BigInt::from(1), -65),
-                BigDecimal::new(BigInt::from(i16::MIN), 0),
-                BigDecimal::new(BigInt::from(i16::MAX), 0),
+                BigDecimal::new(num_bigint::BigInt::from(1), 0),
+                BigDecimal::new(num_bigint::BigInt::from(1), -1),
+                BigDecimal::new(num_bigint::BigInt::from(1), 1),
+                BigDecimal::new(num_bigint::BigInt::from(1), 63),
+                BigDecimal::new(num_bigint::BigInt::from(1), 64),
+                BigDecimal::new(num_bigint::BigInt::from(1), -64),
+                BigDecimal::new(num_bigint::BigInt::from(1), -65),
+                BigDecimal::new(num_bigint::BigInt::from(i16::MIN), 0),
+                BigDecimal::new(num_bigint::BigInt::from(i16::MAX), 0),
             ])
             .for_each(|v| {
                 let buf = serialize(Body::BigDecimal(v.clone()));
@@ -1416,9 +1414,10 @@ mod tests {
 
     mod validate {
         use super::*;
-        use crate::{big_uint::BigUint, date::Date, date_time::DateTime, header::Header};
+        use crate::{
+            big_int::BigInt, big_uint::BigUint, date::Date, date_time::DateTime, header::Header,
+        };
         use bigdecimal::BigDecimal;
-        use num_bigint::BigInt;
         use std::collections::BTreeMap;
         use time::{Month, OffsetDateTime};
 
@@ -1526,7 +1525,7 @@ mod tests {
         #[test]
         fn validate_big_int() {
             let header = Header::BigInt;
-            assert!(Body::BigInt(BigInt::from(123)).validate(&header));
+            assert!(Body::BigInt(BigInt::from(num_bigint::BigInt::from(123))).validate(&header));
             assert!(!Body::Unit.validate(&header));
         }
 
