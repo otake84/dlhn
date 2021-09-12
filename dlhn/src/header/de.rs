@@ -369,6 +369,7 @@ mod tests {
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Date);
     }
 
+    #[cfg(feature = "time")]
     #[test]
     fn deserialize_header_date2() {
         let mut buf = Vec::new();
@@ -386,6 +387,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "time")]
     #[test]
     fn deserialize_header_date_time2() {
         let mut buf = Vec::new();

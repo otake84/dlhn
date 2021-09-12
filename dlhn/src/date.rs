@@ -4,7 +4,6 @@ use serde::{
     ser::SerializeTuple,
     Deserialize, Serialize,
 };
-use std::convert::TryInto;
 
 const DATE_YEAR_OFFSET: i32 = 2000;
 const DATE_ORDINAL_OFFSET: u16 = 1;
@@ -15,24 +14,22 @@ pub struct Date {
     ordinal: u16,
 }
 
+#[cfg(feature = "time")]
 impl From<time::Date> for Date {
     fn from(date: time::Date) -> Self {
         Self {
-            year: date.year() - DATE_YEAR_OFFSET,
-            ordinal: date.ordinal() - DATE_ORDINAL_OFFSET,
+            year: date.year(),
+            ordinal: date.ordinal(),
         }
     }
 }
 
-impl TryInto<time::Date> for Date {
+#[cfg(feature = "time")]
+impl std::convert::TryInto<time::Date> for Date {
     type Error = ();
 
     fn try_into(self) -> Result<time::Date, Self::Error> {
-        time::Date::from_ordinal_date(
-            self.year + DATE_YEAR_OFFSET,
-            self.ordinal + DATE_ORDINAL_OFFSET,
-        )
-        .or(Err(()))
+        time::Date::from_ordinal_date(self.year, self.ordinal).or(Err(()))
     }
 }
 
@@ -42,8 +39,8 @@ impl Serialize for Date {
         S: serde::Serializer,
     {
         let mut tuple = serializer.serialize_tuple(2)?;
-        tuple.serialize_element(&self.year)?;
-        tuple.serialize_element(&self.ordinal)?;
+        tuple.serialize_element(&(self.year - DATE_YEAR_OFFSET))?;
+        tuple.serialize_element(&(self.ordinal - DATE_ORDINAL_OFFSET))?;
         tuple.end()
     }
 }
@@ -69,9 +66,7 @@ impl<'de> Visitor<'de> for DateVisitor {
             .next_element::<u16>()?
             .ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?
             + DATE_ORDINAL_OFFSET;
-        time::Date::from_ordinal_date(year, ordinal)
-            .map(Date::from)
-            .or(Err(de::Error::invalid_value(Unexpected::Seq, &Error::Read)))
+        Ok(Date { year, ordinal })
     }
 }
 
@@ -84,6 +79,7 @@ impl<'de> Deserialize<'de> for Date {
     }
 }
 
+#[cfg(feature = "time")]
 #[cfg(test)]
 mod tests {
     use super::Date;
@@ -97,8 +93,8 @@ mod tests {
         assert_eq!(
             date,
             Date {
-                year: 20,
-                ordinal: 11
+                year: 2020,
+                ordinal: 12,
             }
         );
     }

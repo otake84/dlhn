@@ -177,6 +177,7 @@ impl SerializeHeader for Date {
     }
 }
 
+#[cfg(feature = "time")]
 impl SerializeHeader for time::Date {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::DATE_CODE])
@@ -189,6 +190,7 @@ impl SerializeHeader for DateTime {
     }
 }
 
+#[cfg(feature = "time")]
 impl SerializeHeader for time::OffsetDateTime {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::DATETIME_CODE])
@@ -545,6 +547,7 @@ mod tests {
         assert_eq!(buf, [25]);
     }
 
+    #[cfg(feature = "time")]
     #[test]
     fn serialize_header_date2() {
         let mut buf = Vec::new();
@@ -559,6 +562,7 @@ mod tests {
         assert_eq!(buf, [26]);
     }
 
+    #[cfg(feature = "time")]
     #[test]
     fn serialize_header_date_time2() {
         let mut buf = Vec::new();
@@ -757,6 +761,7 @@ mod tests {
             assert_eq!(serialize(Header::Date), serialize_header::<Date>());
         }
 
+        #[cfg(feature = "time")]
         #[test]
         fn serialize_date2() {
             assert_eq!(serialize(Header::Date), serialize_header::<time::Date>());
@@ -767,6 +772,7 @@ mod tests {
             assert_eq!(serialize(Header::DateTime), serialize_header::<DateTime>());
         }
 
+        #[cfg(feature = "time")]
         #[test]
         fn serialize_date_time2() {
             assert_eq!(

@@ -9,7 +9,7 @@ resolver = "2"
 
 [dependencies]
 serde = "1.0.126"
-time = "0.3.0"
+time = { version = "0.3.2", optional = true }
 num-traits = "0.2.14"
 num-bigint = "0.4.1"
 bigdecimal = "0.3.0"
@@ -35,10 +35,12 @@ harness = false
 [[bench]]
 name = "date"
 harness = false
+features = ["time"]
 
 [[bench]]
 name = "date_time"
 harness = false
+features = ["time"]
 
 [[bench]]
 name = "derive_serialize_header"

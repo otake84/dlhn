@@ -4,7 +4,7 @@ use serde::{
     ser::SerializeSeq,
     Deserialize, Serialize,
 };
-use std::convert::TryInto;
+#[cfg(feature = "time")]
 use time::{ext::NumericalDuration, OffsetDateTime};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -13,6 +13,7 @@ pub struct DateTime {
     nanosecond: u32,
 }
 
+#[cfg(feature = "time")]
 impl From<OffsetDateTime> for DateTime {
     fn from(date_time: OffsetDateTime) -> Self {
         Self {
@@ -22,7 +23,8 @@ impl From<OffsetDateTime> for DateTime {
     }
 }
 
-impl TryInto<OffsetDateTime> for DateTime {
+#[cfg(feature = "time")]
+impl std::convert::TryInto<OffsetDateTime> for DateTime {
     type Error = ();
 
     fn try_into(self) -> Result<OffsetDateTime, Self::Error> {
@@ -79,6 +81,7 @@ impl<'de> Deserialize<'de> for DateTime {
     }
 }
 
+#[cfg(feature = "time")]
 #[cfg(test)]
 mod tests {
     use super::DateTime;

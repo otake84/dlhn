@@ -269,12 +269,12 @@ mod tests {
 
     mod serialize {
         use super::*;
-        use crate::{
-            big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, date::Date,
-            date_time::DateTime,
-        };
+        use crate::{big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint};
+        #[cfg(feature = "time")]
+        use crate::{date::Date, date_time::DateTime};
         use serde_bytes::ByteBuf;
         use std::{array::IntoIter, collections::BTreeMap};
+        #[cfg(feature = "time")]
         use time::{Month, OffsetDateTime};
 
         #[test]
@@ -581,6 +581,7 @@ mod tests {
             );
         }
 
+        #[cfg(feature = "time")]
         #[test]
         fn serialize_date() {
             let v = Date::from(time::Date::from_calendar_date(1970, Month::January, 1).unwrap());
@@ -590,6 +591,7 @@ mod tests {
             assert_eq!(serialize(Body::Date(v)), buf);
         }
 
+        #[cfg(feature = "time")]
         #[test]
         fn serialize_date_time() {
             let v = DateTime::from(OffsetDateTime::UNIX_EPOCH);
@@ -644,11 +646,14 @@ mod tests {
     mod deserialize {
         use super::*;
         use crate::{
-            big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, body::Body, date::Date,
-            date_time::DateTime, de::Deserializer, header::Header, ser::Serializer,
+            big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, body::Body,
+            de::Deserializer, header::Header, ser::Serializer,
         };
+        #[cfg(feature = "time")]
+        use crate::{date::Date, date_time::DateTime};
         use serde::Serialize;
         use std::{array::IntoIter, collections::BTreeMap};
+        #[cfg(feature = "time")]
         use time::{Month, OffsetDateTime};
 
         #[test]
@@ -1319,6 +1324,7 @@ mod tests {
             );
         }
 
+        #[cfg(feature = "time")]
         #[test]
         fn deserialize_date() {
             let body = Body::Date(Date::from(
@@ -1335,6 +1341,7 @@ mod tests {
             );
         }
 
+        #[cfg(feature = "time")]
         #[test]
         fn deserialize_date_time() {
             let body = Body::DateTime(DateTime::from(OffsetDateTime::UNIX_EPOCH));
@@ -1436,11 +1443,11 @@ mod tests {
 
     mod validate {
         use super::*;
-        use crate::{
-            big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, date::Date,
-            date_time::DateTime, header::Header,
-        };
+        use crate::{big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, header::Header};
+        #[cfg(feature = "time")]
+        use crate::{date::Date, date_time::DateTime};
         use std::collections::BTreeMap;
+        #[cfg(feature = "time")]
         use time::{Month, OffsetDateTime};
 
         #[test]
@@ -1661,6 +1668,7 @@ mod tests {
             assert!(!Body::Unit.validate(&header));
         }
 
+        #[cfg(feature = "time")]
         #[test]
         fn validate_date() {
             let header = Header::Date;
@@ -1671,6 +1679,7 @@ mod tests {
             assert!(!Body::Unit.validate(&header));
         }
 
+        #[cfg(feature = "time")]
         #[test]
         fn validate_date_time() {
             let header = Header::DateTime;
