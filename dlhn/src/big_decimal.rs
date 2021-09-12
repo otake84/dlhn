@@ -1,3 +1,4 @@
+#[cfg(feature = "num-traits")]
 use num_traits::Zero;
 use serde::{
     de::{self, SeqAccess, Unexpected, Visitor},
@@ -13,7 +14,7 @@ pub struct BigDecimal {
     scale: i64,
 }
 
-#[cfg(feature = "bigdecimal")]
+#[cfg(all(feature = "num-traits", feature = "bigdecimal"))]
 impl From<bigdecimal::BigDecimal> for BigDecimal {
     fn from(v: bigdecimal::BigDecimal) -> Self {
         if v.is_zero() {
@@ -31,7 +32,7 @@ impl From<bigdecimal::BigDecimal> for BigDecimal {
     }
 }
 
-#[cfg(feature = "bigdecimal")]
+#[cfg(all(feature = "num-traits", feature = "num-bigint", feature = "bigdecimal"))]
 impl Into<bigdecimal::BigDecimal> for BigDecimal {
     fn into(self) -> bigdecimal::BigDecimal {
         bigdecimal::BigDecimal::new(
@@ -72,22 +73,21 @@ impl<'de> Visitor<'de> for BigDecimalVisitor {
     where
         A: SeqAccess<'de>,
     {
-        let digits = num_bigint::BigInt::from_signed_bytes_le(
-            seq.next_element::<Vec<u8>>()?
-                .ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?
-                .as_slice(),
-        );
-        if digits.is_zero() {
+        let signed_bytes = seq
+            .next_element::<Vec<u8>>()?
+            .ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?;
+        if signed_bytes.is_empty() {
             Ok(BigDecimal {
-                signed_bytes: Vec::new(),
+                signed_bytes,
                 scale: 0,
             })
         } else {
+            let scale = seq
+                .next_element::<i64>()?
+                .ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?;
             Ok(BigDecimal {
-                signed_bytes: digits.to_signed_bytes_le(),
-                scale: seq
-                    .next_element::<i64>()?
-                    .ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?,
+                signed_bytes,
+                scale,
             })
         }
     }
@@ -101,7 +101,7 @@ impl<'de> Deserialize<'de> for BigDecimal {
     }
 }
 
-#[cfg(feature = "bigdecimal")]
+#[cfg(all(feature = "num-traits", feature = "num-bigint", feature = "bigdecimal"))]
 #[cfg(test)]
 mod tests {
     use crate::{big_decimal::BigDecimal, de::Deserializer, ser::Serializer};

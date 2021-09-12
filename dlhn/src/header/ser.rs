@@ -110,6 +110,7 @@ impl SerializeHeader for BigUint {
     }
 }
 
+#[cfg(all(feature = "num-traits", feature = "num-bigint"))]
 impl SerializeHeader for num_bigint::BigUint {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::BIG_UINT_CODE])
@@ -122,6 +123,7 @@ impl SerializeHeader for BigInt {
     }
 }
 
+#[cfg(all(feature = "num-traits", feature = "num-bigint"))]
 impl SerializeHeader for num_bigint::BigInt {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::BIG_INT_CODE])
@@ -448,6 +450,7 @@ mod tests {
         assert_eq!(buf, [15]);
     }
 
+    #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
     #[test]
     fn serialize_header_big_uint2() {
         let mut buf = Vec::new();
@@ -462,6 +465,7 @@ mod tests {
         assert_eq!(buf, [16]);
     }
 
+    #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
     #[test]
     fn serialize_header_big_int2() {
         let mut buf = Vec::new();
@@ -667,6 +671,7 @@ mod tests {
             assert_eq!(serialize(Header::BigUInt), serialize_header::<BigUint>());
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn serialize_big_uint2() {
             assert_eq!(
@@ -680,6 +685,7 @@ mod tests {
             assert_eq!(serialize(Header::BigInt), serialize_header::<BigInt>());
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn serialize_big_int2() {
             assert_eq!(

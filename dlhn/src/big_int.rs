@@ -1,4 +1,5 @@
 use crate::de::Error;
+#[cfg(feature = "num-traits")]
 use num_traits::Zero;
 use serde::{
     de::{self, SeqAccess, Unexpected, Visitor},
@@ -9,6 +10,7 @@ use serde::{
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct BigInt(Vec<u8>);
 
+#[cfg(all(feature = "num-traits", feature = "num-bigint"))]
 impl From<num_bigint::BigInt> for BigInt {
     fn from(v: num_bigint::BigInt) -> Self {
         if v.is_zero() {
@@ -19,6 +21,7 @@ impl From<num_bigint::BigInt> for BigInt {
     }
 }
 
+#[cfg(all(feature = "num-traits", feature = "num-bigint"))]
 impl Into<num_bigint::BigInt> for BigInt {
     fn into(self) -> num_bigint::BigInt {
         num_bigint::BigInt::from_signed_bytes_le(self.0.as_ref())
@@ -67,6 +70,7 @@ impl<'de> Deserialize<'de> for BigInt {
     }
 }
 
+#[cfg(all(feature = "num-traits", feature = "num-bigint"))]
 #[cfg(test)]
 mod tests {
     use std::array::IntoIter;

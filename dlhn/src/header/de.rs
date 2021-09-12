@@ -251,6 +251,7 @@ mod tests {
         );
     }
 
+    #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
     #[test]
     fn deserialize_header_big_uint2() {
         let mut buf = Vec::new();
@@ -271,6 +272,7 @@ mod tests {
         );
     }
 
+    #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
     #[test]
     fn deserialize_header_big_int2() {
         let mut buf = Vec::new();

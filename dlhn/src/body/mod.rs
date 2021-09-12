@@ -271,6 +271,7 @@ mod tests {
         use super::*;
         #[cfg(feature = "bigdecimal")]
         use crate::big_decimal::BigDecimal;
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         use crate::{big_int::BigInt, big_uint::BigUint};
         #[cfg(feature = "time")]
         use crate::{date::Date, date_time::DateTime};
@@ -412,6 +413,7 @@ mod tests {
             assert_eq!(serialize(Body::Float64(-f64::NAN)), serialize(-f64::NAN));
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn serialize_big_uint() {
             IntoIter::new([
@@ -434,6 +436,7 @@ mod tests {
             });
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn serialize_big_int() {
             IntoIter::new([
@@ -467,7 +470,7 @@ mod tests {
             });
         }
 
-        #[cfg(feature = "bigdecimal")]
+        #[cfg(all(feature = "num-traits", feature = "num-bigint", feature = "bigdecimal"))]
         #[test]
         fn serialize_big_decimal() {
             IntoIter::new([
@@ -650,10 +653,9 @@ mod tests {
         use super::*;
         #[cfg(feature = "bigdecimal")]
         use crate::big_decimal::BigDecimal;
-        use crate::{
-            big_int::BigInt, big_uint::BigUint, body::Body, de::Deserializer, header::Header,
-            ser::Serializer,
-        };
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
+        use crate::{big_int::BigInt, big_uint::BigUint};
+        use crate::{body::Body, de::Deserializer, header::Header, ser::Serializer};
         #[cfg(feature = "time")]
         use crate::{date::Date, date_time::DateTime};
         use serde::Serialize;
@@ -1094,6 +1096,7 @@ mod tests {
             );
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn deserialize_big_uint() {
             IntoIter::new([
@@ -1121,6 +1124,7 @@ mod tests {
             });
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn deserialize_big_int() {
             IntoIter::new([
@@ -1159,7 +1163,7 @@ mod tests {
             });
         }
 
-        #[cfg(feature = "bigdecimal")]
+        #[cfg(all(feature = "num-traits", feature = "num-bigint", feature = "bigdecimal"))]
         #[test]
         fn deserialize_big_decimal() {
             IntoIter::new([
@@ -1451,7 +1455,9 @@ mod tests {
         use super::*;
         #[cfg(feature = "bigdecimal")]
         use crate::big_decimal::BigDecimal;
-        use crate::{big_int::BigInt, big_uint::BigUint, header::Header};
+        use crate::header::Header;
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
+        use crate::{big_int::BigInt, big_uint::BigUint};
         #[cfg(feature = "time")]
         use crate::{date::Date, date_time::DateTime};
         use std::collections::BTreeMap;
@@ -1550,6 +1556,7 @@ mod tests {
             assert!(!Body::Unit.validate(&header));
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn validate_big_uint() {
             let header = Header::BigUInt;
@@ -1559,6 +1566,7 @@ mod tests {
             assert!(!Body::Unit.validate(&header));
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn validate_big_int() {
             let header = Header::BigInt;
@@ -1566,7 +1574,7 @@ mod tests {
             assert!(!Body::Unit.validate(&header));
         }
 
-        #[cfg(feature = "bigdecimal")]
+        #[cfg(all(feature = "num-traits", feature = "bigdecimal"))]
         #[test]
         fn validate_big_decimal() {
             let header = Header::BigDecimal;
