@@ -86,11 +86,8 @@ impl<R: Read> DeserializeHeader<R> for R {
 #[cfg(test)]
 mod tests {
     use super::DeserializeHeader;
-    use crate::{
-        big_decimal::BigDecimal,
-        header::{ser::SerializeHeader, Header},
-    };
-    use num_bigint::{BigInt, BigUint};
+    use crate::{big_decimal::BigDecimal, big_int::BigInt, header::{ser::SerializeHeader, Header}};
+    use num_bigint::BigUint;
     use serde_bytes::Bytes;
     use std::{collections::BTreeMap, io::Cursor};
     use time::{Date, OffsetDateTime};
@@ -253,6 +250,16 @@ mod tests {
     fn deserialize_header_big_int() {
         let mut buf = Vec::new();
         BigInt::serialize_header(&mut buf).unwrap();
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::BigInt
+        );
+    }
+
+    #[test]
+    fn deserialize_header_big_int2() {
+        let mut buf = Vec::new();
+        num_bigint::BigInt::serialize_header(&mut buf).unwrap();
         assert_eq!(
             Cursor::new(buf).deserialize_header().unwrap(),
             Header::BigInt
