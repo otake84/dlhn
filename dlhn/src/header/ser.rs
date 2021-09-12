@@ -1,13 +1,13 @@
 use super::Header;
-use crate::date::Date;
-use crate::leb128::Leb128;
-use crate::{big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint};
+use crate::{
+    big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, date::Date, date_time::DateTime,
+    leb128::Leb128,
+};
 use serde_bytes::{ByteBuf, Bytes};
 use std::{
     collections::{BTreeMap, HashMap},
     io::{Result, Write},
 };
-use time::OffsetDateTime;
 
 pub trait SerializeHeader {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()>;
@@ -183,7 +183,13 @@ impl SerializeHeader for time::Date {
     }
 }
 
-impl SerializeHeader for OffsetDateTime {
+impl SerializeHeader for DateTime {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::DATETIME_CODE])
+    }
+}
+
+impl SerializeHeader for time::OffsetDateTime {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::DATETIME_CODE])
     }
@@ -275,7 +281,7 @@ impl Header {
             Header::Map(inner) => Self::serialize_inner_box(super::MAP_CODE, inner, writer),
             Header::Enum(inner) => Self::serialize_inner_vec(super::ENUM_CODE, inner, writer),
             Header::Date => Date::serialize_header(writer),
-            Header::DateTime => OffsetDateTime::serialize_header(writer),
+            Header::DateTime => DateTime::serialize_header(writer),
             Header::Extension8(i) => Self::serialize_extension(super::EXTENSION8_CODE, *i, writer),
             Header::Extension16(i) => {
                 Self::serialize_extension(super::EXTENSION16_CODE, *i, writer)
@@ -320,10 +326,12 @@ impl Header {
 #[cfg(test)]
 mod tests {
     use super::SerializeHeader;
-    use crate::{big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, date::Date};
+    use crate::{
+        big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, date::Date,
+        date_time::DateTime,
+    };
     use serde_bytes::{ByteBuf, Bytes};
     use std::collections::{BTreeMap, HashMap};
-    use time::OffsetDateTime;
 
     #[test]
     fn serialize_header_unit() {
@@ -547,7 +555,14 @@ mod tests {
     #[test]
     fn serialize_header_date_time() {
         let mut buf = Vec::new();
-        OffsetDateTime::serialize_header(&mut buf).unwrap();
+        DateTime::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [26]);
+    }
+
+    #[test]
+    fn serialize_header_date_time2() {
+        let mut buf = Vec::new();
+        time::OffsetDateTime::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [26]);
     }
 
@@ -557,11 +572,11 @@ mod tests {
             big_int::BigInt,
             big_uint::BigUint,
             date::Date,
+            date_time::DateTime,
             header::{ser::SerializeHeader, Header},
         };
         use serde_bytes::ByteBuf;
         use std::collections::BTreeMap;
-        use time::OffsetDateTime;
 
         #[test]
         fn serialize_unit() {
@@ -749,9 +764,14 @@ mod tests {
 
         #[test]
         fn serialize_date_time() {
+            assert_eq!(serialize(Header::DateTime), serialize_header::<DateTime>());
+        }
+
+        #[test]
+        fn serialize_date_time2() {
             assert_eq!(
                 serialize(Header::DateTime),
-                serialize_header::<OffsetDateTime>()
+                serialize_header::<time::OffsetDateTime>()
             );
         }
 
