@@ -90,11 +90,12 @@ mod tests {
         big_decimal::BigDecimal,
         big_int::BigInt,
         big_uint::BigUint,
+        date::Date,
         header::{ser::SerializeHeader, Header},
     };
     use serde_bytes::Bytes;
     use std::{collections::BTreeMap, io::Cursor};
-    use time::{Date, OffsetDateTime};
+    use time::OffsetDateTime;
 
     #[test]
     fn deserialize_header_unit() {
@@ -365,6 +366,13 @@ mod tests {
     fn deserialize_header_date() {
         let mut buf = Vec::new();
         Date::serialize_header(&mut buf).unwrap();
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Date);
+    }
+
+    #[test]
+    fn deserialize_header_date2() {
+        let mut buf = Vec::new();
+        time::Date::serialize_header(&mut buf).unwrap();
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Date);
     }
 

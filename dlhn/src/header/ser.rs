@@ -1,4 +1,5 @@
 use super::Header;
+use crate::date::Date;
 use crate::leb128::Leb128;
 use crate::{big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint};
 use serde_bytes::{ByteBuf, Bytes};
@@ -6,7 +7,7 @@ use std::{
     collections::{BTreeMap, HashMap},
     io::{Result, Write},
 };
-use time::{Date, OffsetDateTime};
+use time::OffsetDateTime;
 
 pub trait SerializeHeader {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()>;
@@ -176,6 +177,12 @@ impl SerializeHeader for Date {
     }
 }
 
+impl SerializeHeader for time::Date {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::DATE_CODE])
+    }
+}
+
 impl SerializeHeader for OffsetDateTime {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::DATETIME_CODE])
@@ -313,10 +320,10 @@ impl Header {
 #[cfg(test)]
 mod tests {
     use super::SerializeHeader;
-    use crate::{big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint};
+    use crate::{big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, date::Date};
     use serde_bytes::{ByteBuf, Bytes};
     use std::collections::{BTreeMap, HashMap};
-    use time::{Date, OffsetDateTime};
+    use time::OffsetDateTime;
 
     #[test]
     fn serialize_header_unit() {
@@ -531,6 +538,13 @@ mod tests {
     }
 
     #[test]
+    fn serialize_header_date2() {
+        let mut buf = Vec::new();
+        time::Date::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [25]);
+    }
+
+    #[test]
     fn serialize_header_date_time() {
         let mut buf = Vec::new();
         OffsetDateTime::serialize_header(&mut buf).unwrap();
@@ -542,11 +556,12 @@ mod tests {
             big_decimal::BigDecimal,
             big_int::BigInt,
             big_uint::BigUint,
+            date::Date,
             header::{ser::SerializeHeader, Header},
         };
         use serde_bytes::ByteBuf;
         use std::collections::BTreeMap;
-        use time::{Date, OffsetDateTime};
+        use time::OffsetDateTime;
 
         #[test]
         fn serialize_unit() {
@@ -725,6 +740,11 @@ mod tests {
         #[test]
         fn serialize_date() {
             assert_eq!(serialize(Header::Date), serialize_header::<Date>());
+        }
+
+        #[test]
+        fn serialize_date2() {
+            assert_eq!(serialize(Header::Date), serialize_header::<time::Date>());
         }
 
         #[test]
