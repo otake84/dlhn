@@ -1,7 +1,6 @@
 use super::Header;
-use crate::{big_decimal::BigDecimal, big_int::BigInt};
 use crate::leb128::Leb128;
-use num_bigint::BigUint;
+use crate::{big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint};
 use serde_bytes::{ByteBuf, Bytes};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -105,6 +104,12 @@ impl SerializeHeader for f64 {
 }
 
 impl SerializeHeader for BigUint {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::BIG_UINT_CODE])
+    }
+}
+
+impl SerializeHeader for num_bigint::BigUint {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::BIG_UINT_CODE])
     }
@@ -307,10 +312,8 @@ impl Header {
 
 #[cfg(test)]
 mod tests {
-    use crate::big_int::BigInt;
     use super::SerializeHeader;
-    use bigdecimal::BigDecimal;
-    use num_bigint::BigUint;
+    use crate::{big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint};
     use serde_bytes::{ByteBuf, Bytes};
     use std::collections::{BTreeMap, HashMap};
     use time::{Date, OffsetDateTime};
@@ -428,6 +431,13 @@ mod tests {
     }
 
     #[test]
+    fn serialize_header_big_uint2() {
+        let mut buf = Vec::new();
+        num_bigint::BigUint::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [15]);
+    }
+
+    #[test]
     fn serialize_header_big_int() {
         let mut buf = Vec::new();
         BigInt::serialize_header(&mut buf).unwrap();
@@ -531,9 +541,9 @@ mod tests {
         use crate::{
             big_decimal::BigDecimal,
             big_int::BigInt,
+            big_uint::BigUint,
             header::{ser::SerializeHeader, Header},
         };
-        use num_bigint::BigUint;
         use serde_bytes::ByteBuf;
         use std::collections::BTreeMap;
         use time::{Date, OffsetDateTime};
@@ -622,13 +632,24 @@ mod tests {
         }
 
         #[test]
+        fn serialize_big_uint2() {
+            assert_eq!(
+                serialize(Header::BigUInt),
+                serialize_header::<num_bigint::BigUint>()
+            );
+        }
+
+        #[test]
         fn serialize_big_int() {
             assert_eq!(serialize(Header::BigInt), serialize_header::<BigInt>());
         }
 
         #[test]
         fn serialize_big_int2() {
-            assert_eq!(serialize(Header::BigInt), serialize_header::<num_bigint::BigInt>());
+            assert_eq!(
+                serialize(Header::BigInt),
+                serialize_header::<num_bigint::BigInt>()
+            );
         }
 
         #[test]
