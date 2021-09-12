@@ -86,12 +86,16 @@ impl<R: Read> DeserializeHeader<R> for R {
 #[cfg(test)]
 mod tests {
     use super::DeserializeHeader;
-    use crate::header::{ser::SerializeHeader, Header};
-    use bigdecimal::BigDecimal;
-    use num_bigint::{BigInt, BigUint};
+    use crate::{
+        big_decimal::BigDecimal,
+        big_int::BigInt,
+        big_uint::BigUint,
+        date::Date,
+        date_time::DateTime,
+        header::{ser::SerializeHeader, Header},
+    };
     use serde_bytes::Bytes;
     use std::{collections::BTreeMap, io::Cursor};
-    use time::{Date, OffsetDateTime};
 
     #[test]
     fn deserialize_header_unit() {
@@ -247,6 +251,17 @@ mod tests {
         );
     }
 
+    #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
+    #[test]
+    fn deserialize_header_big_uint2() {
+        let mut buf = Vec::new();
+        num_bigint::BigUint::serialize_header(&mut buf).unwrap();
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::BigUInt
+        );
+    }
+
     #[test]
     fn deserialize_header_big_int() {
         let mut buf = Vec::new();
@@ -257,10 +272,32 @@ mod tests {
         );
     }
 
+    #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
+    #[test]
+    fn deserialize_header_big_int2() {
+        let mut buf = Vec::new();
+        num_bigint::BigInt::serialize_header(&mut buf).unwrap();
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::BigInt
+        );
+    }
+
     #[test]
     fn deserialize_header_big_decimal() {
         let mut buf = Vec::new();
         BigDecimal::serialize_header(&mut buf).unwrap();
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::BigDecimal
+        );
+    }
+
+    #[cfg(feature = "bigdecimal")]
+    #[test]
+    fn deserialize_header_big_decimal2() {
+        let mut buf = Vec::new();
+        bigdecimal::BigDecimal::serialize_header(&mut buf).unwrap();
         assert_eq!(
             Cursor::new(buf).deserialize_header().unwrap(),
             Header::BigDecimal
@@ -335,10 +372,29 @@ mod tests {
         assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Date);
     }
 
+    #[cfg(feature = "time")]
+    #[test]
+    fn deserialize_header_date2() {
+        let mut buf = Vec::new();
+        time::Date::serialize_header(&mut buf).unwrap();
+        assert_eq!(Cursor::new(buf).deserialize_header().unwrap(), Header::Date);
+    }
+
     #[test]
     fn deserialize_header_date_time() {
         let mut buf = Vec::new();
-        OffsetDateTime::serialize_header(&mut buf).unwrap();
+        DateTime::serialize_header(&mut buf).unwrap();
+        assert_eq!(
+            Cursor::new(buf).deserialize_header().unwrap(),
+            Header::DateTime
+        );
+    }
+
+    #[cfg(feature = "time")]
+    #[test]
+    fn deserialize_header_date_time2() {
+        let mut buf = Vec::new();
+        time::OffsetDateTime::serialize_header(&mut buf).unwrap();
         assert_eq!(
             Cursor::new(buf).deserialize_header().unwrap(),
             Header::DateTime

@@ -1,6 +1,7 @@
 use crate::de::Error;
-use bigdecimal::{BigDecimal, Zero};
+use bigdecimal::BigDecimal;
 use num_bigint::BigInt;
+use num_traits::Zero;
 use serde::{
     de::{self, SeqAccess, Unexpected, Visitor},
     ser::SerializeSeq,

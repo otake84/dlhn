@@ -1,13 +1,13 @@
 use super::Header;
-use crate::leb128::Leb128;
-use bigdecimal::BigDecimal;
-use num_bigint::{BigInt, BigUint};
+use crate::{
+    big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, date::Date, date_time::DateTime,
+    leb128::Leb128,
+};
 use serde_bytes::{ByteBuf, Bytes};
 use std::{
     collections::{BTreeMap, HashMap},
     io::{Result, Write},
 };
-use time::{Date, OffsetDateTime};
 
 pub trait SerializeHeader {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()>;
@@ -110,13 +110,34 @@ impl SerializeHeader for BigUint {
     }
 }
 
+#[cfg(all(feature = "num-traits", feature = "num-bigint"))]
+impl SerializeHeader for num_bigint::BigUint {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::BIG_UINT_CODE])
+    }
+}
+
 impl SerializeHeader for BigInt {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::BIG_INT_CODE])
     }
 }
 
+#[cfg(all(feature = "num-traits", feature = "num-bigint"))]
+impl SerializeHeader for num_bigint::BigInt {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::BIG_INT_CODE])
+    }
+}
+
 impl SerializeHeader for BigDecimal {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::BIG_DECIMAL_CODE])
+    }
+}
+
+#[cfg(feature = "bigdecimal")]
+impl SerializeHeader for bigdecimal::BigDecimal {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::BIG_DECIMAL_CODE])
     }
@@ -159,7 +180,21 @@ impl SerializeHeader for Date {
     }
 }
 
-impl SerializeHeader for OffsetDateTime {
+#[cfg(feature = "time")]
+impl SerializeHeader for time::Date {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::DATE_CODE])
+    }
+}
+
+impl SerializeHeader for DateTime {
+    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+        writer.write_all(&[super::DATETIME_CODE])
+    }
+}
+
+#[cfg(feature = "time")]
+impl SerializeHeader for time::OffsetDateTime {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::DATETIME_CODE])
     }
@@ -251,7 +286,7 @@ impl Header {
             Header::Map(inner) => Self::serialize_inner_box(super::MAP_CODE, inner, writer),
             Header::Enum(inner) => Self::serialize_inner_vec(super::ENUM_CODE, inner, writer),
             Header::Date => Date::serialize_header(writer),
-            Header::DateTime => OffsetDateTime::serialize_header(writer),
+            Header::DateTime => DateTime::serialize_header(writer),
             Header::Extension8(i) => Self::serialize_extension(super::EXTENSION8_CODE, *i, writer),
             Header::Extension16(i) => {
                 Self::serialize_extension(super::EXTENSION16_CODE, *i, writer)
@@ -296,11 +331,12 @@ impl Header {
 #[cfg(test)]
 mod tests {
     use super::SerializeHeader;
-    use bigdecimal::BigDecimal;
-    use num_bigint::{BigInt, BigUint};
+    use crate::{
+        big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, date::Date,
+        date_time::DateTime,
+    };
     use serde_bytes::{ByteBuf, Bytes};
     use std::collections::{BTreeMap, HashMap};
-    use time::{Date, OffsetDateTime};
 
     #[test]
     fn serialize_header_unit() {
@@ -414,6 +450,14 @@ mod tests {
         assert_eq!(buf, [15]);
     }
 
+    #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
+    #[test]
+    fn serialize_header_big_uint2() {
+        let mut buf = Vec::new();
+        num_bigint::BigUint::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [15]);
+    }
+
     #[test]
     fn serialize_header_big_int() {
         let mut buf = Vec::new();
@@ -421,10 +465,26 @@ mod tests {
         assert_eq!(buf, [16]);
     }
 
+    #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
+    #[test]
+    fn serialize_header_big_int2() {
+        let mut buf = Vec::new();
+        num_bigint::BigInt::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [16]);
+    }
+
     #[test]
     fn serialize_header_big_decimal() {
         let mut buf = Vec::new();
         BigDecimal::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [17]);
+    }
+
+    #[cfg(feature = "bigdecimal")]
+    #[test]
+    fn serialize_header_big_decimal2() {
+        let mut buf = Vec::new();
+        bigdecimal::BigDecimal::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [17]);
     }
 
@@ -493,20 +553,40 @@ mod tests {
         assert_eq!(buf, [25]);
     }
 
+    #[cfg(feature = "time")]
+    #[test]
+    fn serialize_header_date2() {
+        let mut buf = Vec::new();
+        time::Date::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [25]);
+    }
+
     #[test]
     fn serialize_header_date_time() {
         let mut buf = Vec::new();
-        OffsetDateTime::serialize_header(&mut buf).unwrap();
+        DateTime::serialize_header(&mut buf).unwrap();
+        assert_eq!(buf, [26]);
+    }
+
+    #[cfg(feature = "time")]
+    #[test]
+    fn serialize_header_date_time2() {
+        let mut buf = Vec::new();
+        time::OffsetDateTime::serialize_header(&mut buf).unwrap();
         assert_eq!(buf, [26]);
     }
 
     mod header {
-        use crate::header::{ser::SerializeHeader, Header};
-        use bigdecimal::BigDecimal;
-        use num_bigint::{BigInt, BigUint};
+        use crate::{
+            big_decimal::BigDecimal,
+            big_int::BigInt,
+            big_uint::BigUint,
+            date::Date,
+            date_time::DateTime,
+            header::{ser::SerializeHeader, Header},
+        };
         use serde_bytes::ByteBuf;
         use std::collections::BTreeMap;
-        use time::{Date, OffsetDateTime};
 
         #[test]
         fn serialize_unit() {
@@ -591,9 +671,27 @@ mod tests {
             assert_eq!(serialize(Header::BigUInt), serialize_header::<BigUint>());
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
+        #[test]
+        fn serialize_big_uint2() {
+            assert_eq!(
+                serialize(Header::BigUInt),
+                serialize_header::<num_bigint::BigUint>()
+            );
+        }
+
         #[test]
         fn serialize_big_int() {
             assert_eq!(serialize(Header::BigInt), serialize_header::<BigInt>());
+        }
+
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
+        #[test]
+        fn serialize_big_int2() {
+            assert_eq!(
+                serialize(Header::BigInt),
+                serialize_header::<num_bigint::BigInt>()
+            );
         }
 
         #[test]
@@ -601,6 +699,15 @@ mod tests {
             assert_eq!(
                 serialize(Header::BigDecimal),
                 serialize_header::<BigDecimal>()
+            );
+        }
+
+        #[cfg(feature = "bigdecimal")]
+        #[test]
+        fn serialize_big_decimal2() {
+            assert_eq!(
+                serialize(Header::BigDecimal),
+                serialize_header::<bigdecimal::BigDecimal>()
             );
         }
 
@@ -663,11 +770,23 @@ mod tests {
             assert_eq!(serialize(Header::Date), serialize_header::<Date>());
         }
 
+        #[cfg(feature = "time")]
+        #[test]
+        fn serialize_date2() {
+            assert_eq!(serialize(Header::Date), serialize_header::<time::Date>());
+        }
+
         #[test]
         fn serialize_date_time() {
+            assert_eq!(serialize(Header::DateTime), serialize_header::<DateTime>());
+        }
+
+        #[cfg(feature = "time")]
+        #[test]
+        fn serialize_date_time2() {
             assert_eq!(
                 serialize(Header::DateTime),
-                serialize_header::<OffsetDateTime>()
+                serialize_header::<time::OffsetDateTime>()
             );
         }
 

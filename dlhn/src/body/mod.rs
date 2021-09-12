@@ -1,14 +1,15 @@
 use crate::{
+    big_decimal::BigDecimal,
+    big_int::BigInt,
+    big_uint::BigUint,
+    date::Date,
+    date_time::DateTime,
     de::{Deserializer, Error},
-    format,
     header::Header,
 };
-use bigdecimal::BigDecimal;
-use num_bigint::{BigInt, BigUint};
 use serde::{ser::SerializeTuple, Deserialize, Serialize};
 use serde_bytes::{ByteBuf, Bytes};
 use std::{collections::BTreeMap, io::Read};
-use time::{Date, OffsetDateTime};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Body {
@@ -38,7 +39,7 @@ pub enum Body {
     Map(BTreeMap<String, Body>),
     Enum(u32, Box<Body>),
     Date(Date),
-    DateTime(OffsetDateTime),
+    DateTime(DateTime),
     Extension8([u8; 1]),
     Extension16([u8; 2]),
     Extension32([u8; 4]),
@@ -68,9 +69,9 @@ impl Serialize for Body {
             Body::Int128(v) => v.serialize(serializer),
             Body::Float32(v) => v.serialize(serializer),
             Body::Float64(v) => v.serialize(serializer),
-            Body::BigUInt(v) => format::big_uint::serialize(v, serializer),
-            Body::BigInt(v) => format::big_int::serialize(v, serializer),
-            Body::BigDecimal(v) => format::big_decimal::serialize(v, serializer),
+            Body::BigUInt(v) => v.serialize(serializer),
+            Body::BigInt(v) => v.serialize(serializer),
+            Body::BigDecimal(v) => v.serialize(serializer),
             Body::String(v) => v.serialize(serializer),
             Body::Binary(v) => v.serialize(serializer),
             Body::Array(v) => v.serialize(serializer),
@@ -83,8 +84,8 @@ impl Serialize for Body {
             }
             Body::Map(v) => v.serialize(serializer),
             Body::Enum(i, v) => serializer.serialize_newtype_variant("", *i, "", v),
-            Body::Date(v) => format::date::serialize(v, serializer),
-            Body::DateTime(v) => format::date_time::serialize(v, serializer),
+            Body::Date(v) => v.serialize(serializer),
+            Body::DateTime(v) => v.serialize(serializer),
             Body::Extension8(v) => v.serialize(serializer),
             Body::Extension16(v) => v.serialize(serializer),
             Body::Extension32(v) => v.serialize(serializer),
@@ -125,11 +126,9 @@ impl Body {
             Header::Int128 => i128::deserialize(deserializer).map(Self::Int128),
             Header::Float32 => f32::deserialize(deserializer).map(Self::Float32),
             Header::Float64 => f64::deserialize(deserializer).map(Self::Float64),
-            Header::BigUInt => format::big_uint::deserialize(deserializer).map(Self::BigUInt),
-            Header::BigInt => format::big_int::deserialize(deserializer).map(Self::BigInt),
-            Header::BigDecimal => {
-                format::big_decimal::deserialize(deserializer).map(Self::BigDecimal)
-            }
+            Header::BigUInt => BigUint::deserialize(deserializer).map(Self::BigUInt),
+            Header::BigInt => BigInt::deserialize(deserializer).map(Self::BigInt),
+            Header::BigDecimal => BigDecimal::deserialize(deserializer).map(Self::BigDecimal),
             Header::String => String::deserialize(deserializer).map(Self::String),
             Header::Binary => {
                 ByteBuf::deserialize(deserializer).map(|v| Self::Binary(v.into_vec()))
@@ -175,8 +174,8 @@ impl Body {
                     Box::new(Self::deserialize(inner, deserializer)?),
                 ))
             }
-            Header::Date => format::date::deserialize(deserializer).map(Self::Date),
-            Header::DateTime => format::date_time::deserialize(deserializer).map(Self::DateTime),
+            Header::Date => Date::deserialize(deserializer).map(Self::Date),
+            Header::DateTime => DateTime::deserialize(deserializer).map(Self::DateTime),
             Header::Extension8(_) => <[u8; 1]>::deserialize(deserializer).map(Body::Extension8),
             Header::Extension16(_) => <[u8; 2]>::deserialize(deserializer).map(Body::Extension16),
             Header::Extension32(_) => <[u8; 4]>::deserialize(deserializer).map(Body::Extension32),
@@ -270,11 +269,16 @@ mod tests {
 
     mod serialize {
         use super::*;
-        use bigdecimal::BigDecimal;
-        use num_bigint::{BigInt, BigUint};
+        #[cfg(feature = "bigdecimal")]
+        use crate::big_decimal::BigDecimal;
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
+        use crate::{big_int::BigInt, big_uint::BigUint};
+        #[cfg(feature = "time")]
+        use crate::{date::Date, date_time::DateTime};
         use serde_bytes::ByteBuf;
         use std::{array::IntoIter, collections::BTreeMap};
-        use time::{Date, Month, OffsetDateTime};
+        #[cfg(feature = "time")]
+        use time::{Month, OffsetDateTime};
 
         #[test]
         fn serialize_unit() {
@@ -409,79 +413,94 @@ mod tests {
             assert_eq!(serialize(Body::Float64(-f64::NAN)), serialize(-f64::NAN));
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn serialize_big_uint() {
             IntoIter::new([
-                BigUint::from(0u8),
-                BigUint::from(u8::MAX),
-                BigUint::from(u16::MAX),
-                BigUint::from(u16::MAX) + 1u8,
-                BigUint::from(u32::MAX),
-                BigUint::from(u32::MAX) + 1u8,
-                BigUint::from(u64::MAX),
-                BigUint::from(u64::MAX) + 1u8,
-                BigUint::from(u128::MAX),
-                BigUint::from(u128::MAX) + 1u8,
+                BigUint::from(num_bigint::BigUint::from(0u8)),
+                BigUint::from(num_bigint::BigUint::from(u8::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u16::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u16::MAX) + 1u8),
+                BigUint::from(num_bigint::BigUint::from(u32::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u32::MAX) + 1u8),
+                BigUint::from(num_bigint::BigUint::from(u64::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u64::MAX) + 1u8),
+                BigUint::from(num_bigint::BigUint::from(u128::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u128::MAX) + 1u8),
             ])
             .for_each(|v| {
                 let mut buf = Vec::new();
                 let mut serializer = Serializer::new(&mut buf);
-                crate::format::big_uint::serialize(&v, &mut serializer).unwrap();
+                v.serialize(&mut serializer).unwrap();
                 assert_eq!(serialize(Body::BigUInt(v)), buf);
             });
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn serialize_big_int() {
             IntoIter::new([
-                BigInt::from(0),
-                BigInt::from(i8::MIN),
-                BigInt::from(i8::MAX),
-                BigInt::from(i8::MIN) - 1,
-                BigInt::from(i8::MAX) + 1,
-                BigInt::from(i16::MIN),
-                BigInt::from(i16::MAX),
-                BigInt::from(i16::MIN) - 1,
-                BigInt::from(i16::MAX) + 1,
-                BigInt::from(i32::MIN),
-                BigInt::from(i32::MAX),
-                BigInt::from(i32::MIN) - 1,
-                BigInt::from(i32::MAX) + 1,
-                BigInt::from(i64::MIN),
-                BigInt::from(i64::MAX),
-                BigInt::from(i64::MIN) - 1,
-                BigInt::from(i64::MAX) + 1,
-                BigInt::from(i128::MIN),
-                BigInt::from(i128::MAX),
-                BigInt::from(i128::MIN) - 1,
-                BigInt::from(i128::MAX) + 1,
+                BigInt::from(num_bigint::BigInt::from(0)),
+                BigInt::from(num_bigint::BigInt::from(i8::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i8::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i8::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i8::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i16::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i16::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i16::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i16::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i32::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i32::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i32::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i32::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i64::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i64::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i64::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i64::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i128::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i128::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i128::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i128::MAX) + 1),
             ])
             .for_each(|v| {
                 let mut buf = Vec::new();
                 let mut serializer = Serializer::new(&mut buf);
-                crate::format::big_int::serialize(&v, &mut serializer).unwrap();
+                v.serialize(&mut serializer).unwrap();
                 assert_eq!(serialize(Body::BigInt(v)), buf);
             });
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint", feature = "bigdecimal"))]
         #[test]
         fn serialize_big_decimal() {
             IntoIter::new([
-                BigDecimal::from(0),
-                BigDecimal::new(BigInt::from(1), 0),
-                BigDecimal::new(BigInt::from(1), -1),
-                BigDecimal::new(BigInt::from(1), 1),
-                BigDecimal::new(BigInt::from(1), 63),
-                BigDecimal::new(BigInt::from(1), 64),
-                BigDecimal::new(BigInt::from(1), -64),
-                BigDecimal::new(BigInt::from(1), -65),
-                BigDecimal::new(BigInt::from(i16::MIN), 0),
-                BigDecimal::new(BigInt::from(i16::MAX), 0),
+                BigDecimal::from(bigdecimal::BigDecimal::from(0)),
+                BigDecimal::from(bigdecimal::BigDecimal::new(num_bigint::BigInt::from(1), 0)),
+                BigDecimal::from(bigdecimal::BigDecimal::new(num_bigint::BigInt::from(1), -1)),
+                BigDecimal::from(bigdecimal::BigDecimal::new(num_bigint::BigInt::from(1), 1)),
+                BigDecimal::from(bigdecimal::BigDecimal::new(num_bigint::BigInt::from(1), 63)),
+                BigDecimal::from(bigdecimal::BigDecimal::new(num_bigint::BigInt::from(1), 64)),
+                BigDecimal::from(bigdecimal::BigDecimal::new(
+                    num_bigint::BigInt::from(1),
+                    -64,
+                )),
+                BigDecimal::from(bigdecimal::BigDecimal::new(
+                    num_bigint::BigInt::from(1),
+                    -65,
+                )),
+                BigDecimal::from(bigdecimal::BigDecimal::new(
+                    num_bigint::BigInt::from(i16::MIN),
+                    0,
+                )),
+                BigDecimal::from(bigdecimal::BigDecimal::new(
+                    num_bigint::BigInt::from(i16::MAX),
+                    0,
+                )),
             ])
             .for_each(|v| {
                 let mut buf = Vec::new();
                 let mut serializer = Serializer::new(&mut buf);
-                crate::format::big_decimal::serialize(&v, &mut serializer).unwrap();
+                v.serialize(&mut serializer).unwrap();
                 assert_eq!(serialize(Body::BigDecimal(v)), buf);
             });
         }
@@ -568,21 +587,23 @@ mod tests {
             );
         }
 
+        #[cfg(feature = "time")]
         #[test]
         fn serialize_date() {
-            let v = Date::from_calendar_date(1970, Month::January, 1).unwrap();
+            let v = Date::from(time::Date::from_calendar_date(1970, Month::January, 1).unwrap());
             let mut buf = Vec::new();
             let mut serializer = Serializer::new(&mut buf);
-            crate::format::date::serialize(&v, &mut serializer).unwrap();
+            v.serialize(&mut serializer).unwrap();
             assert_eq!(serialize(Body::Date(v)), buf);
         }
 
+        #[cfg(feature = "time")]
         #[test]
         fn serialize_date_time() {
-            let v = OffsetDateTime::UNIX_EPOCH;
+            let v = DateTime::from(OffsetDateTime::UNIX_EPOCH);
             let mut buf = Vec::new();
             let mut serializer = Serializer::new(&mut buf);
-            crate::format::date_time::serialize(&v, &mut serializer).unwrap();
+            v.serialize(&mut serializer).unwrap();
             assert_eq!(serialize(Body::DateTime(v)), buf);
         }
 
@@ -630,12 +651,17 @@ mod tests {
 
     mod deserialize {
         use super::*;
+        #[cfg(feature = "bigdecimal")]
+        use crate::big_decimal::BigDecimal;
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
+        use crate::{big_int::BigInt, big_uint::BigUint};
         use crate::{body::Body, de::Deserializer, header::Header, ser::Serializer};
-        use bigdecimal::BigDecimal;
-        use num_bigint::{BigInt, BigUint};
+        #[cfg(feature = "time")]
+        use crate::{date::Date, date_time::DateTime};
         use serde::Serialize;
         use std::{array::IntoIter, collections::BTreeMap};
-        use time::{Date, Month, OffsetDateTime};
+        #[cfg(feature = "time")]
+        use time::{Month, OffsetDateTime};
 
         #[test]
         fn deserialize_unit() {
@@ -1070,19 +1096,20 @@ mod tests {
             );
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn deserialize_big_uint() {
             IntoIter::new([
-                BigUint::from(0u8),
-                BigUint::from(u8::MAX),
-                BigUint::from(u16::MAX),
-                BigUint::from(u16::MAX) + 1u8,
-                BigUint::from(u32::MAX),
-                BigUint::from(u32::MAX) + 1u8,
-                BigUint::from(u64::MAX),
-                BigUint::from(u64::MAX) + 1u8,
-                BigUint::from(u128::MAX),
-                BigUint::from(u128::MAX) + 1u8,
+                BigUint::from(num_bigint::BigUint::from(0u8)),
+                BigUint::from(num_bigint::BigUint::from(u8::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u16::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u16::MAX) + 1u8),
+                BigUint::from(num_bigint::BigUint::from(u32::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u32::MAX) + 1u8),
+                BigUint::from(num_bigint::BigUint::from(u64::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u64::MAX) + 1u8),
+                BigUint::from(num_bigint::BigUint::from(u128::MAX)),
+                BigUint::from(num_bigint::BigUint::from(u128::MAX) + 1u8),
             ])
             .for_each(|v| {
                 let buf = serialize(Body::BigUInt(v.clone()));
@@ -1097,30 +1124,31 @@ mod tests {
             });
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn deserialize_big_int() {
             IntoIter::new([
-                BigInt::from(0),
-                BigInt::from(i8::MIN),
-                BigInt::from(i8::MAX),
-                BigInt::from(i8::MIN) - 1,
-                BigInt::from(i8::MAX) + 1,
-                BigInt::from(i16::MIN),
-                BigInt::from(i16::MAX),
-                BigInt::from(i16::MIN) - 1,
-                BigInt::from(i16::MAX) + 1,
-                BigInt::from(i32::MIN),
-                BigInt::from(i32::MAX),
-                BigInt::from(i32::MIN) - 1,
-                BigInt::from(i32::MAX) + 1,
-                BigInt::from(i64::MIN),
-                BigInt::from(i64::MAX),
-                BigInt::from(i64::MIN) - 1,
-                BigInt::from(i64::MAX) + 1,
-                BigInt::from(i128::MIN),
-                BigInt::from(i128::MAX),
-                BigInt::from(i128::MIN) - 1,
-                BigInt::from(i128::MAX) + 1,
+                BigInt::from(num_bigint::BigInt::from(0)),
+                BigInt::from(num_bigint::BigInt::from(i8::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i8::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i8::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i8::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i16::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i16::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i16::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i16::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i32::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i32::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i32::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i32::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i64::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i64::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i64::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i64::MAX) + 1),
+                BigInt::from(num_bigint::BigInt::from(i128::MIN)),
+                BigInt::from(num_bigint::BigInt::from(i128::MAX)),
+                BigInt::from(num_bigint::BigInt::from(i128::MIN) - 1),
+                BigInt::from(num_bigint::BigInt::from(i128::MAX) + 1),
             ])
             .for_each(|v| {
                 let buf = serialize(Body::BigInt(v.clone()));
@@ -1135,19 +1163,32 @@ mod tests {
             });
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint", feature = "bigdecimal"))]
         #[test]
         fn deserialize_big_decimal() {
             IntoIter::new([
-                BigDecimal::from(0),
-                BigDecimal::new(BigInt::from(1), 0),
-                BigDecimal::new(BigInt::from(1), -1),
-                BigDecimal::new(BigInt::from(1), 1),
-                BigDecimal::new(BigInt::from(1), 63),
-                BigDecimal::new(BigInt::from(1), 64),
-                BigDecimal::new(BigInt::from(1), -64),
-                BigDecimal::new(BigInt::from(1), -65),
-                BigDecimal::new(BigInt::from(i16::MIN), 0),
-                BigDecimal::new(BigInt::from(i16::MAX), 0),
+                BigDecimal::from(bigdecimal::BigDecimal::from(0)),
+                BigDecimal::from(bigdecimal::BigDecimal::new(num_bigint::BigInt::from(1), 0)),
+                BigDecimal::from(bigdecimal::BigDecimal::new(num_bigint::BigInt::from(1), -1)),
+                BigDecimal::from(bigdecimal::BigDecimal::new(num_bigint::BigInt::from(1), 1)),
+                BigDecimal::from(bigdecimal::BigDecimal::new(num_bigint::BigInt::from(1), 63)),
+                BigDecimal::from(bigdecimal::BigDecimal::new(num_bigint::BigInt::from(1), 64)),
+                BigDecimal::from(bigdecimal::BigDecimal::new(
+                    num_bigint::BigInt::from(1),
+                    -64,
+                )),
+                BigDecimal::from(bigdecimal::BigDecimal::new(
+                    num_bigint::BigInt::from(1),
+                    -65,
+                )),
+                BigDecimal::from(bigdecimal::BigDecimal::new(
+                    num_bigint::BigInt::from(i16::MIN),
+                    0,
+                )),
+                BigDecimal::from(bigdecimal::BigDecimal::new(
+                    num_bigint::BigInt::from(i16::MAX),
+                    0,
+                )),
             ])
             .for_each(|v| {
                 let buf = serialize(Body::BigDecimal(v.clone()));
@@ -1293,9 +1334,12 @@ mod tests {
             );
         }
 
+        #[cfg(feature = "time")]
         #[test]
         fn deserialize_date() {
-            let body = Body::Date(Date::from_calendar_date(1970, Month::January, 1).unwrap());
+            let body = Body::Date(Date::from(
+                time::Date::from_calendar_date(1970, Month::January, 1).unwrap(),
+            ));
             let buf = serialize(body.clone());
             assert_eq!(
                 Body::deserialize(
@@ -1307,9 +1351,10 @@ mod tests {
             );
         }
 
+        #[cfg(feature = "time")]
         #[test]
         fn deserialize_date_time() {
-            let body = Body::DateTime(OffsetDateTime::UNIX_EPOCH);
+            let body = Body::DateTime(DateTime::from(OffsetDateTime::UNIX_EPOCH));
             let buf = serialize(body.clone());
             assert_eq!(
                 Body::deserialize(
@@ -1408,11 +1453,16 @@ mod tests {
 
     mod validate {
         use super::*;
+        #[cfg(feature = "bigdecimal")]
+        use crate::big_decimal::BigDecimal;
         use crate::header::Header;
-        use bigdecimal::BigDecimal;
-        use num_bigint::{BigInt, BigUint};
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
+        use crate::{big_int::BigInt, big_uint::BigUint};
+        #[cfg(feature = "time")]
+        use crate::{date::Date, date_time::DateTime};
         use std::collections::BTreeMap;
-        use time::{Date, Month, OffsetDateTime};
+        #[cfg(feature = "time")]
+        use time::{Month, OffsetDateTime};
 
         #[test]
         fn validate_unit() {
@@ -1506,24 +1556,32 @@ mod tests {
             assert!(!Body::Unit.validate(&header));
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn validate_big_uint() {
             let header = Header::BigUInt;
-            assert!(Body::BigUInt(BigUint::from(123u8)).validate(&header));
+            assert!(
+                Body::BigUInt(BigUint::from(num_bigint::BigUint::from(123u8))).validate(&header)
+            );
             assert!(!Body::Unit.validate(&header));
         }
 
+        #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn validate_big_int() {
             let header = Header::BigInt;
-            assert!(Body::BigInt(BigInt::from(123)).validate(&header));
+            assert!(Body::BigInt(BigInt::from(num_bigint::BigInt::from(123))).validate(&header));
             assert!(!Body::Unit.validate(&header));
         }
 
+        #[cfg(all(feature = "num-traits", feature = "bigdecimal"))]
         #[test]
         fn validate_big_decimal() {
             let header = Header::BigDecimal;
-            assert!(Body::BigDecimal(BigDecimal::from(123)).validate(&header));
+            assert!(
+                Body::BigDecimal(BigDecimal::from(bigdecimal::BigDecimal::from(123)))
+                    .validate(&header)
+            );
             assert!(!Body::Unit.validate(&header));
         }
 
@@ -1627,20 +1685,22 @@ mod tests {
             assert!(!Body::Unit.validate(&header));
         }
 
+        #[cfg(feature = "time")]
         #[test]
         fn validate_date() {
             let header = Header::Date;
-            assert!(
-                Body::Date(Date::from_calendar_date(1970, Month::January, 1).unwrap())
-                    .validate(&header)
-            );
+            assert!(Body::Date(Date::from(
+                time::Date::from_calendar_date(1970, Month::January, 1).unwrap()
+            ))
+            .validate(&header));
             assert!(!Body::Unit.validate(&header));
         }
 
+        #[cfg(feature = "time")]
         #[test]
         fn validate_date_time() {
             let header = Header::DateTime;
-            assert!(Body::DateTime(OffsetDateTime::UNIX_EPOCH).validate(&header));
+            assert!(Body::DateTime(DateTime::from(OffsetDateTime::UNIX_EPOCH)).validate(&header));
             assert!(!Body::Unit.validate(&header));
         }
 
