@@ -13,6 +13,7 @@ pub struct BigDecimal {
     scale: i64,
 }
 
+#[cfg(feature = "bigdecimal")]
 impl From<bigdecimal::BigDecimal> for BigDecimal {
     fn from(v: bigdecimal::BigDecimal) -> Self {
         if v.is_zero() {
@@ -30,6 +31,7 @@ impl From<bigdecimal::BigDecimal> for BigDecimal {
     }
 }
 
+#[cfg(feature = "bigdecimal")]
 impl Into<bigdecimal::BigDecimal> for BigDecimal {
     fn into(self) -> bigdecimal::BigDecimal {
         bigdecimal::BigDecimal::new(
@@ -99,13 +101,13 @@ impl<'de> Deserialize<'de> for BigDecimal {
     }
 }
 
+#[cfg(feature = "bigdecimal")]
 #[cfg(test)]
 mod tests {
-    use std::array::IntoIter;
-
     use crate::{big_decimal::BigDecimal, de::Deserializer, ser::Serializer};
     use num_bigint::BigInt;
     use serde::{Deserialize, Serialize};
+    use std::array::IntoIter;
 
     #[test]
     fn from() {

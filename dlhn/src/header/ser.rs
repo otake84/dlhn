@@ -134,6 +134,7 @@ impl SerializeHeader for BigDecimal {
     }
 }
 
+#[cfg(feature = "bigdecimal")]
 impl SerializeHeader for bigdecimal::BigDecimal {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
         writer.write_all(&[super::BIG_DECIMAL_CODE])
@@ -475,6 +476,7 @@ mod tests {
         assert_eq!(buf, [17]);
     }
 
+    #[cfg(feature = "bigdecimal")]
     #[test]
     fn serialize_header_big_decimal2() {
         let mut buf = Vec::new();
@@ -694,6 +696,7 @@ mod tests {
             );
         }
 
+        #[cfg(feature = "bigdecimal")]
         #[test]
         fn serialize_big_decimal2() {
             assert_eq!(

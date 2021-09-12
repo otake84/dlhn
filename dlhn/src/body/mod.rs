@@ -269,7 +269,9 @@ mod tests {
 
     mod serialize {
         use super::*;
-        use crate::{big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint};
+        #[cfg(feature = "bigdecimal")]
+        use crate::big_decimal::BigDecimal;
+        use crate::{big_int::BigInt, big_uint::BigUint};
         #[cfg(feature = "time")]
         use crate::{date::Date, date_time::DateTime};
         use serde_bytes::ByteBuf;
@@ -465,6 +467,7 @@ mod tests {
             });
         }
 
+        #[cfg(feature = "bigdecimal")]
         #[test]
         fn serialize_big_decimal() {
             IntoIter::new([
@@ -645,9 +648,11 @@ mod tests {
 
     mod deserialize {
         use super::*;
+        #[cfg(feature = "bigdecimal")]
+        use crate::big_decimal::BigDecimal;
         use crate::{
-            big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, body::Body,
-            de::Deserializer, header::Header, ser::Serializer,
+            big_int::BigInt, big_uint::BigUint, body::Body, de::Deserializer, header::Header,
+            ser::Serializer,
         };
         #[cfg(feature = "time")]
         use crate::{date::Date, date_time::DateTime};
@@ -1154,6 +1159,7 @@ mod tests {
             });
         }
 
+        #[cfg(feature = "bigdecimal")]
         #[test]
         fn deserialize_big_decimal() {
             IntoIter::new([
@@ -1443,7 +1449,9 @@ mod tests {
 
     mod validate {
         use super::*;
-        use crate::{big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, header::Header};
+        #[cfg(feature = "bigdecimal")]
+        use crate::big_decimal::BigDecimal;
+        use crate::{big_int::BigInt, big_uint::BigUint, header::Header};
         #[cfg(feature = "time")]
         use crate::{date::Date, date_time::DateTime};
         use std::collections::BTreeMap;
@@ -1558,6 +1566,7 @@ mod tests {
             assert!(!Body::Unit.validate(&header));
         }
 
+        #[cfg(feature = "bigdecimal")]
         #[test]
         fn validate_big_decimal() {
             let header = Header::BigDecimal;

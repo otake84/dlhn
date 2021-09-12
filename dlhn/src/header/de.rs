@@ -291,6 +291,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "bigdecimal")]
     #[test]
     fn deserialize_header_big_decimal2() {
         let mut buf = Vec::new();
