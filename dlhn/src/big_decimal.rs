@@ -173,7 +173,7 @@ mod tests {
                 BigInt::from(1),
                 64
             ))),
-            [1, 1, 128, 1]
+            [1, 1, 128, 2]
         );
         assert_eq!(
             encode_big_decimal(BigDecimal::from(bigdecimal::BigDecimal::new(
@@ -187,7 +187,7 @@ mod tests {
                 BigInt::from(1),
                 -65
             ))),
-            [1, 1, 129, 1]
+            [1, 1, 129, 2]
         );
         assert_eq!(
             encode_big_decimal(BigDecimal::from(bigdecimal::BigDecimal::new(

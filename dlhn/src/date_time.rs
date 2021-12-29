@@ -85,7 +85,7 @@ impl<'de> Deserialize<'de> for DateTime {
 #[cfg(test)]
 mod tests {
     use super::DateTime;
-    use crate::{de::Deserializer, leb128::Leb128, ser::Serializer, zigzag::ZigZag};
+    use crate::{de::Deserializer, ser::Serializer, zigzag::ZigZag, prefix_varint::PrefixVarint};
     use serde::{Deserialize, Serialize};
     use std::{array::IntoIter, convert::TryInto};
     use time::{ext::NumericalDuration, OffsetDateTime};
@@ -118,8 +118,8 @@ mod tests {
                     date_time
                         .unix_timestamp()
                         .encode_zigzag()
-                        .encode_leb128_vec(),
-                    date_time.nanosecond().encode_leb128_vec()
+                        .encode_prefix_varint_vec(),
+                    date_time.nanosecond().encode_prefix_varint_vec()
                 ]
                 .concat()
             );
