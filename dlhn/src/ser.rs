@@ -1,4 +1,4 @@
-use crate::{leb128::Leb128, zigzag::ZigZag};
+use crate::{leb128::Leb128, prefix_varint::PrefixVarint, zigzag::ZigZag};
 use serde::{
     ser::{self, Impossible},
     Serialize,
@@ -71,20 +71,20 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
-        let mut buf = [0u8; u16::LEB128_BUF_SIZE];
-        let size = v.encode_zigzag().encode_leb128(&mut buf);
+        let mut buf = [0u8; u16::PREFIX_VARINT_BUF_SIZE];
+        let size = v.encode_zigzag().encode_prefix_varint(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
     fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
-        let mut buf = [0u8; u32::LEB128_BUF_SIZE];
-        let size = v.encode_zigzag().encode_leb128(&mut buf);
+        let mut buf = [0u8; u32::PREFIX_VARINT_BUF_SIZE];
+        let size = v.encode_zigzag().encode_prefix_varint(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
-        let mut buf = [0u8; u64::LEB128_BUF_SIZE];
-        let size = v.encode_zigzag().encode_leb128(&mut buf);
+        let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
+        let size = v.encode_zigzag().encode_prefix_varint(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
@@ -102,19 +102,19 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
         let mut buf = [0u8; u16::LEB128_BUF_SIZE];
-        let size = v.encode_leb128(&mut buf);
+        let size = v.encode_prefix_varint(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
     fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
         let mut buf = [0u8; u32::LEB128_BUF_SIZE];
-        let size = v.encode_leb128(&mut buf);
+        let size = v.encode_prefix_varint(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-        let mut buf = [0u8; u64::LEB128_BUF_SIZE];
-        let size = v.encode_leb128(&mut buf);
+        let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
+        let size = v.encode_prefix_varint(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
