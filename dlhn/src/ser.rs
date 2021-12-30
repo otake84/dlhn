@@ -580,7 +580,7 @@ impl<'a, W: Write> ser::Serializer for MapKeySerializer<'a, W> {
 #[cfg(test)]
 mod tests {
     use super::Serializer;
-    use crate::{leb128::Leb128, ser::Error, zigzag::ZigZag, prefix_varint::PrefixVarint};
+    use crate::{leb128::Leb128, prefix_varint::PrefixVarint, ser::Error, zigzag::ZigZag};
     use serde::Serialize;
     use serde_bytes::Bytes;
     use std::collections::BTreeMap;
@@ -940,7 +940,9 @@ mod tests {
             assert_eq!(
                 buf,
                 [
-                    ("a".as_bytes().len() as u64).encode_prefix_varint_vec().as_slice(),
+                    ("a".as_bytes().len() as u64)
+                        .encode_prefix_varint_vec()
+                        .as_slice(),
                     "a".as_bytes()
                 ]
                 .concat()
@@ -955,7 +957,9 @@ mod tests {
             assert_eq!(
                 buf,
                 [
-                    ("あ".as_bytes().len() as u64).encode_prefix_varint_vec().as_slice(),
+                    ("あ".as_bytes().len() as u64)
+                        .encode_prefix_varint_vec()
+                        .as_slice(),
                     "あ".as_bytes()
                 ]
                 .concat()
@@ -972,7 +976,11 @@ mod tests {
             body.serialize(&mut serializer).unwrap();
             assert_eq!(
                 buf,
-                [("".len() as u64).encode_prefix_varint_vec().as_slice(), "".as_bytes()].concat()
+                [
+                    ("".len() as u64).encode_prefix_varint_vec().as_slice(),
+                    "".as_bytes()
+                ]
+                .concat()
             );
         }
 
@@ -984,7 +992,9 @@ mod tests {
             assert_eq!(
                 buf,
                 [
-                    ("test".as_bytes().len() as u64).encode_prefix_varint_vec().as_slice(),
+                    ("test".as_bytes().len() as u64)
+                        .encode_prefix_varint_vec()
+                        .as_slice(),
                     "test".as_bytes()
                 ]
                 .concat()

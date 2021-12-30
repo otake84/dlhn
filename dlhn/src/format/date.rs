@@ -49,7 +49,7 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<Date, T
 
 #[cfg(test)]
 mod tests {
-    use crate::{de::Deserializer, ser::Serializer, zigzag::ZigZag, prefix_varint::PrefixVarint};
+    use crate::{de::Deserializer, prefix_varint::PrefixVarint, ser::Serializer, zigzag::ZigZag};
     use serde::{Deserialize, Serialize};
     use time::{Date, Month};
 
@@ -65,37 +65,61 @@ mod tests {
             serialize(Test {
                 date: Date::from_ordinal_date(2000, 1).unwrap()
             }),
-            [0i32.encode_zigzag().encode_prefix_varint_vec(), 0u16.encode_prefix_varint_vec()].concat(),
+            [
+                0i32.encode_zigzag().encode_prefix_varint_vec(),
+                0u16.encode_prefix_varint_vec()
+            ]
+            .concat(),
         );
         assert_eq!(
             serialize(Test {
                 date: Date::from_ordinal_date(1936, 1).unwrap()
             }),
-            [(1936i32 - 2000).encode_zigzag().encode_prefix_varint_vec(), 0u16.encode_prefix_varint_vec()].concat(),
+            [
+                (1936i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
+                0u16.encode_prefix_varint_vec()
+            ]
+            .concat(),
         );
         assert_eq!(
             serialize(Test {
                 date: Date::from_ordinal_date(1935, 1).unwrap()
             }),
-            [(1935i32 - 2000).encode_zigzag().encode_prefix_varint_vec(), 0u16.encode_prefix_varint_vec()].concat(),
+            [
+                (1935i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
+                0u16.encode_prefix_varint_vec()
+            ]
+            .concat(),
         );
         assert_eq!(
             serialize(Test {
                 date: Date::from_ordinal_date(2063, 128).unwrap()
             }),
-            [(2063i32 - 2000).encode_zigzag().encode_prefix_varint_vec(), 127u16.encode_prefix_varint_vec()].concat(),
+            [
+                (2063i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
+                127u16.encode_prefix_varint_vec()
+            ]
+            .concat(),
         );
         assert_eq!(
             serialize(Test {
                 date: Date::from_ordinal_date(2064, 129).unwrap()
             }),
-            [(2064i32 - 2000).encode_zigzag().encode_prefix_varint_vec(), 128u16.encode_prefix_varint_vec()].concat(),
+            [
+                (2064i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
+                128u16.encode_prefix_varint_vec()
+            ]
+            .concat(),
         );
         assert_eq!(
             serialize(Test {
                 date: Date::from_ordinal_date(2000, 366).unwrap()
             }),
-            [(2000i32 - 2000).encode_zigzag().encode_prefix_varint_vec(), 365u16.encode_prefix_varint_vec()].concat(),
+            [
+                (2000i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
+                365u16.encode_prefix_varint_vec()
+            ]
+            .concat(),
         );
     }
 

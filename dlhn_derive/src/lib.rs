@@ -96,7 +96,10 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                             match &variant.fields {
                                 syn::Fields::Named(fields) => {
                                     let mut buf = vec![STRUCT_CODE];
-                                    buf.append(&mut (variant.fields.len() as u64).encode_prefix_varint_vec());
+                                    buf.append(
+                                        &mut (variant.fields.len() as u64)
+                                            .encode_prefix_varint_vec(),
+                                    );
                                     outers.push(
                                         proc_macro2::TokenStream::from_str(
                                             format!("{:?}", buf).as_str(),
@@ -112,7 +115,10 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                                 }
                                 syn::Fields::Unnamed(fields) => {
                                     let mut buf = vec![TUPLE_CODE];
-                                    buf.append(&mut (variant.fields.len() as u64).encode_prefix_varint_vec());
+                                    buf.append(
+                                        &mut (variant.fields.len() as u64)
+                                            .encode_prefix_varint_vec(),
+                                    );
                                     outers.push(
                                         proc_macro2::TokenStream::from_str(
                                             format!("{:?}", buf).as_str(),

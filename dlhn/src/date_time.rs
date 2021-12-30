@@ -85,7 +85,7 @@ impl<'de> Deserialize<'de> for DateTime {
 #[cfg(test)]
 mod tests {
     use super::DateTime;
-    use crate::{de::Deserializer, ser::Serializer, zigzag::ZigZag, prefix_varint::PrefixVarint};
+    use crate::{de::Deserializer, prefix_varint::PrefixVarint, ser::Serializer, zigzag::ZigZag};
     use serde::{Deserialize, Serialize};
     use std::{array::IntoIter, convert::TryInto};
     use time::{ext::NumericalDuration, OffsetDateTime};
