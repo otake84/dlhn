@@ -1,8 +1,8 @@
 #![forbid(unsafe_code)]
 
-mod leb128;
+mod prefix_varint;
 
-use crate::leb128::Leb128;
+use crate::prefix_varint::PrefixVarint;
 use proc_macro::TokenStream;
 use proc_macro2::{Delimiter, Group, Span};
 use quote::{quote, ToTokens};
@@ -41,9 +41,8 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                 }
             }
 
-            let fields_count = types
-                .len()
-                .encode_leb128_vec()
+            let fields_count = (types.len() as u64)
+                .encode_prefix_varint_vec()
                 .iter()
                 .map(ToTokens::to_token_stream)
                 .collect::<Vec<proc_macro2::TokenStream>>();
@@ -97,7 +96,10 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                             match &variant.fields {
                                 syn::Fields::Named(fields) => {
                                     let mut buf = vec![STRUCT_CODE];
-                                    buf.append(&mut variant.fields.len().encode_leb128_vec());
+                                    buf.append(
+                                        &mut (variant.fields.len() as u64)
+                                            .encode_prefix_varint_vec(),
+                                    );
                                     outers.push(
                                         proc_macro2::TokenStream::from_str(
                                             format!("{:?}", buf).as_str(),
@@ -113,7 +115,10 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                                 }
                                 syn::Fields::Unnamed(fields) => {
                                     let mut buf = vec![TUPLE_CODE];
-                                    buf.append(&mut variant.fields.len().encode_leb128_vec());
+                                    buf.append(
+                                        &mut (variant.fields.len() as u64)
+                                            .encode_prefix_varint_vec(),
+                                    );
                                     outers.push(
                                         proc_macro2::TokenStream::from_str(
                                             format!("{:?}", buf).as_str(),
@@ -146,9 +151,8 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                 }
             }
 
-            let variants_count = outers
-                .len()
-                .encode_leb128_vec()
+            let variants_count = (outers.len() as u64)
+                .encode_prefix_varint_vec()
                 .iter()
                 .map(ToTokens::to_token_stream)
                 .collect::<Vec<proc_macro2::TokenStream>>();

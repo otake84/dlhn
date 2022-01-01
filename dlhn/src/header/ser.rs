@@ -1,7 +1,7 @@
 use super::Header;
 use crate::{
     big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, date::Date, date_time::DateTime,
-    leb128::Leb128,
+    prefix_varint::PrefixVarint,
 };
 use serde_bytes::{ByteBuf, Bytes};
 use std::{
@@ -223,8 +223,8 @@ macro_rules! tuple_impls {
             {
                 fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
                     writer.write_all(&[super::TUPLE_CODE])?;
-                    let mut buf = [0u8; usize::LEB128_BUF_SIZE];
-                    let size = ($len as usize).encode_leb128(&mut buf);
+                    let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
+                    let size = ($len as u64).encode_prefix_varint(&mut buf);
                     writer.write_all(&buf[..size])?;
                     $(
                         $name::serialize_header(writer)?;
@@ -311,8 +311,8 @@ impl Header {
 
     fn serialize_inner_vec<W: Write>(code: u8, inner: &Vec<Header>, writer: &mut W) -> Result<()> {
         writer.write_all(&[code])?;
-        let mut buf = [0u8; usize::LEB128_BUF_SIZE];
-        let size = inner.len().encode_leb128(&mut buf);
+        let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
+        let size = (inner.len() as u64).encode_prefix_varint(&mut buf);
         writer.write_all(&buf[..size])?;
         for v in inner {
             v.serialize(writer)?
@@ -322,8 +322,8 @@ impl Header {
 
     fn serialize_extension<W: Write>(code: u8, i: u64, writer: &mut W) -> Result<()> {
         writer.write_all(&[code])?;
-        let mut buf = [0u8; u64::LEB128_BUF_SIZE];
-        let size = i.encode_leb128(&mut buf);
+        let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
+        let size = i.encode_prefix_varint(&mut buf);
         writer.write_all(&buf[..size])
     }
 }

@@ -83,7 +83,7 @@ impl<'de> Deserialize<'de> for Date {
 #[cfg(test)]
 mod tests {
     use super::Date;
-    use crate::{de::Deserializer, ser::Serializer};
+    use crate::{de::Deserializer, prefix_varint::PrefixVarint, ser::Serializer, zigzag::ZigZag};
     use serde::{Deserialize, Serialize};
     use std::convert::TryInto;
 
@@ -110,33 +110,57 @@ mod tests {
     fn serialize_date() {
         assert_eq!(
             serialize(Date::from(time::Date::from_ordinal_date(2000, 1).unwrap())),
-            [0, 0]
+            [
+                0i32.encode_zigzag().encode_prefix_varint_vec(),
+                0u16.encode_prefix_varint_vec()
+            ]
+            .concat(),
         );
         assert_eq!(
             serialize(Date::from(time::Date::from_ordinal_date(1936, 1).unwrap())),
-            [127, 0]
+            [
+                (1936i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
+                0u16.encode_prefix_varint_vec()
+            ]
+            .concat(),
         );
         assert_eq!(
             serialize(Date::from(time::Date::from_ordinal_date(1935, 1).unwrap())),
-            [129, 1, 0]
+            [
+                (1935i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
+                0u16.encode_prefix_varint_vec()
+            ]
+            .concat(),
         );
         assert_eq!(
             serialize(Date::from(
                 time::Date::from_ordinal_date(2063, 128).unwrap()
             )),
-            [126, 127]
+            [
+                (2063i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
+                127u16.encode_prefix_varint_vec()
+            ]
+            .concat(),
         );
         assert_eq!(
             serialize(Date::from(
                 time::Date::from_ordinal_date(2064, 129).unwrap()
             )),
-            [128, 1, 128, 1]
+            [
+                (2064i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
+                128u16.encode_prefix_varint_vec()
+            ]
+            .concat(),
         );
         assert_eq!(
             serialize(Date::from(
                 time::Date::from_ordinal_date(2000, 366).unwrap()
             )),
-            [0, 237, 2]
+            [
+                (2000i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
+                365u16.encode_prefix_varint_vec()
+            ]
+            .concat(),
         );
     }
 
