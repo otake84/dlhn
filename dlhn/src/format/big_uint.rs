@@ -47,14 +47,7 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<BigUint
 mod tests {
     use crate::{de::Deserializer, ser::Serializer};
     use num_bigint::BigUint;
-    use serde::{Deserialize, Serialize};
     use std::array::IntoIter;
-
-    #[derive(Debug, PartialEq, Serialize, Deserialize)]
-    struct Test {
-        #[serde(with = "crate::format::big_uint")]
-        big_uint: BigUint,
-    }
 
     #[test]
     fn serilize() {
@@ -94,8 +87,7 @@ mod tests {
             let buf = encode_big_uint(big_uint.clone());
             let mut reader = buf.as_slice();
             let mut deserializer = Deserializer::new(&mut reader);
-            let result = Test::deserialize(&mut deserializer).unwrap();
-            assert_eq!(result, Test { big_uint });
+            assert_eq!(big_uint, super::deserialize(&mut deserializer).unwrap());
         }
 
         IntoIter::new([
@@ -116,8 +108,7 @@ mod tests {
     fn encode_big_uint(big_uint: BigUint) -> Vec<u8> {
         let mut buf = Vec::new();
         let mut serializer = Serializer::new(&mut buf);
-        let body = Test { big_uint };
-        body.serialize(&mut serializer).unwrap();
+        super::serialize(&big_uint, &mut serializer).unwrap();
         buf
     }
 }

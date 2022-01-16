@@ -50,21 +50,12 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<Date, T
 #[cfg(test)]
 mod tests {
     use crate::{de::Deserializer, prefix_varint::PrefixVarint, ser::Serializer, zigzag::ZigZag};
-    use serde::{Deserialize, Serialize};
     use time::{Date, Month};
-
-    #[derive(Debug, PartialEq, Serialize, Deserialize)]
-    struct Test {
-        #[serde(with = "crate::format::date")]
-        date: Date,
-    }
 
     #[test]
     fn serialize_date() {
         assert_eq!(
-            serialize(Test {
-                date: Date::from_ordinal_date(2000, 1).unwrap()
-            }),
+            serialize(Date::from_ordinal_date(2000, 1).unwrap()),
             [
                 0i32.encode_zigzag().encode_prefix_varint_vec(),
                 0u16.encode_prefix_varint_vec()
@@ -72,9 +63,7 @@ mod tests {
             .concat(),
         );
         assert_eq!(
-            serialize(Test {
-                date: Date::from_ordinal_date(1936, 1).unwrap()
-            }),
+            serialize(Date::from_ordinal_date(1936, 1).unwrap()),
             [
                 (1936i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
                 0u16.encode_prefix_varint_vec()
@@ -82,9 +71,7 @@ mod tests {
             .concat(),
         );
         assert_eq!(
-            serialize(Test {
-                date: Date::from_ordinal_date(1935, 1).unwrap()
-            }),
+            serialize(Date::from_ordinal_date(1935, 1).unwrap()),
             [
                 (1935i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
                 0u16.encode_prefix_varint_vec()
@@ -92,9 +79,7 @@ mod tests {
             .concat(),
         );
         assert_eq!(
-            serialize(Test {
-                date: Date::from_ordinal_date(2063, 128).unwrap()
-            }),
+            serialize(Date::from_ordinal_date(2063, 128).unwrap()),
             [
                 (2063i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
                 127u16.encode_prefix_varint_vec()
@@ -102,9 +87,7 @@ mod tests {
             .concat(),
         );
         assert_eq!(
-            serialize(Test {
-                date: Date::from_ordinal_date(2064, 129).unwrap()
-            }),
+            serialize(Date::from_ordinal_date(2064, 129).unwrap()),
             [
                 (2064i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
                 128u16.encode_prefix_varint_vec()
@@ -112,9 +95,7 @@ mod tests {
             .concat(),
         );
         assert_eq!(
-            serialize(Test {
-                date: Date::from_ordinal_date(2000, 366).unwrap()
-            }),
+            serialize(Date::from_ordinal_date(2000, 366).unwrap()),
             [
                 (2000i32 - 2000).encode_zigzag().encode_prefix_varint_vec(),
                 365u16.encode_prefix_varint_vec()
@@ -125,24 +106,19 @@ mod tests {
 
     #[test]
     fn deserialize_date() {
-        let buf = serialize(Test {
-            date: Date::from_calendar_date(1970, Month::January, 11).unwrap(),
-        });
+        let buf = serialize(Date::from_calendar_date(1970, Month::January, 11).unwrap());
         let mut reader = buf.as_slice();
         let mut deserializer = Deserializer::new(&mut reader);
-        let result = Test::deserialize(&mut deserializer).unwrap();
         assert_eq!(
-            result,
-            Test {
-                date: Date::from_calendar_date(1970, Month::January, 11).unwrap()
-            }
-        )
+            Date::from_calendar_date(1970, Month::January, 11).unwrap(),
+            super::deserialize(&mut deserializer).unwrap()
+        );
     }
 
-    fn serialize<T: Serialize>(v: T) -> Vec<u8> {
+    fn serialize(date: Date) -> Vec<u8> {
         let mut buf = Vec::new();
         let mut serializer = Serializer::new(&mut buf);
-        v.serialize(&mut serializer).unwrap();
+        super::serialize(&date, &mut serializer).unwrap();
         buf
     }
 }

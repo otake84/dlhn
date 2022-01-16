@@ -61,14 +61,7 @@ mod tests {
     use crate::{de::Deserializer, ser::Serializer};
     use bigdecimal::BigDecimal;
     use num_bigint::BigInt;
-    use serde::{Deserialize, Serialize};
     use std::array::IntoIter;
-
-    #[derive(Debug, PartialEq, Serialize, Deserialize)]
-    struct Test {
-        #[serde(with = "crate::format::big_decimal")]
-        value: BigDecimal,
-    }
 
     #[test]
     fn serilize() {
@@ -121,8 +114,7 @@ mod tests {
             let buf = encode_big_decimal(value.clone());
             let mut reader = buf.as_slice();
             let mut deserializer = Deserializer::new(&mut reader);
-            let result = Test::deserialize(&mut deserializer).unwrap();
-            assert_eq!(result, Test { value });
+            assert_eq!(value, super::deserialize(&mut deserializer).unwrap());
         }
 
         IntoIter::new([
@@ -143,8 +135,7 @@ mod tests {
     fn encode_big_decimal(value: BigDecimal) -> Vec<u8> {
         let mut buf = Vec::new();
         let mut serializer = Serializer::new(&mut buf);
-        let body = Test { value };
-        body.serialize(&mut serializer).unwrap();
+        super::serialize(&value, &mut serializer).unwrap();
         buf
     }
 }

@@ -48,15 +48,8 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<OffsetD
 #[cfg(test)]
 mod tests {
     use crate::{de::Deserializer, prefix_varint::PrefixVarint, ser::Serializer, zigzag::ZigZag};
-    use serde::{Deserialize, Serialize};
     use std::array::IntoIter;
     use time::{ext::NumericalDuration, OffsetDateTime};
-
-    #[derive(Debug, PartialEq, Serialize, Deserialize)]
-    struct Test {
-        #[serde(with = "crate::format::date_time")]
-        date_time: OffsetDateTime,
-    }
 
     #[test]
     fn serialize_date_time() {
@@ -98,8 +91,7 @@ mod tests {
             let buf = encode_date_time(date_time);
             let mut reader = buf.as_slice();
             let mut deserializer = Deserializer::new(&mut reader);
-            let result = Test::deserialize(&mut deserializer).unwrap();
-            assert_eq!(result, Test { date_time });
+            assert_eq!(date_time, super::deserialize(&mut deserializer).unwrap());
         }
 
         IntoIter::new([
@@ -118,8 +110,7 @@ mod tests {
     fn encode_date_time(date_time: OffsetDateTime) -> Vec<u8> {
         let mut buf = Vec::new();
         let mut serializer = Serializer::new(&mut buf);
-        let body = Test { date_time };
-        body.serialize(&mut serializer).unwrap();
+        super::serialize(&date_time, &mut serializer).unwrap();
         buf
     }
 }
