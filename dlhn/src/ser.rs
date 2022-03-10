@@ -139,7 +139,7 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
-        v.len().serialize(&mut *self)?;
+        (v.len() as u64).serialize(&mut *self)?;
         self.output.write_all(v.as_bytes()).or(Err(Error::Write))
     }
 
