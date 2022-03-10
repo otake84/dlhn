@@ -15,7 +15,7 @@ fn derive_serialize_header() {
 
         let mut buf = Vec::new();
         Test::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [22, 3, 2, 3, 1, 5]);
+        assert_eq!(buf, [21, 3, 2, 3, 1, 5]);
     }
 
     {
@@ -45,7 +45,7 @@ fn derive_serialize_header() {
 
         let mut buf = Vec::new();
         Test::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [24, 4, 2, 0, 5, 22, 3, 2, 3, 5]);
+        assert_eq!(buf, [24, 4, 2, 0, 5, 21, 3, 2, 3, 5]);
     }
 }
 
@@ -63,7 +63,7 @@ fn derive_serialize_header_with_skip() {
 
         let mut buf = Vec::new();
         Test::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [22, 2, 2, 1, 5]);
+        assert_eq!(buf, [21, 2, 2, 1, 5]);
     }
 
     {
@@ -97,7 +97,7 @@ fn derive_serialize_header_with_skip_serializing() {
 
         let mut buf = Vec::new();
         Test::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [22, 2, 2, 1, 5]);
+        assert_eq!(buf, [21, 2, 2, 1, 5]);
     }
 
     {
@@ -133,7 +133,7 @@ fn deserialize_header() {
         let mut cursor = Cursor::new(buf);
         assert_eq!(
             cursor.deserialize_header().unwrap(),
-            Header::Struct(vec![Header::Unit, Header::Boolean, Header::UInt8])
+            Header::Tuple(vec![Header::Unit, Header::Boolean, Header::UInt8])
         );
     }
 

@@ -23,7 +23,7 @@ const STRING_CODE: u8 = 18;
 const BINARY_CODE: u8 = 19;
 const ARRAY_CODE: u8 = 20;
 const TUPLE_CODE: u8 = 21;
-const STRUCT_CODE: u8 = 22;
+// const STRUCT_CODE: u8 = 22;
 const MAP_CODE: u8 = 23;
 const ENUM_CODE: u8 = 24;
 const DATE_CODE: u8 = 25;
@@ -53,7 +53,7 @@ pub enum Header {
     Binary,
     Array(Box<Header>),
     Tuple(Vec<Header>),
-    Struct(Vec<Header>),
+    // Struct(Vec<Header>),
     Map(Box<Header>),
     Enum(Vec<Header>),
     Date,

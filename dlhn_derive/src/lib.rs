@@ -10,7 +10,7 @@ use std::{slice::Iter, str::FromStr};
 use syn::{parse_macro_input, Attribute, DeriveInput, Meta, NestedMeta};
 
 const TUPLE_CODE: u8 = 21;
-const STRUCT_CODE: u8 = 22;
+// const STRUCT_CODE: u8 = 22;
 const ENUM_CODE: u8 = 24;
 const SERDE_ATTRIBUTE: &str = "serde";
 const SKIP_ATTRIBUTE: &str = "skip";
@@ -51,7 +51,8 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                 impl dlhn::header::ser::SerializeHeader for #type_name {
                     fn serialize_header<W: std::io::Write>(writer: &mut W) -> std::io::Result<()> {
                         writer.write_all(&[
-                            #STRUCT_CODE,
+                            // #STRUCT_CODE,
+                            #TUPLE_CODE,
                             #(
                                 #fields_count,
                             )*
@@ -95,7 +96,8 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                         if variant.fields.len() > 1 {
                             match &variant.fields {
                                 syn::Fields::Named(fields) => {
-                                    let mut buf = vec![STRUCT_CODE];
+                                    // let mut buf = vec![STRUCT_CODE];
+                                    let mut buf = vec![TUPLE_CODE];
                                     buf.append(
                                         &mut (variant.fields.len() as u64)
                                             .encode_prefix_varint_vec(),

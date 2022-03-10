@@ -64,12 +64,12 @@ fn serialize_tuple() -> Vec<u8> {
     serialize(Body::Tuple(vec![Body::Boolean(true), Body::Boolean(false)]))
 }
 
-fn serialize_struct() -> Vec<u8> {
-    serialize(Body::Struct(vec![
-        Body::Boolean(true),
-        Body::Boolean(false),
-    ]))
-}
+// fn serialize_struct() -> Vec<u8> {
+//     serialize(Body::Struct(vec![
+//         Body::Boolean(true),
+//         Body::Boolean(false),
+//     ]))
+// }
 
 fn serialize_map() -> Vec<u8> {
     serialize(Body::Map({
@@ -111,7 +111,7 @@ main!(
     // serialize_i128,
     serialize_array,
     serialize_tuple,
-    serialize_struct,
+    // serialize_struct,
     serialize_map,
     serialize_enum,
     serialize_binary,

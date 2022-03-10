@@ -47,14 +47,14 @@ impl<R: Read> DeserializeHeader<R> for R {
                 }
                 Ok(Header::Tuple(vec))
             }
-            super::STRUCT_CODE => {
-                let size = u64::decode_prefix_varint(self)?;
-                let mut buf = Vec::with_capacity(size as usize);
-                for _ in 0..size {
-                    buf.push(self.deserialize_header()?);
-                }
-                Ok(Header::Struct(buf))
-            }
+            // super::STRUCT_CODE => {
+            //     let size = u64::decode_prefix_varint(self)?;
+            //     let mut buf = Vec::with_capacity(size as usize);
+            //     for _ in 0..size {
+            //         buf.push(self.deserialize_header()?);
+            //     }
+            //     Ok(Header::Struct(buf))
+            // }
             super::MAP_CODE => {
                 let inner = self.deserialize_header()?;
                 Ok(Header::Map(Box::new(inner)))

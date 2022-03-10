@@ -35,7 +35,7 @@ pub enum Body {
     Binary(ByteBuf),
     Array(Vec<Body>),
     Tuple(Vec<Body>),
-    Struct(Vec<Body>),
+    // Struct(Vec<Body>),
     Map(BTreeMap<String, Body>),
     Enum(u32, Box<Body>),
     Date(Date),
@@ -69,7 +69,7 @@ impl Serialize for Body {
             Body::String(v) => v.serialize(serializer),
             Body::Binary(v) => v.serialize(serializer),
             Body::Array(v) => v.serialize(serializer),
-            Body::Tuple(v) | Body::Struct(v) => {
+            Body::Tuple(v) /* | Body::Struct(v) */ => {
                 let mut tuple = serializer.serialize_tuple(v.len())?;
                 for value in v.iter() {
                     tuple.serialize_element(value)?;
@@ -134,13 +134,13 @@ impl Body {
                 }
                 Ok(Self::Tuple(buf))
             }
-            Header::Struct(inner) => {
-                let mut buf = Vec::with_capacity(inner.len());
-                for inner in inner.iter() {
-                    buf.push(Self::deserialize(inner, deserializer)?);
-                }
-                Ok(Self::Struct(buf))
-            }
+            // Header::Struct(inner) => {
+            //     let mut buf = Vec::with_capacity(inner.len());
+            //     for inner in inner.iter() {
+            //         buf.push(Self::deserialize(inner, deserializer)?);
+            //     }
+            //     Ok(Self::Struct(buf))
+            // }
             Header::Map(inner) => {
                 let len = u64::deserialize(&mut *deserializer)?;
                 let mut buf = BTreeMap::new();
@@ -201,13 +201,13 @@ impl Body {
                         .zip(inner_bodies)
                         .all(|(header, body)| body.validate(header))
             }
-            (Header::Struct(inner_header), Body::Struct(inner_body)) => {
-                inner_header.len() == inner_body.len()
-                    && inner_header
-                        .iter()
-                        .zip(inner_body)
-                        .all(|(header, body)| body.validate(header))
-            }
+            // (Header::Struct(inner_header), Body::Struct(inner_body)) => {
+            //     inner_header.len() == inner_body.len()
+            //         && inner_header
+            //             .iter()
+            //             .zip(inner_body)
+            //             .all(|(header, body)| body.validate(header))
+            // }
             (Header::Map(inner_header), Body::Map(inner_body)) => inner_body
                 .values()
                 .all(|value| value.validate(inner_header)),
@@ -506,18 +506,18 @@ mod tests {
             );
         }
 
-        #[test]
-        fn serialize_struct() {
-            #[derive(Serialize)]
-            struct Test {
-                a: (),
-                b: bool,
-            }
-            assert_eq!(
-                serialize(Body::Struct(vec![Body::Unit, Body::Boolean(false)])),
-                serialize(Test { a: (), b: false })
-            );
-        }
+        // #[test]
+        // fn serialize_struct() {
+        //     #[derive(Serialize)]
+        //     struct Test {
+        //         a: (),
+        //         b: bool,
+        //     }
+        //     assert_eq!(
+        //         serialize(Body::Struct(vec![Body::Unit, Body::Boolean(false)])),
+        //         serialize(Test { a: (), b: false })
+        //     );
+        // }
 
         #[test]
         fn serialize_map() {
@@ -1210,23 +1210,23 @@ mod tests {
             );
         }
 
-        #[test]
-        fn deserialize_struct() {
-            let body = Body::Struct(vec![
-                Body::Boolean(true),
-                Body::UInt8(123),
-                Body::String("test".to_string()),
-            ]);
-            let buf = serialize(body.clone());
-            assert_eq!(
-                Body::deserialize(
-                    &Header::Struct(vec![Header::Boolean, Header::UInt8, Header::String]),
-                    &mut Deserializer::new(&mut buf.as_slice().as_ref())
-                )
-                .unwrap(),
-                body
-            );
-        }
+        // #[test]
+        // fn deserialize_struct() {
+        //     let body = Body::Struct(vec![
+        //         Body::Boolean(true),
+        //         Body::UInt8(123),
+        //         Body::String("test".to_string()),
+        //     ]);
+        //     let buf = serialize(body.clone());
+        //     assert_eq!(
+        //         Body::deserialize(
+        //             &Header::Struct(vec![Header::Boolean, Header::UInt8, Header::String]),
+        //             &mut Deserializer::new(&mut buf.as_slice().as_ref())
+        //         )
+        //         .unwrap(),
+        //         body
+        //     );
+        // }
 
         #[test]
         fn deserialize_map() {
@@ -1471,21 +1471,21 @@ mod tests {
             assert!(!Body::Unit.validate(&header));
         }
 
-        #[test]
-        fn validate_struct() {
-            let header = Header::Struct(vec![Header::Boolean, Header::UInt8]);
-            assert!(Body::Struct(vec![Body::Boolean(true), Body::UInt8(123)]).validate(&header));
-            assert!(
-                !Body::Struct(vec![Body::Boolean(true), Body::Boolean(true)]).validate(&header)
-            );
-            assert!(!Body::Struct(vec![
-                Body::Boolean(true),
-                Body::UInt8(123),
-                Body::UInt8(123)
-            ])
-            .validate(&header));
-            assert!(!Body::Unit.validate(&header));
-        }
+        // #[test]
+        // fn validate_struct() {
+        //     let header = Header::Struct(vec![Header::Boolean, Header::UInt8]);
+        //     assert!(Body::Struct(vec![Body::Boolean(true), Body::UInt8(123)]).validate(&header));
+        //     assert!(
+        //         !Body::Struct(vec![Body::Boolean(true), Body::Boolean(true)]).validate(&header)
+        //     );
+        //     assert!(!Body::Struct(vec![
+        //         Body::Boolean(true),
+        //         Body::UInt8(123),
+        //         Body::UInt8(123)
+        //     ])
+        //     .validate(&header));
+        //     assert!(!Body::Unit.validate(&header));
+        // }
 
         #[test]
         fn validate_map() {
