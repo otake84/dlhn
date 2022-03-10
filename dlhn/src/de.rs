@@ -675,22 +675,24 @@ mod tests {
 
     #[test]
     fn deserialize_f32() {
-        IntoIterator::into_iter([-f32::INFINITY, f32::MIN, 0f32, f32::MAX, f32::INFINITY]).for_each(|v| {
-            let buf = serialize(v);
-            let mut reader = buf.as_slice();
-            let mut deserializer = Deserializer::new(&mut reader);
-            assert_eq!(v, Deserialize::deserialize(&mut deserializer).unwrap());
-        });
+        IntoIterator::into_iter([-f32::INFINITY, f32::MIN, 0f32, f32::MAX, f32::INFINITY])
+            .for_each(|v| {
+                let buf = serialize(v);
+                let mut reader = buf.as_slice();
+                let mut deserializer = Deserializer::new(&mut reader);
+                assert_eq!(v, Deserialize::deserialize(&mut deserializer).unwrap());
+            });
     }
 
     #[test]
     fn deserialize_f64() {
-        IntoIterator::into_iter([-f64::INFINITY, f64::MIN, 0f64, f64::MAX, f64::INFINITY]).for_each(|v| {
-            let buf = serialize(v);
-            let mut reader = buf.as_slice();
-            let mut deserializer = Deserializer::new(&mut reader);
-            assert_eq!(v, Deserialize::deserialize(&mut deserializer).unwrap());
-        });
+        IntoIterator::into_iter([-f64::INFINITY, f64::MIN, 0f64, f64::MAX, f64::INFINITY])
+            .for_each(|v| {
+                let buf = serialize(v);
+                let mut reader = buf.as_slice();
+                let mut deserializer = Deserializer::new(&mut reader);
+                assert_eq!(v, Deserialize::deserialize(&mut deserializer).unwrap());
+            });
     }
 
     #[test]

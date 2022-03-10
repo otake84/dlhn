@@ -29,7 +29,6 @@ const ENUM_CODE: u8 = 24;
 const DATE_CODE: u8 = 25;
 const DATETIME_CODE: u8 = 26;
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum Header {
     Unit,

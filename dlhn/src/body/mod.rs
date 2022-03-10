@@ -32,7 +32,7 @@ pub enum Body {
     BigInt(BigInt),
     BigDecimal(BigDecimal),
     String(String),
-    Binary(Vec<u8>),
+    Binary(ByteBuf),
     Array(Vec<Body>),
     Tuple(Vec<Body>),
     Struct(Vec<Body>),
@@ -118,9 +118,7 @@ impl Body {
             Header::BigInt => BigInt::deserialize(deserializer).map(Self::BigInt),
             Header::BigDecimal => BigDecimal::deserialize(deserializer).map(Self::BigDecimal),
             Header::String => String::deserialize(deserializer).map(Self::String),
-            Header::Binary => {
-                ByteBuf::deserialize(deserializer).map(|v| Self::Binary(v.into_vec()))
-            }
+            Header::Binary => ByteBuf::deserialize(deserializer).map(|v| Self::Binary(v)),
             Header::Array(inner) => {
                 let len = u64::deserialize(&mut *deserializer)?;
                 let mut buf = Vec::with_capacity(len as usize);
@@ -487,7 +485,7 @@ mod tests {
         #[test]
         fn serialize_binary() {
             assert_eq!(
-                serialize(Body::Binary(vec![0, 1, 2, 3])),
+                serialize(Body::Binary(ByteBuf::from(vec![0, 1, 2, 3]))),
                 serialize(ByteBuf::from(vec![0, 1, 2, 3]))
             );
         }
@@ -590,6 +588,7 @@ mod tests {
         #[cfg(feature = "time")]
         use crate::{date::Date, date_time::DateTime};
         use serde::Serialize;
+        use serde_bytes::ByteBuf;
         use std::collections::BTreeMap;
         #[cfg(feature = "time")]
         use time::{Month, OffsetDateTime};
@@ -995,8 +994,8 @@ mod tests {
 
         #[test]
         fn deserialize_f32() {
-            IntoIterator::into_iter([-f32::INFINITY, f32::MIN, 0f32, f32::MAX, f32::INFINITY]).for_each(
-                |v| {
+            IntoIterator::into_iter([-f32::INFINITY, f32::MIN, 0f32, f32::MAX, f32::INFINITY])
+                .for_each(|v| {
                     let buf = serialize(v);
                     assert_eq!(
                         Body::deserialize(
@@ -1006,14 +1005,13 @@ mod tests {
                         .unwrap(),
                         Body::Float32(v)
                     );
-                },
-            );
+                });
         }
 
         #[test]
         fn deserialize_f64() {
-            IntoIterator::into_iter([-f64::INFINITY, f64::MIN, 0f64, f64::MAX, f64::INFINITY]).for_each(
-                |v| {
+            IntoIterator::into_iter([-f64::INFINITY, f64::MIN, 0f64, f64::MAX, f64::INFINITY])
+                .for_each(|v| {
                     let buf = serialize(v);
                     assert_eq!(
                         Body::deserialize(
@@ -1023,8 +1021,7 @@ mod tests {
                         .unwrap(),
                         Body::Float64(v)
                     );
-                },
-            );
+                });
         }
 
         #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
@@ -1165,7 +1162,7 @@ mod tests {
 
         #[test]
         fn deserialize_binary() {
-            let body = Body::Binary(vec![0, 1, 2, 3]);
+            let body = Body::Binary(ByteBuf::from(vec![0, 1, 2, 3]));
             let buf = serialize(body.clone());
             assert_eq!(
                 Body::deserialize(
@@ -1307,6 +1304,7 @@ mod tests {
         use crate::{big_int::BigInt, big_uint::BigUint};
         #[cfg(feature = "time")]
         use crate::{date::Date, date_time::DateTime};
+        use serde_bytes::ByteBuf;
         use std::collections::BTreeMap;
         #[cfg(feature = "time")]
         use time::{Month, OffsetDateTime};
@@ -1442,7 +1440,7 @@ mod tests {
         #[test]
         fn validate_binary() {
             let header = Header::Binary;
-            assert!(Body::Binary(vec![0, 1, 2, 3]).validate(&header));
+            assert!(Body::Binary(ByteBuf::from(vec![0, 1, 2, 3])).validate(&header));
             assert!(!Body::Unit.validate(&header));
         }
 
