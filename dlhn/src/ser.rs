@@ -1,4 +1,4 @@
-use crate::{leb128::Leb128, prefix_varint::PrefixVarint, zigzag::ZigZag};
+use crate::{prefix_varint::PrefixVarint, zigzag::ZigZag};
 use serde::{
     ser::{self, Impossible},
     Serialize,
@@ -101,13 +101,13 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
-        let mut buf = [0u8; u16::LEB128_BUF_SIZE];
+        let mut buf = [0u8; u16::PREFIX_VARINT_BUF_SIZE];
         let size = v.encode_prefix_varint(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
     fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
-        let mut buf = [0u8; u32::LEB128_BUF_SIZE];
+        let mut buf = [0u8; u32::PREFIX_VARINT_BUF_SIZE];
         let size = v.encode_prefix_varint(&mut buf);
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
@@ -580,7 +580,7 @@ impl<'a, W: Write> ser::Serializer for MapKeySerializer<'a, W> {
 #[cfg(test)]
 mod tests {
     use super::Serializer;
-    use crate::{leb128::Leb128, prefix_varint::PrefixVarint, ser::Error, zigzag::ZigZag};
+    use crate::{prefix_varint::PrefixVarint, ser::Error, zigzag::ZigZag};
     use serde::Serialize;
     use serde_bytes::Bytes;
     use std::collections::BTreeMap;

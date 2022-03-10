@@ -1,5 +1,5 @@
 use super::Header;
-use crate::leb128::Leb128;
+use crate::prefix_varint::PrefixVarint;
 use std::io::{ErrorKind, Read, Result};
 
 pub trait DeserializeHeader<R: Read> {
@@ -40,16 +40,16 @@ impl<R: Read> DeserializeHeader<R> for R {
                 Ok(Header::Array(Box::new(inner)))
             }
             super::TUPLE_CODE => {
-                let size = usize::decode_leb128(self)?;
-                let mut vec = Vec::with_capacity(size);
+                let size = u64::decode_prefix_varint(self)?;
+                let mut vec = Vec::with_capacity(size as usize);
                 for _ in 0..size {
                     vec.push(self.deserialize_header()?);
                 }
                 Ok(Header::Tuple(vec))
             }
             super::STRUCT_CODE => {
-                let size = usize::decode_leb128(self)?;
-                let mut buf = Vec::with_capacity(size);
+                let size = u64::decode_prefix_varint(self)?;
+                let mut buf = Vec::with_capacity(size as usize);
                 for _ in 0..size {
                     buf.push(self.deserialize_header()?);
                 }
@@ -60,8 +60,8 @@ impl<R: Read> DeserializeHeader<R> for R {
                 Ok(Header::Map(Box::new(inner)))
             }
             super::ENUM_CODE => {
-                let size = usize::decode_leb128(self)?;
-                let mut buf = Vec::with_capacity(size);
+                let size = u64::decode_prefix_varint(self)?;
+                let mut buf = Vec::with_capacity(size as usize);
                 for _ in 0..size {
                     buf.push(self.deserialize_header()?);
                 }
@@ -69,12 +69,12 @@ impl<R: Read> DeserializeHeader<R> for R {
             }
             super::DATE_CODE => Ok(Header::Date),
             super::DATETIME_CODE => Ok(Header::DateTime),
-            super::EXTENSION8_CODE => u64::decode_leb128(self).map(Header::Extension8),
-            super::EXTENSION16_CODE => u64::decode_leb128(self).map(Header::Extension16),
-            super::EXTENSION32_CODE => u64::decode_leb128(self).map(Header::Extension32),
-            super::EXTENSION64_CODE => u64::decode_leb128(self).map(Header::Extension64),
-            super::EXTENSION128_CODE => u64::decode_leb128(self).map(Header::Extension128),
-            super::EXTENSION_CODE => u64::decode_leb128(self).map(Header::Extension),
+            super::EXTENSION8_CODE => u64::decode_prefix_varint(self).map(Header::Extension8),
+            super::EXTENSION16_CODE => u64::decode_prefix_varint(self).map(Header::Extension16),
+            super::EXTENSION32_CODE => u64::decode_prefix_varint(self).map(Header::Extension32),
+            super::EXTENSION64_CODE => u64::decode_prefix_varint(self).map(Header::Extension64),
+            super::EXTENSION128_CODE => u64::decode_prefix_varint(self).map(Header::Extension128),
+            super::EXTENSION_CODE => u64::decode_prefix_varint(self).map(Header::Extension),
             code => Err(std::io::Error::new(
                 ErrorKind::InvalidData,
                 format!("invalid header code: {}", code),
