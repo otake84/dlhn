@@ -70,18 +70,20 @@ impl PrefixVarint<3> for u16 {
     }
 
     fn decode_prefix_varint(reader: &mut impl Read) -> Result<Self> {
-        let prefix = decode_prefix(reader)? as u16;
+        let prefix = decode_prefix(reader)?;
 
-        if prefix < 128 {
-            Ok(prefix)
-        } else if prefix < 192 {
-            let mut buf = [0u8; 1];
-            reader.read_exact(&mut buf)?;
-            Ok((prefix & 0x3f) | ((buf[0] as u16) << 6))
-        } else {
-            let mut buf = [0u8; 2];
-            reader.read_exact(&mut buf)?;
-            Ok(u16::from_le_bytes(buf))
+        match prefix.leading_ones() {
+            0 => Ok(prefix as u16),
+            1 => {
+                let mut buf = [0u8; 1];
+                reader.read_exact(&mut buf)?;
+                Ok((prefix as u16 & 0x3f) | ((buf[0] as u16) << 6))
+            }
+            _ => {
+                let mut buf = [0u8; 2];
+                reader.read_exact(&mut buf)?;
+                Ok(u16::from_le_bytes(buf))
+            }
         }
     }
 }
@@ -121,28 +123,32 @@ impl PrefixVarint<5> for u32 {
     }
 
     fn decode_prefix_varint(reader: &mut impl Read) -> Result<Self> {
-        let prefix = decode_prefix(reader)? as u32;
+        let prefix = decode_prefix(reader)?;
 
-        if prefix < 128 {
-            Ok(prefix)
-        } else if prefix < 192 {
-            let mut buf = [0u8; 1];
-            reader.read_exact(&mut buf)?;
-            Ok((prefix & 0x3f) | ((buf[0] as u32) << 6))
-        } else if prefix < 224 {
-            let mut buf = [0u8; 2];
-            reader.read_exact(&mut buf)?;
-            Ok((prefix & 0x1f) | ((u16::from_le_bytes(buf) as u32) << 5))
-        } else if prefix < 240 {
-            let mut buf = [0u8; 3];
-            reader.read_exact(&mut buf)?;
-            let mut v = buf[2] as u32;
-            v = (v << 16) | (u16::from_le_bytes([buf[0], buf[1]]) as u32);
-            Ok((prefix & 0x0f) | (v << 4))
-        } else {
-            let mut buf = [0u8; 4];
-            reader.read_exact(&mut buf)?;
-            Ok(u32::from_le_bytes(buf))
+        match prefix.leading_ones() {
+            0 => Ok(prefix as u32),
+            1 => {
+                let mut buf = [0u8; 1];
+                reader.read_exact(&mut buf)?;
+                Ok((prefix as u32 & 0x3f) | ((buf[0] as u32) << 6))
+            }
+            2 => {
+                let mut buf = [0u8; 2];
+                reader.read_exact(&mut buf)?;
+                Ok((prefix as u32 & 0x1f) | ((u16::from_le_bytes(buf) as u32) << 5))
+            }
+            3 => {
+                let mut buf = [0u8; 3];
+                reader.read_exact(&mut buf)?;
+                let mut v = buf[2] as u32;
+                v = (v << 16) | (u16::from_le_bytes([buf[0], buf[1]]) as u32);
+                Ok((prefix as u32 & 0x0f) | (v << 4))
+            }
+            _ => {
+                let mut buf = [0u8; 4];
+                reader.read_exact(&mut buf)?;
+                Ok(u32::from_le_bytes(buf))
+            }
         }
     }
 }
@@ -219,49 +225,57 @@ impl PrefixVarint<9> for u64 {
     }
 
     fn decode_prefix_varint(reader: &mut impl Read) -> Result<Self> {
-        let prefix = decode_prefix(reader)? as u64;
+        let prefix = decode_prefix(reader)?;
 
-        if prefix < 128 {
-            Ok(prefix)
-        } else if prefix < 192 {
-            let mut buf = [0u8; 1];
-            reader.read_exact(&mut buf)?;
-            Ok((prefix & 0x3f) | ((buf[0] as u64) << 6))
-        } else if prefix < 224 {
-            let mut buf = [0u8; 2];
-            reader.read_exact(&mut buf)?;
-            Ok((prefix & 0x1f) | ((u16::from_le_bytes(buf) as u64) << 5))
-        } else if prefix < 240 {
-            let mut buf = [0u8; 3];
-            reader.read_exact(&mut buf)?;
-            let mut v = buf[2] as u64;
-            v = (v << 16) | (u16::from_le_bytes([buf[0], buf[1]]) as u64);
-            Ok((prefix & 0x0f) | (v << 4))
-        } else if prefix < 248 {
-            let mut buf = [0u8; 4];
-            reader.read_exact(&mut buf)?;
-            Ok((prefix & 0x07) | ((u32::from_le_bytes(buf) as u64) << 3))
-        } else if prefix < 252 {
-            let mut buf = [0u8; 5];
-            reader.read_exact(&mut buf)?;
-            let mut v = buf[4] as u64;
-            v = (v << 32) | (u32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]) as u64);
-            Ok((prefix & 0x03) | (v << 2))
-        } else if prefix < 254 {
-            let mut buf = [0u8; 6];
-            reader.read_exact(&mut buf)?;
-            let mut v = u16::from_le_bytes([buf[4], buf[5]]) as u64;
-            v = (v << 32) | (u32::from_le_bytes([buf[1], buf[2], buf[3], buf[4]]) as u64);
-            Ok((prefix & 0x01) | (v << 1))
-        } else if prefix < 255 {
-            let mut buf = [0u8; 8];
-            buf[0] = prefix as u8;
-            reader.read_exact(&mut buf[1..8])?;
-            Ok(u64::from_le_bytes(buf) >> 8)
-        } else {
-            let mut buf = [0u8; 8];
-            reader.read_exact(&mut buf)?;
-            Ok(u64::from_le_bytes(buf))
+        match prefix.leading_ones() {
+            0 => Ok(prefix as u64),
+            1 => {
+                let mut buf = [0u8; 1];
+                reader.read_exact(&mut buf)?;
+                Ok((prefix as u64 & 0x3f) | ((buf[0] as u64) << 6))
+            }
+            2 => {
+                let mut buf = [0u8; 2];
+                reader.read_exact(&mut buf)?;
+                Ok((prefix as u64 & 0x1f) | ((u16::from_le_bytes(buf) as u64) << 5))
+            }
+            3 => {
+                let mut buf = [0u8; 3];
+                reader.read_exact(&mut buf)?;
+                let mut v = buf[2] as u64;
+                v = (v << 16) | (u16::from_le_bytes([buf[0], buf[1]]) as u64);
+                Ok((prefix as u64 & 0x0f) | (v << 4))
+            }
+            4 => {
+                let mut buf = [0u8; 4];
+                reader.read_exact(&mut buf)?;
+                Ok((prefix as u64 & 0x07) | ((u32::from_le_bytes(buf) as u64) << 3))
+            }
+            5 => {
+                let mut buf = [0u8; 5];
+                reader.read_exact(&mut buf)?;
+                let mut v = buf[4] as u64;
+                v = (v << 32) | (u32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]) as u64);
+                Ok((prefix as u64 & 0x03) | (v << 2))
+            }
+            6 => {
+                let mut buf = [0u8; 6];
+                reader.read_exact(&mut buf)?;
+                let mut v = u16::from_le_bytes([buf[4], buf[5]]) as u64;
+                v = (v << 32) | (u32::from_le_bytes([buf[1], buf[2], buf[3], buf[4]]) as u64);
+                Ok((prefix as u64 & 0x01) | (v << 1))
+            }
+            7 => {
+                let mut buf = [0u8; 8];
+                buf[0] = prefix as u8;
+                reader.read_exact(&mut buf[1..8])?;
+                Ok(u64::from_le_bytes(buf) >> 8)
+            }
+            _ => {
+                let mut buf = [0u8; 8];
+                reader.read_exact(&mut buf)?;
+                Ok(u64::from_le_bytes(buf))
+            }
         }
     }
 }
