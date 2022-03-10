@@ -56,11 +56,11 @@ impl SerializeHeader for u64 {
     }
 }
 
-impl SerializeHeader for u128 {
-    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[super::UINT128_CODE])
-    }
-}
+// impl SerializeHeader for u128 {
+//     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+//         writer.write_all(&[super::UINT128_CODE])
+//     }
+// }
 
 impl SerializeHeader for i8 {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
@@ -86,11 +86,11 @@ impl SerializeHeader for i64 {
     }
 }
 
-impl SerializeHeader for i128 {
-    fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
-        writer.write_all(&[super::INT128_CODE])
-    }
-}
+// impl SerializeHeader for i128 {
+//     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
+//         writer.write_all(&[super::INT128_CODE])
+//     }
+// }
 
 impl SerializeHeader for f32 {
     fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
@@ -267,12 +267,12 @@ impl Header {
             Header::UInt16 => u16::serialize_header(writer),
             Header::UInt32 => u32::serialize_header(writer),
             Header::UInt64 => u64::serialize_header(writer),
-            Header::UInt128 => u128::serialize_header(writer),
+            // Header::UInt128 => u128::serialize_header(writer),
             Header::Int8 => i8::serialize_header(writer),
             Header::Int16 => i16::serialize_header(writer),
             Header::Int32 => i32::serialize_header(writer),
             Header::Int64 => i64::serialize_header(writer),
-            Header::Int128 => i128::serialize_header(writer),
+            // Header::Int128 => i128::serialize_header(writer),
             Header::Float32 => f32::serialize_header(writer),
             Header::Float64 => f64::serialize_header(writer),
             Header::BigUInt => BigUint::serialize_header(writer),
@@ -387,12 +387,12 @@ mod tests {
         assert_eq!(buf, [6]);
     }
 
-    #[test]
-    fn serialize_header_u128() {
-        let mut buf = Vec::new();
-        u128::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [7]);
-    }
+    // #[test]
+    // fn serialize_header_u128() {
+    //     let mut buf = Vec::new();
+    //     u128::serialize_header(&mut buf).unwrap();
+    //     assert_eq!(buf, [7]);
+    // }
 
     #[test]
     fn serialize_header_i8() {
@@ -422,12 +422,12 @@ mod tests {
         assert_eq!(buf, [11]);
     }
 
-    #[test]
-    fn serialize_header_i128() {
-        let mut buf = Vec::new();
-        i128::serialize_header(&mut buf).unwrap();
-        assert_eq!(buf, [12]);
-    }
+    // #[test]
+    // fn serialize_header_i128() {
+    //     let mut buf = Vec::new();
+    //     i128::serialize_header(&mut buf).unwrap();
+    //     assert_eq!(buf, [12]);
+    // }
 
     #[test]
     fn serialize_header_f32() {
@@ -626,10 +626,10 @@ mod tests {
             assert_eq!(serialize(Header::UInt64), serialize_header::<u64>());
         }
 
-        #[test]
-        fn serialize_uint128() {
-            assert_eq!(serialize(Header::UInt128), serialize_header::<u128>());
-        }
+        // #[test]
+        // fn serialize_uint128() {
+        //     assert_eq!(serialize(Header::UInt128), serialize_header::<u128>());
+        // }
 
         #[test]
         fn serialize_int8() {
@@ -651,10 +651,10 @@ mod tests {
             assert_eq!(serialize(Header::Int64), serialize_header::<i64>());
         }
 
-        #[test]
-        fn serialize_int128() {
-            assert_eq!(serialize(Header::Int128), serialize_header::<i128>());
-        }
+        // #[test]
+        // fn serialize_int128() {
+        //     assert_eq!(serialize(Header::Int128), serialize_header::<i128>());
+        // }
 
         #[test]
         fn serialize_float32() {

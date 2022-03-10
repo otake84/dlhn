@@ -32,12 +32,12 @@ fn deserialize_u64() -> u64 {
     u64::deserialize(&mut deserializer).unwrap()
 }
 
-fn deserialize_u128() -> u128 {
-    let buf = serialize(u128::MAX);
-    let mut reader = buf.as_slice();
-    let mut deserializer = Deserializer::new(&mut reader);
-    u128::deserialize(&mut deserializer).unwrap()
-}
+// fn deserialize_u128() -> u128 {
+//     let buf = serialize(u128::MAX);
+//     let mut reader = buf.as_slice();
+//     let mut deserializer = Deserializer::new(&mut reader);
+//     u128::deserialize(&mut deserializer).unwrap()
+// }
 
 fn deserialize_i8() -> i8 {
     let buf = serialize(i8::MAX);
@@ -67,12 +67,12 @@ fn deserialize_i64() -> i64 {
     i64::deserialize(&mut deserializer).unwrap()
 }
 
-fn deserialize_i128() -> i128 {
-    let buf = serialize(i128::MAX);
-    let mut reader = buf.as_slice();
-    let mut deserializer = Deserializer::new(&mut reader);
-    i128::deserialize(&mut deserializer).unwrap()
-}
+// fn deserialize_i128() -> i128 {
+//     let buf = serialize(i128::MAX);
+//     let mut reader = buf.as_slice();
+//     let mut deserializer = Deserializer::new(&mut reader);
+//     i128::deserialize(&mut deserializer).unwrap()
+// }
 
 fn deserialize_char() -> char {
     let buf = serialize('a');
@@ -128,12 +128,12 @@ main!(
     deserialize_u16,
     deserialize_u32,
     deserialize_u64,
-    deserialize_u128,
+    // deserialize_u128,
     deserialize_i8,
     deserialize_i16,
     deserialize_i32,
     deserialize_i64,
-    deserialize_i128,
+    // deserialize_i128,
     deserialize_char,
     deserialize_string,
     deserialize_byte_buf,

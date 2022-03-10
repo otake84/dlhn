@@ -33,11 +33,11 @@ fn serialize_u64() {
     u64::MAX.serialize(&mut serializer).unwrap();
 }
 
-fn serialize_u128() {
-    let mut buf = Vec::new();
-    let mut serializer = Serializer::new(&mut buf);
-    u128::MAX.serialize(&mut serializer).unwrap();
-}
+// fn serialize_u128() {
+//     let mut buf = Vec::new();
+//     let mut serializer = Serializer::new(&mut buf);
+//     u128::MAX.serialize(&mut serializer).unwrap();
+// }
 
 fn serialize_i8() {
     let mut buf = Vec::new();
@@ -63,11 +63,11 @@ fn serialize_i64() {
     i64::MAX.serialize(&mut serializer).unwrap();
 }
 
-fn serialize_i128() {
-    let mut buf = Vec::new();
-    let mut serializer = Serializer::new(&mut buf);
-    i128::MAX.serialize(&mut serializer).unwrap();
-}
+// fn serialize_i128() {
+//     let mut buf = Vec::new();
+//     let mut serializer = Serializer::new(&mut buf);
+//     i128::MAX.serialize(&mut serializer).unwrap();
+// }
 
 fn serialize_f32() {
     let mut buf = Vec::new();
@@ -113,12 +113,12 @@ main!(
     serialize_u16,
     serialize_u32,
     serialize_u64,
-    serialize_u128,
+    // serialize_u128,
     serialize_i8,
     serialize_i16,
     serialize_i32,
     serialize_i64,
-    serialize_i128,
+    // serialize_i128,
     serialize_f32,
     serialize_f64,
     serialize_char,

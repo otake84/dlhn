@@ -1,4 +1,4 @@
-use crate::{leb128::Leb128, prefix_varint::PrefixVarint, zigzag::ZigZag};
+use crate::{prefix_varint::PrefixVarint, zigzag::ZigZag};
 use serde::{de, forward_to_deserialize_any, Deserialize};
 use std::{
     fmt::{self, Display},
@@ -130,16 +130,16 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
         )
     }
 
-    fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de>,
-    {
-        visitor.visit_i128(
-            u128::decode_leb128(self.reader)
-                .map(i128::decode_zigzag)
-                .or(Err(Error::Read))?,
-        )
-    }
+    // fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    // where
+    //     V: de::Visitor<'de>,
+    // {
+    //     visitor.visit_i128(
+    //         u128::decode_leb128(self.reader)
+    //             .map(i128::decode_zigzag)
+    //             .or(Err(Error::Read))?,
+    //     )
+    // }
 
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
@@ -171,12 +171,12 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
         visitor.visit_u64(u64::decode_prefix_varint(self.reader).or(Err(Error::Read))?)
     }
 
-    fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de>,
-    {
-        visitor.visit_u128(u128::decode_leb128(self.reader).or(Err(Error::Read))?)
-    }
+    // fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    // where
+    //     V: de::Visitor<'de>,
+    // {
+    //     visitor.visit_u128(u128::decode_leb128(self.reader).or(Err(Error::Read))?)
+    // }
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
@@ -616,15 +616,15 @@ mod tests {
         });
     }
 
-    #[test]
-    fn deserialize_i128() {
-        IntoIter::new([i128::MIN, 0, i128::MAX]).for_each(|v| {
-            let buf = serialize(v);
-            let mut reader = buf.as_slice();
-            let mut deserializer = Deserializer::new(&mut reader);
-            assert_eq!(v, Deserialize::deserialize(&mut deserializer).unwrap());
-        });
-    }
+    // #[test]
+    // fn deserialize_i128() {
+    //     IntoIter::new([i128::MIN, 0, i128::MAX]).for_each(|v| {
+    //         let buf = serialize(v);
+    //         let mut reader = buf.as_slice();
+    //         let mut deserializer = Deserializer::new(&mut reader);
+    //         assert_eq!(v, Deserialize::deserialize(&mut deserializer).unwrap());
+    //     });
+    // }
 
     #[test]
     fn deserialize_u8() {
@@ -666,15 +666,15 @@ mod tests {
         });
     }
 
-    #[test]
-    fn deserialize_u128() {
-        IntoIter::new([u128::MIN, u128::MAX]).for_each(|v| {
-            let buf = serialize(v);
-            let mut reader = buf.as_slice();
-            let mut deserializer = Deserializer::new(&mut reader);
-            assert_eq!(v, Deserialize::deserialize(&mut deserializer).unwrap());
-        })
-    }
+    // #[test]
+    // fn deserialize_u128() {
+    //     IntoIter::new([u128::MIN, u128::MAX]).for_each(|v| {
+    //         let buf = serialize(v);
+    //         let mut reader = buf.as_slice();
+    //         let mut deserializer = Deserializer::new(&mut reader);
+    //         assert_eq!(v, Deserialize::deserialize(&mut deserializer).unwrap());
+    //     })
+    // }
 
     #[test]
     fn deserialize_f32() {

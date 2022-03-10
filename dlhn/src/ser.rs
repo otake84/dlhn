@@ -88,11 +88,11 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
-    fn serialize_i128(self, v: i128) -> Result<Self::Ok, Self::Error> {
-        let mut buf = [0u8; u128::LEB128_BUF_SIZE];
-        let size = v.encode_zigzag().encode_leb128(&mut buf);
-        self.output.write_all(&buf[..size]).or(Err(Error::Write))
-    }
+    // fn serialize_i128(self, v: i128) -> Result<Self::Ok, Self::Error> {
+    //     let mut buf = [0u8; u128::LEB128_BUF_SIZE];
+    //     let size = v.encode_zigzag().encode_leb128(&mut buf);
+    //     self.output.write_all(&buf[..size]).or(Err(Error::Write))
+    // }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
         self.output
@@ -118,11 +118,11 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
         self.output.write_all(&buf[..size]).or(Err(Error::Write))
     }
 
-    fn serialize_u128(self, v: u128) -> Result<Self::Ok, Self::Error> {
-        let mut buf = [0u8; u128::LEB128_BUF_SIZE];
-        let size = v.encode_leb128(&mut buf);
-        self.output.write_all(&buf[..size]).or(Err(Error::Write))
-    }
+    // fn serialize_u128(self, v: u128) -> Result<Self::Ok, Self::Error> {
+    //     let mut buf = [0u8; u128::LEB128_BUF_SIZE];
+    //     let size = v.encode_leb128(&mut buf);
+    //     self.output.write_all(&buf[..size]).or(Err(Error::Write))
+    // }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
         self.output
@@ -714,24 +714,24 @@ mod tests {
         }
     }
 
-    #[test]
-    fn serialize_i128() {
-        {
-            let mut buf = Vec::new();
-            let mut serializer = Serializer::new(&mut buf);
-            let body = i128::MIN;
-            body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, i128::MIN.encode_zigzag().encode_leb128_vec());
-        }
+    // #[test]
+    // fn serialize_i128() {
+    //     {
+    //         let mut buf = Vec::new();
+    //         let mut serializer = Serializer::new(&mut buf);
+    //         let body = i128::MIN;
+    //         body.serialize(&mut serializer).unwrap();
+    //         assert_eq!(buf, i128::MIN.encode_zigzag().encode_leb128_vec());
+    //     }
 
-        {
-            let mut buf = Vec::new();
-            let mut serializer = Serializer::new(&mut buf);
-            let body = i128::MAX;
-            body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, i128::MAX.encode_zigzag().encode_leb128_vec());
-        }
-    }
+    //     {
+    //         let mut buf = Vec::new();
+    //         let mut serializer = Serializer::new(&mut buf);
+    //         let body = i128::MAX;
+    //         body.serialize(&mut serializer).unwrap();
+    //         assert_eq!(buf, i128::MAX.encode_zigzag().encode_leb128_vec());
+    //     }
+    // }
 
     #[test]
     fn serialize_u8() {
@@ -809,24 +809,24 @@ mod tests {
         }
     }
 
-    #[test]
-    fn serialize_u128() {
-        {
-            let mut buf = Vec::new();
-            let mut serializer = Serializer::new(&mut buf);
-            let body = u128::MIN;
-            body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, u128::MIN.encode_leb128_vec());
-        }
+    // #[test]
+    // fn serialize_u128() {
+    //     {
+    //         let mut buf = Vec::new();
+    //         let mut serializer = Serializer::new(&mut buf);
+    //         let body = u128::MIN;
+    //         body.serialize(&mut serializer).unwrap();
+    //         assert_eq!(buf, u128::MIN.encode_leb128_vec());
+    //     }
 
-        {
-            let mut buf = Vec::new();
-            let mut serializer = Serializer::new(&mut buf);
-            let body = u128::MAX;
-            body.serialize(&mut serializer).unwrap();
-            assert_eq!(buf, u128::MAX.encode_leb128_vec());
-        }
-    }
+    //     {
+    //         let mut buf = Vec::new();
+    //         let mut serializer = Serializer::new(&mut buf);
+    //         let body = u128::MAX;
+    //         body.serialize(&mut serializer).unwrap();
+    //         assert_eq!(buf, u128::MAX.encode_leb128_vec());
+    //     }
+    // }
 
     #[test]
     fn serialize_f32() {

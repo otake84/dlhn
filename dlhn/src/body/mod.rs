@@ -20,12 +20,12 @@ pub enum Body {
     UInt16(u16),
     UInt32(u32),
     UInt64(u64),
-    UInt128(u128),
+    // UInt128(u128),
     Int8(i8),
     Int16(i16),
     Int32(i32),
     Int64(i64),
-    Int128(i128),
+    // Int128(i128),
     Float32(f32),
     Float64(f64),
     BigUInt(BigUint),
@@ -61,12 +61,12 @@ impl Serialize for Body {
             Body::UInt16(v) => v.serialize(serializer),
             Body::UInt32(v) => v.serialize(serializer),
             Body::UInt64(v) => v.serialize(serializer),
-            Body::UInt128(v) => v.serialize(serializer),
+            // Body::UInt128(v) => v.serialize(serializer),
             Body::Int8(v) => v.serialize(serializer),
             Body::Int16(v) => v.serialize(serializer),
             Body::Int32(v) => v.serialize(serializer),
             Body::Int64(v) => v.serialize(serializer),
-            Body::Int128(v) => v.serialize(serializer),
+            // Body::Int128(v) => v.serialize(serializer),
             Body::Float32(v) => v.serialize(serializer),
             Body::Float64(v) => v.serialize(serializer),
             Body::BigUInt(v) => v.serialize(serializer),
@@ -118,12 +118,12 @@ impl Body {
             Header::UInt16 => u16::deserialize(deserializer).map(Self::UInt16),
             Header::UInt32 => u32::deserialize(deserializer).map(Self::UInt32),
             Header::UInt64 => u64::deserialize(deserializer).map(Self::UInt64),
-            Header::UInt128 => u128::deserialize(deserializer).map(Self::UInt128),
+            // Header::UInt128 => u128::deserialize(deserializer).map(Self::UInt128),
             Header::Int8 => i8::deserialize(deserializer).map(Self::Int8),
             Header::Int16 => i16::deserialize(deserializer).map(Self::Int16),
             Header::Int32 => i32::deserialize(deserializer).map(Self::Int32),
             Header::Int64 => i64::deserialize(deserializer).map(Self::Int64),
-            Header::Int128 => i128::deserialize(deserializer).map(Self::Int128),
+            // Header::Int128 => i128::deserialize(deserializer).map(Self::Int128),
             Header::Float32 => f32::deserialize(deserializer).map(Self::Float32),
             Header::Float64 => f64::deserialize(deserializer).map(Self::Float64),
             Header::BigUInt => BigUint::deserialize(deserializer).map(Self::BigUInt),
@@ -332,12 +332,12 @@ mod tests {
             assert_ne!(serialize(Body::UInt64(u64::MAX)), serialize(true));
         }
 
-        #[test]
-        fn serialize_uint128() {
-            assert_eq!(serialize(Body::UInt128(0)), serialize(0u128));
-            assert_eq!(serialize(Body::UInt128(u128::MAX)), serialize(u128::MAX));
-            assert_ne!(serialize(Body::UInt128(u128::MAX)), serialize(true));
-        }
+        // #[test]
+        // fn serialize_uint128() {
+        //     assert_eq!(serialize(Body::UInt128(0)), serialize(0u128));
+        //     assert_eq!(serialize(Body::UInt128(u128::MAX)), serialize(u128::MAX));
+        //     assert_ne!(serialize(Body::UInt128(u128::MAX)), serialize(true));
+        // }
 
         #[test]
         fn serialize_int8() {
@@ -371,13 +371,13 @@ mod tests {
             assert_ne!(serialize(Body::Int64(i64::MAX)), serialize(true));
         }
 
-        #[test]
-        fn serialize_int128() {
-            assert_eq!(serialize(Body::Int128(i128::MIN)), serialize(i128::MIN));
-            assert_eq!(serialize(Body::Int128(0)), serialize(0i128));
-            assert_eq!(serialize(Body::Int128(i128::MAX)), serialize(i128::MAX));
-            assert_ne!(serialize(Body::Int128(i128::MAX)), serialize(true));
-        }
+        // #[test]
+        // fn serialize_int128() {
+        //     assert_eq!(serialize(Body::Int128(i128::MIN)), serialize(i128::MIN));
+        //     assert_eq!(serialize(Body::Int128(0)), serialize(0i128));
+        //     assert_eq!(serialize(Body::Int128(i128::MAX)), serialize(i128::MAX));
+        //     assert_ne!(serialize(Body::Int128(i128::MAX)), serialize(true));
+        // }
 
         #[test]
         fn serialize_f32() {
@@ -840,32 +840,32 @@ mod tests {
             }
         }
 
-        #[test]
-        fn deserialize_u128() {
-            {
-                let buf = serialize(0u128);
-                assert_eq!(
-                    Body::deserialize(
-                        &Header::UInt128,
-                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
-                    )
-                    .unwrap(),
-                    Body::UInt128(0)
-                );
-            }
+        // #[test]
+        // fn deserialize_u128() {
+        //     {
+        //         let buf = serialize(0u128);
+        //         assert_eq!(
+        //             Body::deserialize(
+        //                 &Header::UInt128,
+        //                 &mut Deserializer::new(&mut buf.as_slice().as_ref())
+        //             )
+        //             .unwrap(),
+        //             Body::UInt128(0)
+        //         );
+        //     }
 
-            {
-                let buf = serialize(u128::MAX);
-                assert_eq!(
-                    Body::deserialize(
-                        &Header::UInt128,
-                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
-                    )
-                    .unwrap(),
-                    Body::UInt128(u128::MAX)
-                );
-            }
-        }
+        //     {
+        //         let buf = serialize(u128::MAX);
+        //         assert_eq!(
+        //             Body::deserialize(
+        //                 &Header::UInt128,
+        //                 &mut Deserializer::new(&mut buf.as_slice().as_ref())
+        //             )
+        //             .unwrap(),
+        //             Body::UInt128(u128::MAX)
+        //         );
+        //     }
+        // }
 
         #[test]
         fn deserialize_i8() {
@@ -1023,44 +1023,44 @@ mod tests {
             }
         }
 
-        #[test]
-        fn deserialize_i128() {
-            {
-                let buf = serialize(i128::MIN);
-                assert_eq!(
-                    Body::deserialize(
-                        &Header::Int128,
-                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
-                    )
-                    .unwrap(),
-                    Body::Int128(i128::MIN)
-                );
-            }
+        // #[test]
+        // fn deserialize_i128() {
+        //     {
+        //         let buf = serialize(i128::MIN);
+        //         assert_eq!(
+        //             Body::deserialize(
+        //                 &Header::Int128,
+        //                 &mut Deserializer::new(&mut buf.as_slice().as_ref())
+        //             )
+        //             .unwrap(),
+        //             Body::Int128(i128::MIN)
+        //         );
+        //     }
 
-            {
-                let buf = serialize(0i128);
-                assert_eq!(
-                    Body::deserialize(
-                        &Header::Int128,
-                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
-                    )
-                    .unwrap(),
-                    Body::Int128(0i128)
-                );
-            }
+        //     {
+        //         let buf = serialize(0i128);
+        //         assert_eq!(
+        //             Body::deserialize(
+        //                 &Header::Int128,
+        //                 &mut Deserializer::new(&mut buf.as_slice().as_ref())
+        //             )
+        //             .unwrap(),
+        //             Body::Int128(0i128)
+        //         );
+        //     }
 
-            {
-                let buf = serialize(i128::MAX);
-                assert_eq!(
-                    Body::deserialize(
-                        &Header::Int128,
-                        &mut Deserializer::new(&mut buf.as_slice().as_ref())
-                    )
-                    .unwrap(),
-                    Body::Int128(i128::MAX)
-                );
-            }
-        }
+        //     {
+        //         let buf = serialize(i128::MAX);
+        //         assert_eq!(
+        //             Body::deserialize(
+        //                 &Header::Int128,
+        //                 &mut Deserializer::new(&mut buf.as_slice().as_ref())
+        //             )
+        //             .unwrap(),
+        //             Body::Int128(i128::MAX)
+        //         );
+        //     }
+        // }
 
         #[test]
         fn deserialize_f32() {
