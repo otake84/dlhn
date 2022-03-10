@@ -146,7 +146,7 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        v.len().serialize(&mut *self)?;
+        (v.len() as u64).serialize(&mut *self)?;
         self.output.write_all(v).or(Err(Error::Write))
     }
 
