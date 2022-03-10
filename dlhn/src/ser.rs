@@ -11,7 +11,6 @@ use std::{
 #[derive(Clone, Debug, PartialEq)]
 pub enum Error {
     Write,
-    UnknownMapSize,
     UnsupportedKeyType,
     Message(String),
 }
@@ -26,7 +25,6 @@ impl Display for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Error::Write => formatter.write_str("write error"),
-            Error::UnknownMapSize => formatter.write_str("unknown map size"),
             Error::UnsupportedKeyType => formatter.write_str("unsupported key type"),
             Error::Message(message) => formatter.write_str(message),
         }
@@ -237,10 +235,8 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
         if let Some(len) = len {
             len.serialize(&mut *self)?;
-            Ok(self)
-        } else {
-            Err(Error::UnknownMapSize)
         }
+        Ok(self)
     }
 
     fn serialize_struct(
