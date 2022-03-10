@@ -31,9 +31,9 @@ fn serialize_u64() -> Vec<u8> {
     serialize(Body::UInt64(u64::MAX))
 }
 
-fn serialize_u128() -> Vec<u8> {
-    serialize(Body::UInt128(u128::MAX))
-}
+// fn serialize_u128() -> Vec<u8> {
+//     serialize(Body::UInt128(u128::MAX))
+// }
 
 fn serialize_i8() -> Vec<u8> {
     serialize(Body::Int8(i8::MAX))
@@ -51,9 +51,9 @@ fn serialize_i64() -> Vec<u8> {
     serialize(Body::Int64(i64::MAX))
 }
 
-fn serialize_i128() -> Vec<u8> {
-    serialize(Body::Int128(i128::MAX))
-}
+// fn serialize_i128() -> Vec<u8> {
+//     serialize(Body::Int128(i128::MAX))
+// }
 
 fn serialize_array() -> Vec<u8> {
     serialize(Body::Array(vec![Body::Boolean(true), Body::Boolean(false)]))
@@ -98,12 +98,12 @@ main!(
     serialize_u16,
     serialize_u32,
     serialize_u64,
-    serialize_u128,
+    // serialize_u128,
     serialize_i8,
     serialize_i16,
     serialize_i32,
     serialize_i64,
-    serialize_i128,
+    // serialize_i128,
     serialize_array,
     serialize_tuple,
     serialize_struct,

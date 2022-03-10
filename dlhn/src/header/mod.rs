@@ -8,12 +8,12 @@ const UINT8_CODE: u8 = 3;
 const UINT16_CODE: u8 = 4;
 const UINT32_CODE: u8 = 5;
 const UINT64_CODE: u8 = 6;
-const UINT128_CODE: u8 = 7;
+// const UINT128_CODE: u8 = 7;
 const INT8_CODE: u8 = 8;
 const INT16_CODE: u8 = 9;
 const INT32_CODE: u8 = 10;
 const INT64_CODE: u8 = 11;
-const INT128_CODE: u8 = 12;
+// const INT128_CODE: u8 = 12;
 const FLOAT32_CODE: u8 = 13;
 const FLOAT64_CODE: u8 = 14;
 const BIG_UINT_CODE: u8 = 15;
@@ -44,12 +44,12 @@ pub enum Header {
     UInt16,
     UInt32,
     UInt64,
-    UInt128,
+    // UInt128,
     Int8,
     Int16,
     Int32,
     Int64,
-    Int128,
+    // Int128,
     Float32,
     Float64,
     BigUInt,
