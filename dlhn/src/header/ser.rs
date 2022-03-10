@@ -287,20 +287,6 @@ impl Header {
             Header::Enum(inner) => Self::serialize_inner_vec(super::ENUM_CODE, inner, writer),
             Header::Date => Date::serialize_header(writer),
             Header::DateTime => DateTime::serialize_header(writer),
-            Header::Extension8(i) => Self::serialize_extension(super::EXTENSION8_CODE, *i, writer),
-            Header::Extension16(i) => {
-                Self::serialize_extension(super::EXTENSION16_CODE, *i, writer)
-            }
-            Header::Extension32(i) => {
-                Self::serialize_extension(super::EXTENSION32_CODE, *i, writer)
-            }
-            Header::Extension64(i) => {
-                Self::serialize_extension(super::EXTENSION64_CODE, *i, writer)
-            }
-            Header::Extension128(i) => {
-                Self::serialize_extension(super::EXTENSION128_CODE, *i, writer)
-            }
-            Header::Extension(i) => Self::serialize_extension(super::EXTENSION_CODE, *i, writer),
         }
     }
 
@@ -318,13 +304,6 @@ impl Header {
             v.serialize(writer)?
         }
         Ok(())
-    }
-
-    fn serialize_extension<W: Write>(code: u8, i: u64, writer: &mut W) -> Result<()> {
-        writer.write_all(&[code])?;
-        let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
-        let size = i.encode_prefix_varint(&mut buf);
-        writer.write_all(&buf[..size])
     }
 }
 
@@ -788,36 +767,6 @@ mod tests {
                 serialize(Header::DateTime),
                 serialize_header::<time::OffsetDateTime>()
             );
-        }
-
-        #[test]
-        fn serialize_extension8() {
-            assert_eq!(serialize(Header::Extension8(123)), [27, 123]);
-        }
-
-        #[test]
-        fn serialize_extension16() {
-            assert_eq!(serialize(Header::Extension16(123)), [28, 123]);
-        }
-
-        #[test]
-        fn serialize_extension32() {
-            assert_eq!(serialize(Header::Extension32(123)), [29, 123]);
-        }
-
-        #[test]
-        fn serialize_extension64() {
-            assert_eq!(serialize(Header::Extension64(123)), [30, 123]);
-        }
-
-        #[test]
-        fn serialize_extension128() {
-            assert_eq!(serialize(Header::Extension128(123)), [31, 123]);
-        }
-
-        #[test]
-        fn serialize_extension() {
-            assert_eq!(serialize(Header::Extension(123)), [32, 123]);
         }
 
         fn serialize_header<T: SerializeHeader>() -> Vec<u8> {

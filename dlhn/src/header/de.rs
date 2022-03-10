@@ -69,12 +69,6 @@ impl<R: Read> DeserializeHeader<R> for R {
             }
             super::DATE_CODE => Ok(Header::Date),
             super::DATETIME_CODE => Ok(Header::DateTime),
-            super::EXTENSION8_CODE => u64::decode_prefix_varint(self).map(Header::Extension8),
-            super::EXTENSION16_CODE => u64::decode_prefix_varint(self).map(Header::Extension16),
-            super::EXTENSION32_CODE => u64::decode_prefix_varint(self).map(Header::Extension32),
-            super::EXTENSION64_CODE => u64::decode_prefix_varint(self).map(Header::Extension64),
-            super::EXTENSION128_CODE => u64::decode_prefix_varint(self).map(Header::Extension128),
-            super::EXTENSION_CODE => u64::decode_prefix_varint(self).map(Header::Extension),
             code => Err(std::io::Error::new(
                 ErrorKind::InvalidData,
                 format!("invalid header code: {}", code),
@@ -398,60 +392,6 @@ mod tests {
         assert_eq!(
             Cursor::new(buf).deserialize_header().unwrap(),
             Header::DateTime
-        );
-    }
-
-    #[test]
-    fn deserialize_header_extension8() {
-        let buf = vec![27u8, 123];
-        assert_eq!(
-            Cursor::new(buf).deserialize_header().unwrap(),
-            Header::Extension8(123)
-        );
-    }
-
-    #[test]
-    fn deserialize_header_extension16() {
-        let buf = vec![28u8, 123];
-        assert_eq!(
-            Cursor::new(buf).deserialize_header().unwrap(),
-            Header::Extension16(123)
-        );
-    }
-
-    #[test]
-    fn deserialize_header_extension32() {
-        let buf = vec![29u8, 123];
-        assert_eq!(
-            Cursor::new(buf).deserialize_header().unwrap(),
-            Header::Extension32(123)
-        );
-    }
-
-    #[test]
-    fn deserialize_header_extension64() {
-        let buf = vec![30u8, 123];
-        assert_eq!(
-            Cursor::new(buf).deserialize_header().unwrap(),
-            Header::Extension64(123)
-        );
-    }
-
-    #[test]
-    fn deserialize_header_extension128() {
-        let buf = vec![31u8, 123];
-        assert_eq!(
-            Cursor::new(buf).deserialize_header().unwrap(),
-            Header::Extension128(123)
-        );
-    }
-
-    #[test]
-    fn deserialize_header_extension() {
-        let buf = vec![32u8, 123];
-        assert_eq!(
-            Cursor::new(buf).deserialize_header().unwrap(),
-            Header::Extension(123)
         );
     }
 }
