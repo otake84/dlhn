@@ -20,6 +20,7 @@ serde_bytes = "0.11.5"
 dlhn_derive = { path = "../dlhn_derive" }
 
 [dev-dependencies]
+serde = { version = "1.0.130", features = ["derive"] }
 iai = "0.1.1"
 
 [[bench]]
