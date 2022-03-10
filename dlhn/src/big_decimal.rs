@@ -107,7 +107,6 @@ mod tests {
     use crate::{big_decimal::BigDecimal, de::Deserializer, ser::Serializer};
     use num_bigint::BigInt;
     use serde::{Deserialize, Serialize};
-    use std::array::IntoIter;
 
     #[test]
     fn from() {
@@ -215,7 +214,7 @@ mod tests {
             assert_eq!(result, value);
         }
 
-        IntoIter::new([
+        IntoIterator::into_iter([
             BigDecimal::from(bigdecimal::BigDecimal::from(0)),
             BigDecimal::from(bigdecimal::BigDecimal::new(BigInt::from(1), 0)),
             BigDecimal::from(bigdecimal::BigDecimal::new(BigInt::from(1), -1)),

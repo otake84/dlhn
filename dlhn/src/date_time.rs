@@ -87,7 +87,7 @@ mod tests {
     use super::DateTime;
     use crate::{de::Deserializer, prefix_varint::PrefixVarint, ser::Serializer, zigzag::ZigZag};
     use serde::{Deserialize, Serialize};
-    use std::{array::IntoIter, convert::TryInto};
+    use std::convert::TryInto;
     use time::{ext::NumericalDuration, OffsetDateTime};
 
     #[test]
@@ -125,7 +125,7 @@ mod tests {
             );
         }
 
-        IntoIter::new([
+        IntoIterator::into_iter([
             OffsetDateTime::UNIX_EPOCH,
             OffsetDateTime::UNIX_EPOCH + 1.nanoseconds(),
             OffsetDateTime::UNIX_EPOCH + 999999999.nanoseconds(),
@@ -155,7 +155,7 @@ mod tests {
             assert_eq!(result, DateTime::from(date_time));
         }
 
-        IntoIter::new([
+        IntoIterator::into_iter([
             OffsetDateTime::UNIX_EPOCH,
             OffsetDateTime::UNIX_EPOCH + 1.nanoseconds(),
             OffsetDateTime::UNIX_EPOCH + 999999999.nanoseconds(),

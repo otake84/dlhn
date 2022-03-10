@@ -48,7 +48,6 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<OffsetD
 #[cfg(test)]
 mod tests {
     use crate::{de::Deserializer, prefix_varint::PrefixVarint, ser::Serializer, zigzag::ZigZag};
-    use std::array::IntoIter;
     use time::{ext::NumericalDuration, OffsetDateTime};
 
     #[test]
@@ -67,7 +66,7 @@ mod tests {
             );
         }
 
-        IntoIter::new([
+        IntoIterator::into_iter([
             OffsetDateTime::UNIX_EPOCH,
             OffsetDateTime::UNIX_EPOCH + 1.nanoseconds(),
             OffsetDateTime::UNIX_EPOCH + 999999999.nanoseconds(),
@@ -94,7 +93,7 @@ mod tests {
             assert_eq!(date_time, super::deserialize(&mut deserializer).unwrap());
         }
 
-        IntoIter::new([
+        IntoIterator::into_iter([
             OffsetDateTime::UNIX_EPOCH,
             OffsetDateTime::UNIX_EPOCH + 1.nanoseconds(),
             OffsetDateTime::UNIX_EPOCH + 999999999.nanoseconds(),

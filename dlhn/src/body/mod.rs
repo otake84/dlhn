@@ -8,7 +8,7 @@ use crate::{
     header::Header,
 };
 use serde::{ser::SerializeTuple, Deserialize, Serialize};
-use serde_bytes::{ByteBuf, Bytes};
+use serde_bytes::ByteBuf;
 use std::{collections::BTreeMap, io::Read};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -248,7 +248,7 @@ mod tests {
         #[cfg(feature = "time")]
         use crate::{date::Date, date_time::DateTime};
         use serde_bytes::ByteBuf;
-        use std::{array::IntoIter, collections::BTreeMap};
+        use std::collections::BTreeMap;
         #[cfg(feature = "time")]
         use time::{Month, OffsetDateTime};
 
@@ -388,7 +388,7 @@ mod tests {
         #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn serialize_big_uint() {
-            IntoIter::new([
+            IntoIterator::into_iter([
                 BigUint::from(num_bigint::BigUint::from(0u8)),
                 BigUint::from(num_bigint::BigUint::from(u8::MAX)),
                 BigUint::from(num_bigint::BigUint::from(u16::MAX)),
@@ -411,7 +411,7 @@ mod tests {
         #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn serialize_big_int() {
-            IntoIter::new([
+            IntoIterator::into_iter([
                 BigInt::from(num_bigint::BigInt::from(0)),
                 BigInt::from(num_bigint::BigInt::from(i8::MIN)),
                 BigInt::from(num_bigint::BigInt::from(i8::MAX)),
@@ -445,7 +445,7 @@ mod tests {
         #[cfg(all(feature = "num-traits", feature = "num-bigint", feature = "bigdecimal"))]
         #[test]
         fn serialize_big_decimal() {
-            IntoIter::new([
+            IntoIterator::into_iter([
                 BigDecimal::from(bigdecimal::BigDecimal::from(0)),
                 BigDecimal::from(bigdecimal::BigDecimal::new(num_bigint::BigInt::from(1), 0)),
                 BigDecimal::from(bigdecimal::BigDecimal::new(num_bigint::BigInt::from(1), -1)),
@@ -479,7 +479,7 @@ mod tests {
 
         #[test]
         fn serialize_string() {
-            IntoIter::new(["test", "テスト"]).for_each(|v| {
+            IntoIterator::into_iter(["test", "テスト"]).for_each(|v| {
                 assert_eq!(serialize(Body::String(v.to_string())), serialize(v));
             });
         }
@@ -590,7 +590,7 @@ mod tests {
         #[cfg(feature = "time")]
         use crate::{date::Date, date_time::DateTime};
         use serde::Serialize;
-        use std::{array::IntoIter, collections::BTreeMap};
+        use std::collections::BTreeMap;
         #[cfg(feature = "time")]
         use time::{Month, OffsetDateTime};
 
@@ -995,7 +995,7 @@ mod tests {
 
         #[test]
         fn deserialize_f32() {
-            IntoIter::new([-f32::INFINITY, f32::MIN, 0f32, f32::MAX, f32::INFINITY]).for_each(
+            IntoIterator::into_iter([-f32::INFINITY, f32::MIN, 0f32, f32::MAX, f32::INFINITY]).for_each(
                 |v| {
                     let buf = serialize(v);
                     assert_eq!(
@@ -1012,7 +1012,7 @@ mod tests {
 
         #[test]
         fn deserialize_f64() {
-            IntoIter::new([-f64::INFINITY, f64::MIN, 0f64, f64::MAX, f64::INFINITY]).for_each(
+            IntoIterator::into_iter([-f64::INFINITY, f64::MIN, 0f64, f64::MAX, f64::INFINITY]).for_each(
                 |v| {
                     let buf = serialize(v);
                     assert_eq!(
@@ -1030,7 +1030,7 @@ mod tests {
         #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn deserialize_big_uint() {
-            IntoIter::new([
+            IntoIterator::into_iter([
                 BigUint::from(num_bigint::BigUint::from(0u8)),
                 BigUint::from(num_bigint::BigUint::from(u8::MAX)),
                 BigUint::from(num_bigint::BigUint::from(u16::MAX)),
@@ -1058,7 +1058,7 @@ mod tests {
         #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
         #[test]
         fn deserialize_big_int() {
-            IntoIter::new([
+            IntoIterator::into_iter([
                 BigInt::from(num_bigint::BigInt::from(0)),
                 BigInt::from(num_bigint::BigInt::from(i8::MIN)),
                 BigInt::from(num_bigint::BigInt::from(i8::MAX)),
@@ -1097,7 +1097,7 @@ mod tests {
         #[cfg(all(feature = "num-traits", feature = "num-bigint", feature = "bigdecimal"))]
         #[test]
         fn deserialize_big_decimal() {
-            IntoIter::new([
+            IntoIterator::into_iter([
                 BigDecimal::from(bigdecimal::BigDecimal::from(0)),
                 BigDecimal::from(bigdecimal::BigDecimal::new(num_bigint::BigInt::from(1), 0)),
                 BigDecimal::from(bigdecimal::BigDecimal::new(num_bigint::BigInt::from(1), -1)),

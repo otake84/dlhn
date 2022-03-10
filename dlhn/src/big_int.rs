@@ -73,8 +73,6 @@ impl<'de> Deserialize<'de> for BigInt {
 #[cfg(all(feature = "num-traits", feature = "num-bigint"))]
 #[cfg(test)]
 mod tests {
-    use std::array::IntoIter;
-
     use crate::{big_int::BigInt, de::Deserializer, ser::Serializer};
     use serde::{Deserialize, Serialize};
 
@@ -183,7 +181,7 @@ mod tests {
             assert_eq!(result, big_int);
         }
 
-        IntoIter::new([
+        IntoIterator::into_iter([
             BigInt::from(num_bigint::BigInt::from(0)),
             BigInt::from(num_bigint::BigInt::from(i8::MIN)),
             BigInt::from(num_bigint::BigInt::from(i8::MAX)),

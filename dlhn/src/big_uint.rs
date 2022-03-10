@@ -76,7 +76,6 @@ mod tests {
     use super::BigUint;
     use crate::{de::Deserializer, ser::Serializer};
     use serde::{Deserialize, Serialize};
-    use std::array::IntoIter;
 
     #[test]
     fn from() {
@@ -144,7 +143,7 @@ mod tests {
             assert_eq!(result, big_uint);
         }
 
-        IntoIter::new([
+        IntoIterator::into_iter([
             BigUint::from(num_bigint::BigUint::from(0u8)),
             BigUint::from(num_bigint::BigUint::from(u8::MAX)),
             BigUint::from(num_bigint::BigUint::from(u16::MAX)),

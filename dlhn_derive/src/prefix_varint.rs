@@ -269,11 +269,10 @@ impl PrefixVarint<9> for u64 {
 #[cfg(test)]
 mod tests {
     use super::PrefixVarint;
-    use std::array::IntoIter;
 
     #[test]
     fn decode_u8() {
-        IntoIter::new([0u8, (1 << 7) - 1, (1 << 7), u8::MAX]).for_each(|v| {
+        IntoIterator::into_iter([0u8, (1 << 7) - 1, (1 << 7), u8::MAX]).for_each(|v| {
             let mut buf = [0u8; u8::PREFIX_VARINT_BUF_SIZE];
             v.encode_prefix_varint(&mut buf);
             assert_eq!(v, u8::decode_prefix_varint(&mut buf.as_ref()).unwrap());
@@ -282,7 +281,7 @@ mod tests {
 
     #[test]
     fn decode_u16() {
-        IntoIter::new([
+        IntoIterator::into_iter([
             0u16,
             (1 << 7) - 1,
             (1 << 7),
@@ -299,7 +298,7 @@ mod tests {
 
     #[test]
     fn decode_u32() {
-        IntoIter::new([
+        IntoIterator::into_iter([
             0u32,
             (1 << 7) - 1,
             (1 << 7),
@@ -320,7 +319,7 @@ mod tests {
 
     #[test]
     fn decode_u64() {
-        IntoIter::new([
+        IntoIterator::into_iter([
             0u64,
             (1 << 7) - 1,
             (1 << 7),

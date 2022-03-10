@@ -47,7 +47,6 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<BigInt,
 mod tests {
     use crate::{de::Deserializer, ser::Serializer};
     use num_bigint::BigInt;
-    use std::array::IntoIter;
 
     #[test]
     fn serilize() {
@@ -135,7 +134,7 @@ mod tests {
             assert_eq!(big_int, super::deserialize(&mut deserializer).unwrap());
         }
 
-        IntoIter::new([
+        IntoIterator::into_iter([
             BigInt::from(0),
             BigInt::from(i8::MIN),
             BigInt::from(i8::MAX),

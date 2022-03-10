@@ -61,7 +61,6 @@ mod tests {
     use crate::{de::Deserializer, ser::Serializer};
     use bigdecimal::BigDecimal;
     use num_bigint::BigInt;
-    use std::array::IntoIter;
 
     #[test]
     fn serilize() {
@@ -117,7 +116,7 @@ mod tests {
             assert_eq!(value, super::deserialize(&mut deserializer).unwrap());
         }
 
-        IntoIter::new([
+        IntoIterator::into_iter([
             BigDecimal::from(0),
             BigDecimal::new(BigInt::from(1), 0),
             BigDecimal::new(BigInt::from(1), -1),
