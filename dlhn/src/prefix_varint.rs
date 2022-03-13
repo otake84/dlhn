@@ -54,18 +54,22 @@ impl PrefixVarint<3> for u16 {
     fn encode_prefix_varint(self, buf: &mut [u8; 3]) -> usize {
         let mut value = self;
 
-        if value < 1 << 7 {
-            buf[0] = value as u8;
-            1
-        } else if value < (1 << 14) {
-            value <<= 2;
-            buf[0] = (value as u8 >> 2) | 128;
-            buf[1] = (value >> 8) as u8;
-            2
-        } else {
-            buf[0] = 0b_1100_0000;
-            buf[1..].copy_from_slice(value.to_le_bytes().as_slice());
-            3
+        match value.leading_zeros() {
+            0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 => {
+                buf[0] = 0b_1100_0000;
+                buf[1..].copy_from_slice(value.to_le_bytes().as_slice());
+                3
+            }
+            8 | 9 | 10 | 11 | 12 | 13 | 14 => {
+                value <<= 2;
+                buf[0] = (value as u8 >> 2) | 128;
+                buf[1] = (value >> 8) as u8;
+                2
+            }
+            _ => {
+                buf[0] = value as u8;
+                1
+            }
         }
     }
 
@@ -94,31 +98,37 @@ impl PrefixVarint<5> for u32 {
     fn encode_prefix_varint(self, buf: &mut [u8; 5]) -> usize {
         let mut value = self;
 
-        if value < (1 << 7) {
-            buf[0] = value as u8;
-            1
-        } else if value < (1 << 14) {
-            value <<= 2;
-            buf[0] = (value as u8 >> 2) | 128;
-            buf[1] = (value >> 8) as u8;
-            2
-        } else if value < (1 << 21) {
-            value <<= 3;
-            buf[0] = (value as u8 >> 3) | 192;
-            buf[1] = (value >> 8) as u8;
-            buf[2] = (value >> 16) as u8;
-            3
-        } else if value < (1 << 28) {
-            value <<= 4;
-            buf[0] = (value as u8 >> 4) | 224;
-            buf[1] = (value >> 8) as u8;
-            buf[2] = (value >> 16) as u8;
-            buf[3] = (value >> 24) as u8;
-            4
-        } else {
-            buf[0] = 0b_1111_0000;
-            buf[1..].copy_from_slice(value.to_le_bytes().as_slice());
-            5
+        match value.leading_zeros() {
+            0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 => {
+                buf[0] = 0b_1111_0000;
+                buf[1..].copy_from_slice(value.to_le_bytes().as_slice());
+                5
+            }
+            8 | 9 | 10 | 11 | 12 | 13 | 14 => {
+                value <<= 4;
+                buf[0] = (value as u8 >> 4) | 224;
+                buf[1] = (value >> 8) as u8;
+                buf[2] = (value >> 16) as u8;
+                buf[3] = (value >> 24) as u8;
+                4
+            }
+            15 | 16 | 17 | 18 | 19 | 20 | 21 => {
+                value <<= 3;
+                buf[0] = (value as u8 >> 3) | 192;
+                buf[1] = (value >> 8) as u8;
+                buf[2] = (value >> 16) as u8;
+                3
+            }
+            22 | 23 | 24 | 25 | 26 | 27 | 28 => {
+                value <<= 2;
+                buf[0] = (value as u8 >> 2) | 128;
+                buf[1] = (value >> 8) as u8;
+                2
+            }
+            _ => {
+                buf[0] = value as u8;
+                1
+            }
         }
     }
 
@@ -159,68 +169,78 @@ impl PrefixVarint<9> for u64 {
     fn encode_prefix_varint(self, buf: &mut [u8; 9]) -> usize {
         let mut value = self;
 
-        if value < (1 << 7) {
-            buf[0] = value as u8;
-            1
-        } else if value < (1 << 14) {
-            value <<= 2;
-            buf[0] = (value as u8 >> 2) | 128;
-            buf[1] = (value >> 8) as u8;
-            2
-        } else if value < (1 << 21) {
-            value <<= 3;
-            buf[0] = (value as u8 >> 3) | 192;
-            buf[1] = (value >> 8) as u8;
-            buf[2] = (value >> 16) as u8;
-            3
-        } else if value < (1 << 28) {
-            value <<= 4;
-            buf[0] = (value as u8 >> 4) | 224;
-            buf[1] = (value >> 8) as u8;
-            buf[2] = (value >> 16) as u8;
-            buf[3] = (value >> 24) as u8;
-            4
-        } else if value < (1 << 35) {
-            value <<= 5;
-            buf[0] = (value as u8 >> 5) | 240;
-            buf[1] = (value >> 8) as u8;
-            buf[2] = (value >> 16) as u8;
-            buf[3] = (value >> 24) as u8;
-            buf[4] = (value >> 32) as u8;
-            5
-        } else if value < (1 << 42) {
-            value <<= 6;
-            buf[0] = (value as u8 >> 6) | 248;
-            buf[1] = (value >> 8) as u8;
-            buf[2] = (value >> 16) as u8;
-            buf[3] = (value >> 24) as u8;
-            buf[4] = (value >> 32) as u8;
-            buf[5] = (value >> 40) as u8;
-            6
-        } else if value < (1 << 49) {
-            value <<= 7;
-            buf[0] = (value as u8 >> 7) | 252;
-            buf[1] = (value >> 8) as u8;
-            buf[2] = (value >> 16) as u8;
-            buf[3] = (value >> 24) as u8;
-            buf[4] = (value >> 32) as u8;
-            buf[5] = (value >> 40) as u8;
-            buf[6] = (value >> 48) as u8;
-            7
-        } else if value < (1 << 56) {
-            buf[0] = 254;
-            buf[1] = value as u8;
-            buf[2] = (value >> 8) as u8;
-            buf[3] = (value >> 16) as u8;
-            buf[4] = (value >> 24) as u8;
-            buf[5] = (value >> 32) as u8;
-            buf[6] = (value >> 40) as u8;
-            buf[7] = (value >> 48) as u8;
-            8
-        } else {
-            buf[0] = 255;
-            buf[1..].copy_from_slice(&value.to_le_bytes());
-            9
+        match value.leading_zeros() {
+            0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 => {
+                buf[0] = 255;
+                buf[1..].copy_from_slice(&value.to_le_bytes());
+                9
+            }
+            8 | 9 | 10 | 11 | 12 | 13 | 14 => {
+                buf[0] = 254;
+                buf[1] = value as u8;
+                buf[2] = (value >> 8) as u8;
+                buf[3] = (value >> 16) as u8;
+                buf[4] = (value >> 24) as u8;
+                buf[5] = (value >> 32) as u8;
+                buf[6] = (value >> 40) as u8;
+                buf[7] = (value >> 48) as u8;
+                8
+            }
+            15 | 16 | 17 | 18 | 19 | 20 | 21 => {
+                value <<= 7;
+                buf[0] = (value as u8 >> 7) | 252;
+                buf[1] = (value >> 8) as u8;
+                buf[2] = (value >> 16) as u8;
+                buf[3] = (value >> 24) as u8;
+                buf[4] = (value >> 32) as u8;
+                buf[5] = (value >> 40) as u8;
+                buf[6] = (value >> 48) as u8;
+                7
+            }
+            22 | 23 | 24 | 25 | 26 | 27 | 28 => {
+                value <<= 6;
+                buf[0] = (value as u8 >> 6) | 248;
+                buf[1] = (value >> 8) as u8;
+                buf[2] = (value >> 16) as u8;
+                buf[3] = (value >> 24) as u8;
+                buf[4] = (value >> 32) as u8;
+                buf[5] = (value >> 40) as u8;
+                6
+            }
+            29 | 30 | 31 | 32 | 33 | 34 | 35 => {
+                value <<= 5;
+                buf[0] = (value as u8 >> 5) | 240;
+                buf[1] = (value >> 8) as u8;
+                buf[2] = (value >> 16) as u8;
+                buf[3] = (value >> 24) as u8;
+                buf[4] = (value >> 32) as u8;
+                5
+            }
+            36 | 37 | 38 | 39 | 40 | 41 | 42 => {
+                value <<= 4;
+                buf[0] = (value as u8 >> 4) | 224;
+                buf[1] = (value >> 8) as u8;
+                buf[2] = (value >> 16) as u8;
+                buf[3] = (value >> 24) as u8;
+                4
+            }
+            43 | 44 | 45 | 46 | 47 | 48 | 49 => {
+                value <<= 3;
+                buf[0] = (value as u8 >> 3) | 192;
+                buf[1] = (value >> 8) as u8;
+                buf[2] = (value >> 16) as u8;
+                3
+            }
+            50 | 51 | 52 | 53 | 54 | 55 | 56 => {
+                value <<= 2;
+                buf[0] = (value as u8 >> 2) | 128;
+                buf[1] = (value >> 8) as u8;
+                2
+            }
+            _ => {
+                buf[0] = value as u8;
+                1
+            }
         }
     }
 
@@ -295,14 +315,20 @@ mod tests {
 
     #[test]
     fn decode_u16() {
-        IntoIterator::into_iter([
-            0u16,
-            (1 << 7) - 1,
-            (1 << 7),
-            (1 << 14) - 1,
-            1 << 14,
-            u16::MAX,
-        ])
+        IntoIterator::into_iter(
+            [
+                vec![
+                    0u16,
+                    (1 << 7) - 1,
+                    (1 << 7),
+                    (1 << 14) - 1,
+                    1 << 14,
+                    u16::MAX,
+                ],
+                (0..16).into_iter().map(|v| 1u16 << v).collect(),
+            ]
+            .concat(),
+        )
         .for_each(|v| {
             let mut buf = [0u8; u16::PREFIX_VARINT_BUF_SIZE];
             v.encode_prefix_varint(&mut buf);
@@ -312,18 +338,24 @@ mod tests {
 
     #[test]
     fn decode_u32() {
-        IntoIterator::into_iter([
-            0u32,
-            (1 << 7) - 1,
-            (1 << 7),
-            (1 << 14) - 1,
-            1 << 14,
-            (1 << 21) - 1,
-            1 << 21,
-            (1 << 28) - 1,
-            1 << 28,
-            u32::MAX,
-        ])
+        IntoIterator::into_iter(
+            [
+                vec![
+                    0u32,
+                    (1 << 7) - 1,
+                    (1 << 7),
+                    (1 << 14) - 1,
+                    1 << 14,
+                    (1 << 21) - 1,
+                    1 << 21,
+                    (1 << 28) - 1,
+                    1 << 28,
+                    u32::MAX,
+                ],
+                (0..32).into_iter().map(|v| 1u32 << v).collect(),
+            ]
+            .concat(),
+        )
         .for_each(|v| {
             let mut buf = [0u8; u32::PREFIX_VARINT_BUF_SIZE];
             v.encode_prefix_varint(&mut buf);
@@ -333,26 +365,32 @@ mod tests {
 
     #[test]
     fn decode_u64() {
-        IntoIterator::into_iter([
-            0u64,
-            (1 << 7) - 1,
-            (1 << 7),
-            (1 << 14) - 1,
-            1 << 14,
-            (1 << 21) - 1,
-            1 << 21,
-            (1 << 28) - 1,
-            1 << 28,
-            (1 << 35) - 1,
-            1 << 35,
-            (1 << 42) - 1,
-            1 << 42,
-            (1 << 49) - 1,
-            1 << 49,
-            (1 << 56) - 1,
-            1 << 56,
-            u64::MAX,
-        ])
+        IntoIterator::into_iter(
+            [
+                vec![
+                    0u64,
+                    (1 << 7) - 1,
+                    (1 << 7),
+                    (1 << 14) - 1,
+                    1 << 14,
+                    (1 << 21) - 1,
+                    1 << 21,
+                    (1 << 28) - 1,
+                    1 << 28,
+                    (1 << 35) - 1,
+                    1 << 35,
+                    (1 << 42) - 1,
+                    1 << 42,
+                    (1 << 49) - 1,
+                    1 << 49,
+                    (1 << 56) - 1,
+                    1 << 56,
+                    u64::MAX,
+                ],
+                (0..64).into_iter().map(|v| 1u64 << v).collect(),
+            ]
+            .concat(),
+        )
         .for_each(|v| {
             let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
             v.encode_prefix_varint(&mut buf);
