@@ -76,7 +76,7 @@ impl PrefixVarint<3> for u16 {
     fn decode_prefix_varint(reader: &mut impl Read) -> Result<Self> {
         let prefix = decode_prefix(reader)?;
 
-        match prefix.leading_ones() {
+        match prefix.leading_ones() as u8 {
             0 => Ok(prefix as u16),
             1 => {
                 let mut buf = [0u8; 1];
@@ -247,7 +247,7 @@ impl PrefixVarint<9> for u64 {
     fn decode_prefix_varint(reader: &mut impl Read) -> Result<Self> {
         let prefix = decode_prefix(reader)?;
 
-        match prefix.leading_ones() {
+        match prefix.leading_ones() as u8 {
             0 => Ok(prefix as u64),
             1 => {
                 let mut buf = [0u8; 1];
