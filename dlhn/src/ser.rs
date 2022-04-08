@@ -239,6 +239,7 @@ impl<'a, W: Write> ser::Serializer for &'a mut Serializer<W> {
         Ok(self)
     }
 
+    #[inline]
     fn serialize_struct(
         self,
         _name: &'static str,
