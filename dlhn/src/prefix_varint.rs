@@ -316,15 +316,13 @@ mod tests {
             1u8 << 5,
             1u8 << 6,
             (1u8 << 7) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u8::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 1);
         });
 
-        IntoIterator::into_iter([
-            1u8 << 7,
-            u8::MAX,
-        ]).for_each(|v| {
+        IntoIterator::into_iter([1u8 << 7, u8::MAX]).for_each(|v| {
             let mut buf = [0u8; u8::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 2);
         });
@@ -342,7 +340,8 @@ mod tests {
             1u16 << 5,
             1u16 << 6,
             (1u16 << 7) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u16::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 1);
         });
@@ -356,16 +355,13 @@ mod tests {
             1u16 << 12,
             1u16 << 13,
             (1u16 << 14) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u16::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 2);
         });
 
-        IntoIterator::into_iter([
-            1u16 << 14,
-            1u16 << 15,
-            u16::MAX,
-        ]).for_each(|v| {
+        IntoIterator::into_iter([1u16 << 14, 1u16 << 15, u16::MAX]).for_each(|v| {
             let mut buf = [0u8; u16::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 3);
         });
@@ -383,7 +379,8 @@ mod tests {
             1u32 << 5,
             1u32 << 6,
             (1u32 << 7) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u32::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 1);
         });
@@ -397,7 +394,8 @@ mod tests {
             1u32 << 12,
             1u32 << 13,
             (1u32 << 14) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u32::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 2);
         });
@@ -411,7 +409,8 @@ mod tests {
             1u32 << 19,
             1u32 << 20,
             (1u32 << 21) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u32::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 3);
         });
@@ -425,21 +424,17 @@ mod tests {
             1u32 << 26,
             1u32 << 27,
             (1u32 << 28) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u32::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 4);
         });
 
-        IntoIterator::into_iter([
-            1u32 << 28,
-            1u32 << 29,
-            1u32 << 30,
-            1u32 << 31,
-            u32::MAX,
-        ]).for_each(|v| {
-            let mut buf = [0u8; u32::PREFIX_VARINT_BUF_SIZE];
-            assert_eq!(v.encode_prefix_varint(&mut buf), 5);
-        });
+        IntoIterator::into_iter([1u32 << 28, 1u32 << 29, 1u32 << 30, 1u32 << 31, u32::MAX])
+            .for_each(|v| {
+                let mut buf = [0u8; u32::PREFIX_VARINT_BUF_SIZE];
+                assert_eq!(v.encode_prefix_varint(&mut buf), 5);
+            });
     }
 
     #[test]
@@ -454,7 +449,8 @@ mod tests {
             1u64 << 5,
             1u64 << 6,
             (1u64 << 7) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 1);
         });
@@ -468,7 +464,8 @@ mod tests {
             1u64 << 12,
             1u64 << 13,
             (1u64 << 14) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 2);
         });
@@ -482,7 +479,8 @@ mod tests {
             1u64 << 19,
             1u64 << 20,
             (1u64 << 21) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 3);
         });
@@ -496,7 +494,8 @@ mod tests {
             1u64 << 26,
             1u64 << 27,
             (1u64 << 28) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 4);
         });
@@ -510,7 +509,8 @@ mod tests {
             1u64 << 33,
             1u64 << 34,
             (1u64 << 35) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 5);
         });
@@ -524,7 +524,8 @@ mod tests {
             1u64 << 40,
             1u64 << 41,
             (1u64 << 42) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 6);
         });
@@ -538,7 +539,8 @@ mod tests {
             1u64 << 47,
             1u64 << 48,
             (1u64 << 49) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 7);
         });
@@ -552,7 +554,8 @@ mod tests {
             1u64 << 54,
             1u64 << 55,
             (1u64 << 56) - 1,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 8);
         });
@@ -567,7 +570,8 @@ mod tests {
             1u64 << 62,
             1u64 << 63,
             u64::MAX,
-        ]).for_each(|v| {
+        ])
+        .for_each(|v| {
             let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
             assert_eq!(v.encode_prefix_varint(&mut buf), 9);
         });
