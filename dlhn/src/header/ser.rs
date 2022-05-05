@@ -223,8 +223,8 @@ macro_rules! tuple_impls {
             {
                 fn serialize_header<W: Write>(writer: &mut W) -> Result<()> {
                     writer.write_all(&[super::TUPLE_CODE])?;
-                    let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
-                    let size = ($len as u64).encode_prefix_varint(&mut buf);
+                    let mut buf = [0u8; u16::PREFIX_VARINT_BUF_SIZE];
+                    let size = ($len as u16).encode_prefix_varint(&mut buf);
                     writer.write_all(&buf[..size])?;
                     $(
                         $name::serialize_header(writer)?;
@@ -297,8 +297,8 @@ impl Header {
 
     fn serialize_inner_vec<W: Write>(code: u8, inner: &Vec<Header>, writer: &mut W) -> Result<()> {
         writer.write_all(&[code])?;
-        let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
-        let size = (inner.len() as u64).encode_prefix_varint(&mut buf);
+        let mut buf = [0u8; u16::PREFIX_VARINT_BUF_SIZE];
+        let size = (inner.len() as u16).encode_prefix_varint(&mut buf);
         writer.write_all(&buf[..size])?;
         for v in inner {
             v.serialize(writer)?

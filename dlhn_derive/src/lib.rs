@@ -41,7 +41,7 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                 }
             }
 
-            let fields_count = (types.len() as u64)
+            let fields_count = (types.len() as u16)
                 .encode_prefix_varint_vec()
                 .iter()
                 .map(ToTokens::to_token_stream)
@@ -99,7 +99,7 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                                     // let mut buf = vec![STRUCT_CODE];
                                     let mut buf = vec![TUPLE_CODE];
                                     buf.append(
-                                        &mut (variant.fields.len() as u64)
+                                        &mut (variant.fields.len() as u16)
                                             .encode_prefix_varint_vec(),
                                     );
                                     outers.push(
@@ -118,7 +118,7 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                                 syn::Fields::Unnamed(fields) => {
                                     let mut buf = vec![TUPLE_CODE];
                                     buf.append(
-                                        &mut (variant.fields.len() as u64)
+                                        &mut (variant.fields.len() as u16)
                                             .encode_prefix_varint_vec(),
                                     );
                                     outers.push(
@@ -153,7 +153,7 @@ pub fn derive_serialize_header(input: TokenStream) -> TokenStream {
                 }
             }
 
-            let variants_count = (outers.len() as u64)
+            let variants_count = (outers.len() as u16)
                 .encode_prefix_varint_vec()
                 .iter()
                 .map(ToTokens::to_token_stream)

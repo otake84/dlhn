@@ -40,7 +40,7 @@ impl<R: Read> DeserializeHeader<R> for R {
                 Ok(Header::Array(Box::new(inner)))
             }
             super::TUPLE_CODE => {
-                let size = u64::decode_prefix_varint(self)?;
+                let size = u16::decode_prefix_varint(self)?;
                 let mut vec = Vec::with_capacity(size as usize);
                 for _ in 0..size {
                     vec.push(self.deserialize_header()?);
@@ -48,7 +48,7 @@ impl<R: Read> DeserializeHeader<R> for R {
                 Ok(Header::Tuple(vec))
             }
             // super::STRUCT_CODE => {
-            //     let size = u64::decode_prefix_varint(self)?;
+            //     let size = u16::decode_prefix_varint(self)?;
             //     let mut buf = Vec::with_capacity(size as usize);
             //     for _ in 0..size {
             //         buf.push(self.deserialize_header()?);
@@ -60,7 +60,7 @@ impl<R: Read> DeserializeHeader<R> for R {
                 Ok(Header::Map(Box::new(inner)))
             }
             super::ENUM_CODE => {
-                let size = u64::decode_prefix_varint(self)?;
+                let size = u16::decode_prefix_varint(self)?;
                 let mut buf = Vec::with_capacity(size as usize);
                 for _ in 0..size {
                     buf.push(self.deserialize_header()?);
