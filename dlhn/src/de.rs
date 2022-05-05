@@ -338,7 +338,7 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     where
         V: de::Visitor<'de>,
     {
-        self.deserialize_u32(visitor)
+        self.deserialize_u16(visitor)
     }
 
     fn deserialize_ignored_any<V>(self, _: V) -> Result<V::Value, Self::Error>
