@@ -5,6 +5,11 @@ authors = ["Shogo Otake <shogo.otake@gmail.com>"]
 edition = "2018"
 resolver = "2"
 license = "Apache-2.0"
+description = "DLHN is a blazing fast and small data serialization format."
+repository = "https://github.com/otake84/dlhn"
+readme = "README.md"
+keywords = ["dlhn", "serde", "serialization"]
+categories = ["encoding"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

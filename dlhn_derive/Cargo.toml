@@ -4,6 +4,11 @@ version = "0.1.0"
 authors = ["Shogo Otake <shogo.otake@gmail.com>"]
 edition = "2018"
 license = "Apache-2.0"
+description = "Procedural Macros for DLHN"
+repository = "https://github.com/otake84/dlhn"
+readme = "README.md"
+keywords = ["dlhn", "serde", "serialization"]
+categories = ["encoding"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
