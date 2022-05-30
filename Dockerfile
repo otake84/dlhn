@@ -1,4 +1,4 @@
-FROM rust:1.60
+FROM rust:1.61
 RUN apt-get -y update
 RUN apt-get -y install valgrind cmake
 RUN rustup component add rustfmt
