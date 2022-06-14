@@ -1,3 +1,7 @@
+[![Latest Version](https://img.shields.io/crates/v/dlhn)](https://crates.io/crates/dlhn)
+[![Documentation](https://docs.rs/dlhn/badge.svg)](https://docs.rs/dlhn/)
+[![License](https://img.shields.io/github/license/otake84/dlhn)](LICENSE)
+
 # DLHN
 DLHN is a blazing fast and small data serialization format.  
 [Specification](https://dlhn.org)
