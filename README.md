@@ -11,8 +11,7 @@ However, we are also considering supporting schema file in the future.
 ## QuickStart
 ```toml
 [dependencies]
-dlhn = "0.1.0"
-dlhn_derive = "0.1.0"
+dlhn = "0.1"
 ```
 
 ## Serialize and deserialize body
