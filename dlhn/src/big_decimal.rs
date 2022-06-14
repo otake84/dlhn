@@ -1,3 +1,4 @@
+use crate::de::Error;
 #[cfg(feature = "num-traits")]
 use num_traits::Zero;
 use serde::{
@@ -5,8 +6,6 @@ use serde::{
     ser::SerializeSeq,
     Deserialize, Serialize,
 };
-
-use crate::de::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct BigDecimal {

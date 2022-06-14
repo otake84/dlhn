@@ -83,7 +83,7 @@ impl<'de> Deserialize<'de> for Date {
 #[cfg(test)]
 mod tests {
     use super::Date;
-    use crate::{de::Deserializer, prefix_varint::PrefixVarint, ser::Serializer, zigzag::ZigZag};
+    use crate::{Deserializer, PrefixVarint, Serializer, ZigZag};
     use serde::{Deserialize, Serialize};
     use std::convert::TryInto;
 

@@ -17,7 +17,7 @@ dlhn_derive = "0.1.0"
 
 ## Serialize and deserialize body
 ```rust
-use dlhn::{de::Deserializer, ser::Serializer};
+use dlhn::{Deserializer, Serializer};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -50,8 +50,7 @@ fn main() {
 
 ## Serialize and deserialize header
 ```rust
-use dlhn::header::{de::DeserializeHeader, ser::SerializeHeader, Header};
-use dlhn_derive::SerializeHeader;
+use dlhn::{DeserializeHeader, SerializeHeader, Header};
 
 #[derive(SerializeHeader)]
 struct Test {
@@ -87,7 +86,7 @@ fn main() {
 
 ## Stream version serialize and deserialize bodies
 ```rust
-use dlhn::{ser::Serializer, de::{Deserializer, Error}};
+use dlhn::{de::Error, Deserializer, Serializer};
 use serde::{Deserialize, Serialize};
 
 fn main() {

@@ -47,7 +47,7 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<OffsetD
 
 #[cfg(test)]
 mod tests {
-    use crate::{de::Deserializer, prefix_varint::PrefixVarint, ser::Serializer, zigzag::ZigZag};
+    use crate::{Deserializer, PrefixVarint, Serializer, ZigZag};
     use time::{ext::NumericalDuration, OffsetDateTime};
 
     #[test]

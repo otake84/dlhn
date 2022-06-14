@@ -1,4 +1,4 @@
-use dlhn::{de::Deserializer, ser::Serializer};
+use dlhn::{Deserializer, Serializer};
 use serde::{Deserialize, Serialize};
 
 #[test]

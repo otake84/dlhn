@@ -1,5 +1,4 @@
-use dlhn::header::ser::SerializeHeader;
-use dlhn_derive::*;
+use dlhn::SerializeHeader;
 use iai::main;
 
 fn serialize_header_struct() {
