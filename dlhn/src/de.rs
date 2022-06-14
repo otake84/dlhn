@@ -1,4 +1,4 @@
-use crate::{prefix_varint::PrefixVarint, zigzag::ZigZag};
+use crate::{PrefixVarint, ZigZag};
 use serde::{de, forward_to_deserialize_any, Deserialize};
 use std::{
     fmt::{self, Display},

@@ -1,4 +1,4 @@
-use dlhn::ser::Serializer;
+use dlhn::Serializer;
 use iai::main;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;

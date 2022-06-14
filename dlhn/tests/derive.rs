@@ -1,5 +1,4 @@
-use dlhn::header::{de::DeserializeHeader, ser::SerializeHeader, Header};
-use dlhn_derive::*;
+use dlhn::{DeserializeHeader, Header, SerializeHeader};
 use std::io::Cursor;
 
 #[test]

@@ -1,4 +1,4 @@
-use dlhn::{de::Deserializer, ser::Serializer};
+use dlhn::{Deserializer, Serializer};
 use dlhn_bench::Test;
 use iai::main;
 use serde::{Deserialize, Serialize};

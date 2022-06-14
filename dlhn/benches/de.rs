@@ -1,4 +1,4 @@
-use dlhn::{de::Deserializer, ser::Serializer};
+use dlhn::{Deserializer, Serializer};
 use iai::main;
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;

@@ -1,4 +1,4 @@
-use crate::{prefix_varint::PrefixVarint, zigzag::ZigZag};
+use crate::{PrefixVarint, ZigZag};
 use serde::{
     ser::{self, Impossible},
     Serialize,
@@ -577,7 +577,7 @@ impl<'a, W: Write> ser::Serializer for MapKeySerializer<'a, W> {
 #[cfg(test)]
 mod tests {
     use super::Serializer;
-    use crate::{prefix_varint::PrefixVarint, ser::Error, zigzag::ZigZag};
+    use crate::{ser::Error, PrefixVarint, ZigZag};
     use serde::Serialize;
     use serde_bytes::Bytes;
     use std::collections::BTreeMap;

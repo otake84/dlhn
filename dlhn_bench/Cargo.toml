@@ -10,7 +10,6 @@ license = "Apache-2.0"
 [dependencies]
 serde = { version = "1.0.136", features = ["derive"] }
 dlhn = { path = "../dlhn" }
-dlhn_derive = { path = "../dlhn_derive" }
 serde_json = "1.0.81"
 rmp-serde = "1.1.0"
 prost = "0.10.3"

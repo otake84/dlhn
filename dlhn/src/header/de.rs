@@ -1,5 +1,5 @@
 use super::Header;
-use crate::prefix_varint::PrefixVarint;
+use crate::PrefixVarint;
 use std::io::{ErrorKind, Read, Result};
 
 pub trait DeserializeHeader<R: Read> {
@@ -81,12 +81,8 @@ impl<R: Read> DeserializeHeader<R> for R {
 mod tests {
     use super::DeserializeHeader;
     use crate::{
-        big_decimal::BigDecimal,
-        big_int::BigInt,
-        big_uint::BigUint,
-        date::Date,
-        date_time::DateTime,
-        header::{ser::SerializeHeader, Header},
+        big_decimal::BigDecimal, big_int::BigInt, big_uint::BigUint, date::Date,
+        date_time::DateTime, Header, SerializeHeader,
     };
     use serde_bytes::Bytes;
     use std::{collections::BTreeMap, io::Cursor};

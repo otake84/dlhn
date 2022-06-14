@@ -1,4 +1,4 @@
-use dlhn::{body::Body, ser::Serializer};
+use dlhn::{Body, Serializer};
 use iai::main;
 use serde::Serialize;
 use serde_bytes::ByteBuf;
