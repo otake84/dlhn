@@ -282,7 +282,7 @@ impl PrefixVarint<9> for u64 {
                 let mut buf = [0u8; 6];
                 reader.read_exact(&mut buf)?;
                 let mut v = u16::from_le_bytes([buf[4], buf[5]]) as u64;
-                v = (v << 32) | (u32::from_le_bytes([buf[1], buf[2], buf[3], buf[4]]) as u64);
+                v = (v << 32) | (u32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]) as u64);
                 Ok((prefix as u64 & 0x01) | (v << 1))
             }
             7 => {
@@ -669,5 +669,15 @@ mod tests {
             v.encode_prefix_varint(&mut buf);
             assert_eq!(v, u64::decode_prefix_varint(&mut buf.as_ref()).unwrap());
         });
+    }
+
+    #[test]
+    fn issue_2() {
+        // https://github.com/otake84/dlhn/issues/2
+        // Thanks @lunemec
+        let v = 37486878914941u64;
+        let mut buf = [0u8; u64::PREFIX_VARINT_BUF_SIZE];
+        v.encode_prefix_varint(&mut buf);
+        assert_eq!(v, u64::decode_prefix_varint(&mut buf.as_ref()).unwrap());
     }
 }
