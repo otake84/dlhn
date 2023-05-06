@@ -47,7 +47,10 @@ pub fn deserialize<'de, T: Deserializer<'de>>(deserializer: T) -> Result<OffsetD
 
 #[cfg(test)]
 mod tests {
-    use crate::{Deserializer, PrefixVarint, Serializer, ZigZag};
+    use std::convert::TryInto;
+
+    use crate::{DateTime, Deserializer, PrefixVarint, Serializer, ZigZag};
+    use serde::{Deserialize, Serialize};
     use time::{ext::NumericalDuration, OffsetDateTime};
 
     #[test]
@@ -111,5 +114,33 @@ mod tests {
         let mut serializer = Serializer::new(&mut buf);
         super::serialize(&date_time, &mut serializer).unwrap();
         buf
+    }
+
+    #[test]
+    fn eq_encode_time_date_time_dlhn_date_time() {
+        let time_date_time =
+            encode_date_time(OffsetDateTime::UNIX_EPOCH + 100000.days() + 1.nanoseconds());
+        let mut dlhn_date_time = Vec::new();
+        let mut serializer = crate::Serializer::new(&mut dlhn_date_time);
+        crate::DateTime::from(OffsetDateTime::UNIX_EPOCH + 100000.days() + 1.nanoseconds())
+            .serialize(&mut serializer)
+            .unwrap();
+        assert_eq!(time_date_time, dlhn_date_time);
+    }
+
+    #[test]
+    fn eq_decode_time_date_time_dlhn_date_time() {
+        let mut dlhn_date_time = Vec::new();
+        let mut serializer = crate::Serializer::new(&mut dlhn_date_time);
+        crate::DateTime::from(OffsetDateTime::UNIX_EPOCH + 100000.days() + 1.nanoseconds())
+            .serialize(&mut serializer)
+            .unwrap();
+        let mut buf = dlhn_date_time.as_slice();
+        let mut deserializer = crate::Deserializer::new(&mut buf);
+        let dlhn_date = DateTime::deserialize(&mut deserializer).unwrap();
+        assert_eq!(
+            OffsetDateTime::UNIX_EPOCH + 100000.days() + 1.nanoseconds(),
+            TryInto::<OffsetDateTime>::try_into(dlhn_date).unwrap(),
+        );
     }
 }

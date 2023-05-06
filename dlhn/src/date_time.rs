@@ -1,13 +1,8 @@
-use crate::de::Error;
-use serde::{
-    de::{self, SeqAccess, Unexpected, Visitor},
-    ser::SerializeSeq,
-    Deserialize, Serialize,
-};
+use serde::{Deserialize, Serialize};
 #[cfg(feature = "time")]
 use time::{ext::NumericalDuration, OffsetDateTime};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct DateTime {
     unix_timestamp: i64,
     nanosecond: u32,
@@ -31,53 +26,6 @@ impl std::convert::TryInto<OffsetDateTime> for DateTime {
         OffsetDateTime::from_unix_timestamp(self.unix_timestamp)
             .map(|v| v + (self.nanosecond as i64).nanoseconds())
             .or(Err(()))
-    }
-}
-
-impl Serialize for DateTime {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut seq = serializer.serialize_seq(None)?;
-        seq.serialize_element(&self.unix_timestamp)?;
-        seq.serialize_element(&self.nanosecond)?;
-        seq.end()
-    }
-}
-
-struct DateTimeVisitor;
-
-impl<'de> Visitor<'de> for DateTimeVisitor {
-    type Value = DateTime;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("format error")
-    }
-
-    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-    where
-        A: SeqAccess<'de>,
-    {
-        let unix_timestamp = seq
-            .next_element::<i64>()?
-            .ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?;
-        let nanosecond = seq
-            .next_element::<u32>()?
-            .ok_or(de::Error::invalid_value(Unexpected::Seq, &Error::Read))?;
-        Ok(DateTime {
-            unix_timestamp,
-            nanosecond,
-        })
-    }
-}
-
-impl<'de> Deserialize<'de> for DateTime {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        deserializer.deserialize_tuple(2, DateTimeVisitor)
     }
 }
 
