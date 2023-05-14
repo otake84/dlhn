@@ -1,5 +1,5 @@
 use crate::{PrefixVarint, ZigZag};
-use serde::{de, forward_to_deserialize_any, Deserialize};
+use serde::{de, Deserialize};
 use std::{
     fmt::{self, Display},
     io::Read,
@@ -442,10 +442,11 @@ impl<'a, 'de: 'a, R: Read> de::MapAccess<'de> for StructDeserializer<'a, 'de, R>
     where
         K: de::DeserializeSeed<'de>,
     {
-        if let Some(&key) = self.keys.next() {
-            seed.deserialize(StructKey::new(key)).map(Some)
-        } else {
-            Ok(None)
+        match self.keys.next() {
+            Some(&key) => seed
+                .deserialize(serde::de::value::BorrowedStrDeserializer::new(key))
+                .map(Some),
+            None => Ok(None),
         }
     }
 
@@ -454,44 +455,6 @@ impl<'a, 'de: 'a, R: Read> de::MapAccess<'de> for StructDeserializer<'a, 'de, R>
         V: de::DeserializeSeed<'de>,
     {
         seed.deserialize(&mut *self.deserializer)
-    }
-}
-
-struct StructKey {
-    key: &'static str,
-}
-
-impl StructKey {
-    fn new(key: &'static str) -> Self {
-        Self { key }
-    }
-}
-
-impl<'de> de::Deserializer<'de> for StructKey {
-    type Error = Error;
-
-    fn deserialize_any<V>(self, _: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de>,
-    {
-        Err(Error::UnsupportedKeyType)
-    }
-
-    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, Self::Error>
-    where
-        V: de::Visitor<'de>,
-    {
-        visitor.visit_str(self.key)
-    }
-
-    #[inline]
-    fn is_human_readable(&self) -> bool {
-        false
-    }
-
-    forward_to_deserialize_any! {
-        bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string bytes byte_buf option
-        unit unit_struct newtype_struct seq tuple tuple_struct map struct enum ignored_any
     }
 }
 
