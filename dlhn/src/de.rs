@@ -55,7 +55,7 @@ impl<'de, R: Read> Deserializer<'de, R> {
 
     fn new_dynamic_buf(&mut self) -> Result<Vec<u8>, Error> {
         let len = u64::decode_prefix_varint(self.reader).or(Err(Error::Read))?;
-        Ok(vec![0; len as usize])
+        Ok(vec![0; len.min(128) as usize])
     }
 }
 
