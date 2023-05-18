@@ -110,6 +110,9 @@ fn main() {
 }
 ```
 
+## Benchmark
+[Rust serialization benchmark](https://github.com/djkoloski/rust_serialization_benchmark)
+
 ## Copyright
 Copyright 2020-2022 Shogo Otake
 
