@@ -1,9 +1,11 @@
 use crate::{PrefixVarint, ZigZag};
 use serde::{de, Deserialize};
 use std::{
+    cmp::min,
     fmt::{self, Display},
     io::Read,
     slice::Iter,
+    vec,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -51,11 +53,6 @@ pub struct Deserializer<'de, R: Read> {
 impl<'de, R: Read> Deserializer<'de, R> {
     pub fn new(reader: &'de mut R) -> Self {
         Deserializer { reader }
-    }
-
-    fn new_dynamic_buf(&mut self) -> Result<Vec<u8>, Error> {
-        let len = u64::decode_prefix_varint(self.reader).or(Err(Error::Read))?;
-        Ok(vec![0; len.min(128) as usize])
     }
 }
 
@@ -214,9 +211,29 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     where
         V: de::Visitor<'de>,
     {
-        let mut body_buf = self.new_dynamic_buf()?;
-        self.reader.read_exact(&mut body_buf).or(Err(Error::Read))?;
-        visitor.visit_string(String::from_utf8(body_buf).or(Err(Error::Read))?)
+        let len = u64::decode_prefix_varint(self.reader).or(Err(Error::Read))?;
+        const MAX_SIZE: u64 = 128;
+        if len < MAX_SIZE {
+            let mut body_buf = [0; MAX_SIZE as usize];
+            self.reader
+                .read_exact(&mut body_buf[..(len as usize)])
+                .or(Err(Error::Read))?;
+            visitor.visit_string(
+                String::from_utf8(body_buf[..(len as usize)].to_vec()).or(Err(Error::Read))?,
+            )
+        } else {
+            let mut s = String::new();
+            if self
+                .reader
+                .take(len as u64)
+                .read_to_string(&mut s)
+                .or(Err(Error::Read))?
+                != len as usize
+            {
+                return Err(Error::Read);
+            };
+            visitor.visit_string(s)
+        }
     }
 
     fn deserialize_bytes<V>(self, _: V) -> Result<V::Value, Self::Error>
@@ -230,9 +247,25 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<'de, R> {
     where
         V: de::Visitor<'de>,
     {
-        let mut buf = self.new_dynamic_buf()?;
-        self.reader.read_exact(&mut buf).or(Err(Error::Read))?;
-        visitor.visit_byte_buf(buf)
+        let len = u64::decode_prefix_varint(self.reader).or(Err(Error::Read))?;
+        const MAX_SIZE: u64 = 4096;
+        if len > MAX_SIZE {
+            let mut result = Vec::new();
+            let mut buf = vec![0; MAX_SIZE as usize];
+            let mut pos = 0;
+            while result.len() < len as usize {
+                self.reader
+                    .read_exact(&mut buf[..(min(MAX_SIZE, len - pos)) as usize])
+                    .or(Err(Error::Read))?;
+                result.extend_from_slice(&buf[..(min(MAX_SIZE, len - pos)) as usize]);
+                pos += min(MAX_SIZE, len - pos);
+            }
+            visitor.visit_byte_buf(result)
+        } else {
+            let mut buf = vec![0; len as usize];
+            self.reader.read_exact(&mut buf).or(Err(Error::Read))?;
+            visitor.visit_byte_buf(buf)
+        }
     }
 
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, Self::Error>
@@ -681,12 +714,46 @@ mod tests {
     }
 
     #[test]
+    fn deserialize_string129_issue() {
+        // Thanks @caibear and @udoprog
+        // https://github.com/otake84/dlhn/issues/14
+        // https://github.com/otake84/dlhn/issues/15
+        let original = " ".repeat(129);
+        let mut serialized = vec![];
+        original
+            .serialize(&mut Serializer::new(&mut serialized))
+            .unwrap();
+
+        let deserialized =
+            String::deserialize(&mut Deserializer::new(&mut serialized.as_slice())).unwrap();
+        assert_eq!(original, deserialized);
+    }
+
+    #[test]
     fn deserialize_byte_buf() {
-        let buf = serialize(ByteBuf::from(vec![0u8, 1, 2, 3, 255]));
+        let buf = serialize(ByteBuf::from(vec![0u8, 1, 2, 3, 255].repeat(1000)));
         let mut reader = buf.as_slice();
         let mut deserializer = Deserializer::new(&mut reader);
         let result = ByteBuf::deserialize(&mut deserializer).unwrap();
-        assert_eq!([0u8, 1, 2, 3, 255], result.as_slice());
+        assert_eq!([0u8, 1, 2, 3, 255].repeat(1000), result.as_slice());
+    }
+
+    #[test]
+    fn deserialize_byte_buf_4097() {
+        let buf = serialize(ByteBuf::from(vec![0u8].repeat(4097)));
+        let mut reader = buf.as_slice();
+        let mut deserializer = Deserializer::new(&mut reader);
+        let result = ByteBuf::deserialize(&mut deserializer).unwrap();
+        assert_eq!([0u8].repeat(4097), result.as_slice());
+    }
+
+    #[test]
+    fn deserialize_byte_buf_100000() {
+        let buf = serialize(ByteBuf::from(vec![0u8].repeat(100000)));
+        let mut reader = buf.as_slice();
+        let mut deserializer = Deserializer::new(&mut reader);
+        let result = ByteBuf::deserialize(&mut deserializer).unwrap();
+        assert_eq!([0u8].repeat(100000), result.as_slice());
     }
 
     #[test]
